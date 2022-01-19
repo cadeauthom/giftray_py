@@ -6,6 +6,7 @@ alias wpython='/mnt/c/Users/tcadeau/AppData/Local/Programs/Python/Python310/pyth
 wpython -m pip install --upgrade pip
 wpython -m pip install pywin32
 wpython -m pip install pyinstaller
+wpython -m pip install keyboard
 
 curl -s https://api.github.com/repos/upx/upx/releases/latest | grep "browser_download_url.*win64.zip" | cut -d '"' -f 4  |wget -qi  -
 unzip upx-*-win64.zip
