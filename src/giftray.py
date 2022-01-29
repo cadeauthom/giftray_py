@@ -8,14 +8,13 @@ import sys
 import win32api         # package pywin32
 import win32con
 import win32gui_struct
+import keyboard
 import configparser
 
 try:
     import winxpgui as win32gui
 except ImportError:
     import win32gui
-
-
 
 def ValidateIconPath(path="",color="black",project=""):
     if path:
@@ -59,6 +58,8 @@ def GetIcon(path,ico="default_default.ico"):
         return GetIcon(path)
     return win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
 
+
+#keyboard.add_hotkey('ctrl + shift + z', print, args =('Hotkey', 'Detected')) 
 class MainClass(object):
     def __init__(self):
         self._begin()
