@@ -1,13 +1,9 @@
 import os
 import sys
 
+from feature import feature
 
-def terminator_run():
-    print("terminator run")
-    return
-
-def proxy_run():
-    return
-
-def proxy_init():
-    return
+class terminator(feature):
+    def _action():
+        print("test")
+        return

@@ -1,9 +1,8 @@
 
 
-
-
 import os
 import sys
+import inspect
 #import time
 #import win32api         # package pywin32
 import win32con
@@ -18,6 +17,10 @@ import logging
 import importlib
 
 import icon
+from feature import feature
+
+def str_to_class(module,feat):
+    return getattr(sys.modules[module], feat)
 
 #keyboard.add_hotkey('ctrl + shift + z', print, args =('Hotkey', 'Detected'))
 class MainClass(object):
@@ -32,6 +35,7 @@ class MainClass(object):
         self.showname           = "GifTray"
         self.name               = "giftray"
         logging.basicConfig(filename="giftray.log",level=0,format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+        logging.info("Initialising main class")
         message_map = {win32gui.RegisterWindowMessage("TaskbarCreated"): self._restart,
                        win32con.WM_DESTROY: self._destroy,
                        win32con.WM_COMMAND: self._command,
@@ -57,13 +61,17 @@ class MainClass(object):
           #for i in self.avail:
           #  if hasattr(i, "destroy"): i.destroy(i)
           del self.avail
-        self.avail              = dict()
+        #self.avail              = dict()
+        self.avail              = []
         if hasattr(self, "error"):
           del self.error
-        self.error              = []
+        self.error              = dict()
         if hasattr(self, "install"):
           del self.install
-        self.install            = []
+        self.install            = dict()
+        if hasattr(self, "menu"):
+          del self.menu
+        self.menu               = []
         self.conf               = os.getenv('USERPROFILE')+'/'+self.name+'/'+self.name+".conf"
         if hasattr(self, "icos"):
           del self.icos
@@ -82,15 +90,17 @@ class MainClass(object):
             except:
                 logging.error("Module '" +m+ "' does not exist")
                 continue
-            for i in (k for k in dir(tmp) if '_run' in k):
-                fct  = i.split("_")[0]
+            for fct, obj in inspect.getmembers(tmp):
+                if not (inspect.isclass(obj) and fct != 'feature'):
+                    continue
                 full = m+"_"+fct
-                self.avail[full]            = dict()
-                self.avail[full]["feature"] = fct
-                self.avail[full]["module"]  = m
-                self.avail[full]["fct"]     = getattr(tmp,i)
-                if fct+"_init" in dir(tmp):
-                    self.avail[full]["init"]=True
+                if not "_action" in (dir(obj)):
+                    logging.error("Feature '" +full+ "' does not have '_action' defined")
+                self.avail.append(full)
+                #self.avail[full]            = dict()
+                #self.avail[full]["fct"]     = fct
+                #self.avail[full]["module"]  = m
+                #self.avail[full]["feature"] = obj
 
     def _readconf(self):
         config = configparser.ConfigParser()
@@ -120,30 +130,28 @@ class MainClass(object):
                     else :
                         logging.error(i+"->"+k+"not supported")
             else:
-                fct = i.casefold()
+                if "function" in conf[i]:
+                    fct = conf[i]["function"].casefold()
+                else:
+                    logging.error("'function' not defined in '"+i+"'")
                 if fct.count('_') != 1:
-                    logging.error("'"+fct+"' does not contain exactly 1 '_'")
+                    logging.error("'"+fct+"' does not contain exactly 1 '_' in '"+i+"'")
                     continue
                 split_i = fct.split("_")
                 module = split_i[0]
-                feature = split_i[1]
+                feat = split_i[1]
                 if  not module in sys.modules.keys():
-                    logging.error("Module '"+module+"' not loaded")
+                    logging.error("Module '"+module+"' not loaded from '"+i+"'")
                     continue
                 if not fct in self.avail:
-                    logging.error("'"+feature+"' not defined in module '" +module+"'")
+                    logging.error("'"+feat+"' not defined in module '" +module+"' from '"+i+"'")
                     continue
-                new = dict()
-                new["fct"]  = fct
-                new["icon"] = self.conf_ico_default
-                for confk in conf[i]:
-                    k = confk.casefold()
-                    if k == "ico".casefold():
-                        new["icon"] = k
-                    elif k == "ahk".casefold():
-                    logging.info(feature +"->"+k+"="+conf[i][k])
-                new[hicon] = icon.GetIcon(self.iconPath, new["ico"])
-                self.install.push(new)
+                new_class = str_to_class(module,feat)(i,conf[i],self)
+                if not new_class.is_ok():
+                    self.error[new_class.print()] = new_class.print_error(sep=",",prefix="")
+                if new_class.is_in_menu():
+                    self.menu.append(new_class.print())
+                self.install[new_class.print()]=new_class
 
     def _useconf(self):
         self.iconPath=icon.ValidateIconPath( path    = self.conf_icoPath,\
@@ -153,7 +161,6 @@ class MainClass(object):
         flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
         nid = (self.hwnd, 0, flags, win32con.WM_USER+20, self.main_hicon, self.name)
         win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, nid)
-
 
     def _show_menu(self):
         menu = win32gui.CreatePopupMenu()
@@ -218,13 +225,23 @@ class MainClass(object):
         return True
 
     def wait(self):
+        if True:
+            print ("----- avail ------")
+            print (self.avail)
+            print ("----- error ------")
+            print (self.error)
+            print ("----- install ------")
+            print (self.install)
+            print ("----- menu ------")
+            print (self.menu)
         win32gui.PumpMessages()
 
 if __name__ == '__main__':
     #import itertools, glob
     a=MainClass()
+    logging.info("Entering wait state")
     a.wait()
-
+    logging.info("Exiting")
     #ball=WindowsBalloonTip.BalloonTip("my test","this is my test", ico="../dist/giftray/icons/black/giftray-0.ico",taskbarname="GifTray-Tip",time=20)
     #ball.popup()
     #  time.sleep(20)
