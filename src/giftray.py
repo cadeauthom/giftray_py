@@ -5,71 +5,33 @@
 import os
 import sys
 #import time
-import win32api         # package pywin32
+#import win32api         # package pywin32
 import win32con
-import win32gui_struct
-import keyboard
+#import keyboard
 import configparser
-
 try:
     import winxpgui as win32gui
 except ImportError:
     import win32gui
+import win32gui_struct
+import logging
+import importlib
 
-def ValidateIconPath(path="",color="black",project=""):
-    if path:
-        path = os.path.abspath(os.path.join(path,color))
-        if os.path.isdir(path):
-            return path
-    path = os.path.abspath(os.path.join( sys.path[0], color))
-    if os.path.isdir(path):
-        return path
-    path = os.path.abspath(os.path.join( sys.path[0], "..\\"+color))
-    if os.path.isdir(path):
-        return path
-    path = os.path.abspath(os.path.join( sys.path[0], "icons\\"+color))
-    if os.path.isdir(path):
-        return path
-    path = os.path.abspath(os.path.join( sys.path[0], "..\\icons\\"+color))
-    if os.path.isdir(path):
-        return path
-    path = os.path.abspath(os.path.join( sys.path[0], "..\\dist\\"+project+"\\icons\\"+color))
-    if os.path.isdir(path):
-        return path
-    path = os.path.abspath(os.path.join( sys.path[0], "..\\build\\"+project+"\\icons\\"+color))
-    if os.path.isdir(path):
-        return path
-    return ""
-
-def GetIcon(path,ico="default_default.ico"):
-    last_try=False
-    if ico=="default_default.ico":
-        last_try=True
-    if not ico:
-        ico="default_default.ico"
-    iconPathName = os.path.abspath(os.path.join( path, ico ))
-    icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
-    if os.path.isfile(iconPathName):
-        try:
-            return win32gui.LoadImage(0, iconPathName, win32con.IMAGE_ICON, 0, 0, icon_flags)
-        except:
-            pass
-    if not last_try:
-        return GetIcon(path)
-    return win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
-
+import icon
 
 #keyboard.add_hotkey('ctrl + shift + z', print, args =('Hotkey', 'Detected'))
 class MainClass(object):
     def __init__(self):
         self._begin()
         self._reset()
+        self._loadmodules(['wsl','windows'])
         self._readconf()
         self._useconf()
 
     def _begin(self):
         self.showname           = "GifTray"
         self.name               = "giftray"
+        logging.basicConfig(filename="giftray.log",level=0,format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
         message_map = {win32gui.RegisterWindowMessage("TaskbarCreated"): self._restart,
                        win32con.WM_DESTROY: self._destroy,
                        win32con.WM_COMMAND: self._command,
@@ -92,10 +54,10 @@ class MainClass(object):
 
     def _reset(self):
         if hasattr(self, "avail"):
-          for i in self.avail:
-            if hasattr(i, "destroy"): i.destroy(i)
+          #for i in self.avail:
+          #  if hasattr(i, "destroy"): i.destroy(i)
           del self.avail
-        self.avail              = []
+        self.avail              = dict()
         if hasattr(self, "error"):
           del self.error
         self.error              = []
@@ -106,11 +68,29 @@ class MainClass(object):
         if hasattr(self, "icos"):
           del self.icos
         self.icos               = []
-        self.conf_color         = "blue"
+        self.conf_colormainicon = "blue"
+        self.conf_coloricons    = "blue"
         self.conf_ico_default   = "default_default"
         self.conf_ico_empty     = "default_empty"
         self.conf_icoPath       = ""
         self.iconPath           = ""
+
+    def _loadmodules(self,mods):
+        for m in mods:
+            try :
+                tmp = importlib.import_module(m)
+            except:
+                logging.error("Module '" +m+ "' does not exist")
+                continue
+            for i in (k for k in dir(tmp) if '_run' in k):
+                fct  = i.split("_")[0]
+                full = m+"_"+fct
+                self.avail[full]            = dict()
+                self.avail[full]["feature"] = fct
+                self.avail[full]["module"]  = m
+                self.avail[full]["fct"]     = getattr(tmp,i)
+                if fct+"_init" in dir(tmp):
+                    self.avail[full]["init"]=True
 
     def _readconf(self):
         config = configparser.ConfigParser()
@@ -124,22 +104,60 @@ class MainClass(object):
             config.read(os.getcwd()+'/../../conf/'+self.name+'.conf')
         else :
             return 1
-        print (config.sections())
+        logging.info(config.sections())
         #config.write()
+        self._conf2data(config)
         return 0
 
+    def _conf2data(self,conf):
+        for i in conf.sections():
+            if i.casefold() == 'GENERAL'.casefold():
+                for k in conf[i]:
+                    if k.casefold() == 'ColorMainIcon'.casefold():
+                        self.conf_colormainicon = str(conf[i][k])
+                    elif k.casefold() == 'ColorIcons'.casefold():
+                        self.conf_coloricons = str(conf[i][k])
+                    else :
+                        logging.error(i+"->"+k+"not supported")
+            else:
+                fct = i.casefold()
+                if fct.count('_') != 1:
+                    logging.error("'"+fct+"' does not contain exactly 1 '_'")
+                    continue
+                split_i = fct.split("_")
+                module = split_i[0]
+                feature = split_i[1]
+                if  not module in sys.modules.keys():
+                    logging.error("Module '"+module+"' not loaded")
+                    continue
+                if not fct in self.avail:
+                    logging.error("'"+feature+"' not defined in module '" +module+"'")
+                    continue
+                new = dict()
+                new["fct"]  = fct
+                new["icon"] = self.conf_ico_default
+                for confk in conf[i]:
+                    k = confk.casefold()
+                    if k == "ico".casefold():
+                        new["icon"] = k
+                    elif k == "ahk".casefold():
+                    logging.info(feature +"->"+k+"="+conf[i][k])
+                new[hicon] = icon.GetIcon(self.iconPath, new["ico"])
+                self.install.push(new)
+
     def _useconf(self):
-        self.iconPath=ValidateIconPath( path    = self.conf_icoPath,\
-                                        color   = self.conf_color, \
-                                        project = self.name)
-        self.main_hicon=GetIcon(self.iconPath, ico=self.name+"-0.ico")
+        self.iconPath=icon.ValidateIconPath( path    = self.conf_icoPath,\
+                                             color   = self.conf_colormainicon, \
+                                             project = self.name)
+        self.main_hicon=icon.GetIcon(self.iconPath, ico=self.name+"-0.ico")
         flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
         nid = (self.hwnd, 0, flags, win32con.WM_USER+20, self.main_hicon, self.name)
         win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, nid)
 
-    def show_menu(self):
+
+    def _show_menu(self):
         menu = win32gui.CreatePopupMenu()
-        self.create_menu(menu, self.menu_options)
+        #self._create_menu(menu, self.menu_options)
         #win32gui.SetMenuDefaultItem(menu, 1000, 0)
 
         pos = win32gui.GetCursorPos()
@@ -154,7 +172,7 @@ class MainClass(object):
                                 None)
         win32gui.PostMessage(self.hwnd, win32con.WM_NULL, 0, 0)
 
-    def create_menu(self, menu, menu_options):
+    def _create_menu(self, menu, menu_options):
         for option_text, option_icon, option_action, option_id in menu_options[::-1]:
             if option_icon:
                 option_icon = self.prep_menu_icon(option_icon)
