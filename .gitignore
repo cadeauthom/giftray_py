@@ -3,3 +3,4 @@ dist/
 tmp/
 upx*/
 src/__pycache__/
+*.log
