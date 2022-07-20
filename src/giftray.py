@@ -17,7 +17,7 @@ import logging
 import importlib
 
 import icon
-from feature import feature
+import feature
 
 def str_to_class(module,feat):
     return getattr(sys.modules[module], feat)
@@ -27,9 +27,9 @@ class MainClass(object):
     def __init__(self):
         self._begin()
         self._reset()
-        self._loadmodules(['wsl','windows'])
-        self._readconf()
-        self._useconf()
+        self._load_modules(['wsl','windows'])
+        self._read_conf()
+        self._create_notify()
 
     def _begin(self):
         self.showname           = "GifTray"
@@ -58,24 +58,26 @@ class MainClass(object):
 
     def _reset(self):
         if hasattr(self, "avail"):
-          #for i in self.avail:
-          #  if hasattr(i, "destroy"): i.destroy(i)
-          del self.avail
-        #self.avail              = dict()
-        self.avail              = []
+          pass
+        else:
+            self.avail = []
         if hasattr(self, "error"):
-          del self.error
-        self.error              = dict()
+          self.error.clear()
+        else:
+            self.error = dict()
         if hasattr(self, "install"):
-          del self.install
-        self.install            = dict()
+          self.install.clear()
+        else:
+            self.install = dict()
         if hasattr(self, "menu"):
-          del self.menu
-        self.menu               = []
+          self.menu.clear()
+        else:
+            self.menu = []
         self.conf               = os.getenv('USERPROFILE')+'/'+self.name+'/'+self.name+".conf"
         if hasattr(self, "icos"):
-          del self.icos
-        self.icos               = []
+          self.icos.clear()
+        else:
+            self.icos = []
         self.conf_colormainicon = "blue"
         self.conf_coloricons    = "blue"
         self.conf_ico_default   = "default_default"
@@ -83,26 +85,31 @@ class MainClass(object):
         self.conf_icoPath       = ""
         self.iconPath           = ""
 
-    def _loadmodules(self,mods):
+    def _load_modules(self,mods):
         for m in mods:
             try :
                 tmp = importlib.import_module(m)
-            except:
-                logging.error("Module '" +m+ "' does not exist")
+            except Exception as e:
+                e_str = str(e)
+                print("Module '" +m+ "' does not exist: "+e_str)
+                logging.error("Module '" +m+ "' does not exist: "+e_str)
                 continue
             for fct, obj in inspect.getmembers(tmp):
-                if not (inspect.isclass(obj) and fct != 'feature'):
+                if not (inspect.isclass(obj) and fct != 'main'):
                     continue
-                full = m+"_"+fct
-                if not "_action" in (dir(obj)):
-                    logging.error("Feature '" +full+ "' does not have '_action' defined")
+                full = m+"."+fct
+                if m != obj.__module__:
+                    logging.error("Issue while loading '" +full+ "': mismatch modules name: '"+m+"'!='"+obj.__module__+"'")
+                    continue
+                if fct != obj.__name__:
+                    logging.error("Issue while loading '" +full+ "': mismatch feature name: '"+fct+"'!='"+obj.__name__+"'")
+                    continue
+                if not "_custom_action" in (dir(obj)):
+                    logging.error("Feature '" +full+ "' does not have '_custom_action' defined")
                 self.avail.append(full)
-                #self.avail[full]            = dict()
-                #self.avail[full]["fct"]     = fct
-                #self.avail[full]["module"]  = m
-                #self.avail[full]["feature"] = obj
 
-    def _readconf(self):
+    def _read_conf(self):
+        #Find and read config file
         config = configparser.ConfigParser()
         if os.path.isfile(self.conf) :
             config.read(self.conf)
@@ -116,44 +123,43 @@ class MainClass(object):
             return 1
         logging.info(config.sections())
         #config.write()
-        self._conf2data(config)
-        return 0
-
-    def _conf2data(self,conf):
-        for i in conf.sections():
-            if i.casefold() == 'GENERAL'.casefold():
-                for k in conf[i]:
+        #Load config to variables
+        for section in config.sections():
+            if section.casefold() == 'GENERAL'.casefold():
+                for k in config[section]:
                     if k.casefold() == 'ColorMainIcon'.casefold():
-                        self.conf_colormainicon = str(conf[i][k])
+                        self.conf_colormainicon = str(config[section][k])
                     elif k.casefold() == 'ColorIcons'.casefold():
-                        self.conf_coloricons = str(conf[i][k])
+                        self.conf_coloricons = str(config[section][k])
                     else :
-                        logging.error(i+"->"+k+"not supported")
+                        logging.error(section+"->"+k+"not supported")
             else:
-                if "function" in conf[i]:
-                    fct = conf[i]["function"].casefold()
+                if "function" in config[section]:
+                    fct = config[section]["function"].casefold()
                 else:
-                    logging.error("'function' not defined in '"+i+"'")
-                if fct.count('_') != 1:
-                    logging.error("'"+fct+"' does not contain exactly 1 '_' in '"+i+"'")
+                    logging.error("'function' not defined in '"+section+"'")
+                if fct.count('.') != 1:
+                    logging.error("'"+fct+"' does not contain exactly 1 '.' in '"+section+"'")
                     continue
-                split_i = fct.split("_")
-                module = split_i[0]
-                feat = split_i[1]
+                split_section = fct.split(".")
+                module = split_section[0]
+                feat = split_section[1]
                 if  not module in sys.modules.keys():
-                    logging.error("Module '"+module+"' not loaded from '"+i+"'")
+                    logging.error("Module '"+module+"' not loaded from '"+section+"'")
                     continue
+                print (fct)
                 if not fct in self.avail:
-                    logging.error("'"+feat+"' not defined in module '" +module+"' from '"+i+"'")
+                    logging.error("'"+feat+"' not defined in module '" +module+"' from '"+section+"'")
                     continue
-                new_class = str_to_class(module,feat)(i,conf[i],self)
+                new_class = str_to_class(module,feat)(section,config[section],self)
                 if not new_class.is_ok():
                     self.error[new_class.print()] = new_class.print_error(sep=",",prefix="")
                 if new_class.is_in_menu():
                     self.menu.append(new_class.print())
                 self.install[new_class.print()]=new_class
+        return 0
 
-    def _useconf(self):
+    def _create_notify(self):
         self.iconPath=icon.ValidateIconPath( path    = self.conf_icoPath,\
                                              color   = self.conf_colormainicon, \
                                              project = self.name)
@@ -197,7 +203,7 @@ class MainClass(object):
                                                                 hSubMenu=submenu)
                 win32gui.InsertMenuItem(menu, 0, 1, item)
 
-    def _popup(self, title, msg):
+    def popup(self, title, msg):
         win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, \
                          (self.hwnd, 0, win32gui.NIF_INFO,  win32con.WM_USER+20,\
                           self.main_hicon, "",msg,400,title, win32gui.NIIF_NOSOUND))
@@ -225,13 +231,18 @@ class MainClass(object):
         return True
 
     def wait(self):
-        if True:
+        if False:
             print ("----- avail ------")
             print (self.avail)
             print ("----- error ------")
             print (self.error)
             print ("----- install ------")
             print (self.install)
+            for i in self.install:
+                print (i)
+                out = self.install[i].action()
+                if out:
+                    self.popup(i,out)
             print ("----- menu ------")
             print (self.menu)
         win32gui.PumpMessages()

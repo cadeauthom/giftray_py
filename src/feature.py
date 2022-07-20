@@ -1,11 +1,12 @@
 import logging
 import icon
 
-class feature:
-    def __init__(self,show,val,main):
+class main:
+    def __init__(self,show,val,giftray):
         others      = dict()
+        self.giftray=giftray
         self.show   = show
-        self.icon   = main.conf_ico_default
+        self.icon   = giftray.conf_ico_default
         self.ahk    = ""
         self.menu   = False
         self.error  = []
@@ -13,7 +14,8 @@ class feature:
         for i in val:
             k = i.casefold()
             if k == "function".casefold():
-                self.function = val[i]
+                #self.function = val[i]
+                pass
             elif k == "ico".casefold():
                 self.icon = val[i]
             elif k == "ahk".casefold():
@@ -27,7 +29,7 @@ class feature:
 
         self._custom_init(others)
 
-        self.hicon = icon.GetIcon(main.iconPath, self.icon)
+        self.hicon = icon.GetIcon(giftray.iconPath, self.icon)
         if self.ahk:
             #self.hhk = self.ahk
             print(self.ahk)
@@ -45,6 +47,19 @@ class feature:
         for i in others:
             logging.error("'"+i+"' not defined in '" +self.show+"'")
             self.error.append("'"+i+"' not defined")
+        return
+
+    def action(self):
+        try:
+            out = self._custom_action()
+        except Exception as e:
+            e_str = str(e)
+            print("Action '" +self.show+ "' failed: "+e_str)
+            logging.error("Action '" +self.show+ "' failed: "+e_str)
+            out = "Action '" +self.show+ "' failed: "+e_str
+        return out
+
+    def _custom_action(self):
         return
 
     def print_error(self, sep='\n', prefix='\t- '):
