@@ -31,15 +31,12 @@ class main:
 
         self.hicon = icon.GetIcon(giftray.iconPath, self.icon)
         if self.ahk:
-            #self.hhk = self.ahk
-            print(self.ahk)
+            self._build_hk()
             if not self.hhk:
                 self.error.append("Shortcut not well defined ("+self.ahk+")")
             
         if not self.hhk and not self.menu:
             self.error.append("Nor in menu or shortcut")
-
-        print (self.print_error())
 
         return
 
@@ -80,6 +77,9 @@ class main:
     def is_in_menu(self):
         return self.menu
 
+    def get_hk(self):
+        return self.ahk
+
     def print(self):
         return self.show
 
@@ -87,4 +87,22 @@ class main:
         return
 
     def _custom_return_conf(self):
+        return
+
+    def _build_hk(self):
+        if not self.ahk:
+            return
+        hhk = ""
+        #create hhk
+        if not hhk:
+            logging.error("Issue on conversion of ahk ("+self.ahk+")")
+            #return
+        self.hhk = hhk
+        #reconvert
+        ahk = ""
+        if not ahk:
+            logging.error("Issue on revert conversion to ahk ("+self.ahk+")")
+        else:
+            logging.info("Revert ahk "+ahk+" -> "+self.ahk)
+            self.ahk = ahk
         return
