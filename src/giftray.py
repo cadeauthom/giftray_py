@@ -6,7 +6,7 @@ import inspect
 #import time
 #import win32api         # package pywin32
 import win32con
-#import keyboard
+import keyboard
 import configparser
 try:
     import winxpgui as win32gui
@@ -22,7 +22,6 @@ import feature
 def str_to_class(module,feat):
     return getattr(sys.modules[module], feat)
 
-#keyboard.add_hotkey('ctrl + shift + z', print, args =('Hotkey', 'Detected'))
 class MainClass(object):
     def __init__(self):
         self._begin()
@@ -62,20 +61,26 @@ class MainClass(object):
         else:
             self.avail = []
         if hasattr(self, "error"):
-          self.error.clear()
+            self.error.clear()
         else:
             self.error = dict()
         if hasattr(self, "install"):
-          self.install.clear()
+            self.install.clear()
         else:
             self.install = dict()
         if hasattr(self, "menu"):
-          self.menu.clear()
+            self.menu.clear()
         else:
             self.menu = []
+        if hasattr(self, "ahk"):
+            if len(self.ahk)>0:
+                keyboard.clear_all_hotkeys()
+            self.ahk.clear()
+        else:
+            self.ahk = dict()            
         self.conf               = os.getenv('USERPROFILE')+'/'+self.name+'/'+self.name+".conf"
         if hasattr(self, "icos"):
-          self.icos.clear()
+            self.icos.clear()
         else:
             self.icos = []
         self.conf_colormainicon = "blue"
@@ -147,16 +152,17 @@ class MainClass(object):
                 if  not module in sys.modules.keys():
                     logging.error("Module '"+module+"' not loaded from '"+section+"'")
                     continue
-                print (fct)
                 if not fct in self.avail:
                     logging.error("'"+feat+"' not defined in module '" +module+"' from '"+section+"'")
                     continue
                 new_class = str_to_class(module,feat)(section,config[section],self)
                 if not new_class.is_ok():
                     self.error[new_class.print()] = new_class.print_error(sep=",",prefix="")
+                self.install[new_class.print()]=new_class
                 if new_class.is_in_menu():
                     self.menu.append(new_class.print())
-                self.install[new_class.print()]=new_class
+                if hk := new_class.get_hk() :
+                    self.ahk[hk] = new_class.print()
         return 0
 
     def _create_notify(self):
@@ -231,7 +237,20 @@ class MainClass(object):
         return True
 
     def wait(self):
-        if False:
+        keyboard.add_hotkey((21, 29, 56), print, args =('alt + y'))
+        #keyboard.add_hotkey('Ctrl + alt + y', print, args =('alt + y'))
+        keyboard.add_hotkey("ctrl+left windows+y", print, args =('Windows + y'),suppress=True)
+        keyboard.add_hotkey("ctrl+windows gauche+up", print, args =('ctrl + t'),suppress=False)
+        for i in dir(keyboard._winkeyboard):
+            print(i)
+        #print (keyboard.parse_hotkey_combinations("plus"))
+        #print (keyboard.all_modifiers)
+        #print (keyboard.get_hotkey_name(['+', 'left ctrl', 'shift']))
+        #print (keyboard.key_to_scan_codes("ctrl"))
+        #print (keyboard.is_modifier("ctrl"))
+        #print (keyboard.read_hotkey())
+        #print (keyboard.normalize_name("ctrl+ winDows gauche+y"))
+        if True:
             print ("----- avail ------")
             print (self.avail)
             print ("----- error ------")
@@ -245,6 +264,8 @@ class MainClass(object):
                     self.popup(i,out)
             print ("----- menu ------")
             print (self.menu)
+            print ("----- ahk ------")
+            print (self.ahk)
         win32gui.PumpMessages()
 
 if __name__ == '__main__':
