@@ -134,10 +134,10 @@ class MainClass(object):
                                         project = self.name)
         self.main_hicon=GetIcon(self.iconPath, ico=self.name+"-0.ico")
         flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
-        nid = (self.hwnd, 0, flags, win32con.WM_USER+20, self.main_hicon, self.name)
+        nid = (self.hwnd, 0, flags, win32con.WM_USER+20, self.main_hicon, self.showname)
         win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, nid)
 
-    def show_menu(self):
+    def _show_menu(self):
         menu = win32gui.CreatePopupMenu()
         self.create_menu(menu, self.menu_options)
         #win32gui.SetMenuDefaultItem(menu, 1000, 0)
