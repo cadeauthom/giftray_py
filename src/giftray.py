@@ -6,7 +6,6 @@ import inspect
 #import time
 #import win32api         # package pywin32
 import win32con
-import keyboard
 import configparser
 try:
     import winxpgui as win32gui
@@ -15,6 +14,7 @@ except ImportError:
 import win32gui_struct
 import logging
 import importlib
+import pynput
 
 import icon
 import feature
@@ -73,11 +73,16 @@ class MainClass(object):
         else:
             self.menu = []
         if hasattr(self, "ahk"):
-            if len(self.ahk)>0:
-                keyboard.clear_all_hotkeys()
             self.ahk.clear()
         else:
-            self.ahk = dict()            
+            self.ahk = dict()
+        if hasattr(self, "hhk"):
+            self.hhk.clear()
+        else:
+            self.hhk = []
+        if hasattr(self, "hk_thread"):
+            if "stop" in dir(self.hk_thread):
+                self.hk_thread.stop()
         self.conf               = os.getenv('USERPROFILE')+'/'+self.name+'/'+self.name+".conf"
         if hasattr(self, "icos"):
             self.icos.clear()
@@ -96,8 +101,8 @@ class MainClass(object):
                 tmp = importlib.import_module(m)
             except Exception as e:
                 e_str = str(e)
-                print("Module '" +m+ "' does not exist: "+e_str)
-                logging.error("Module '" +m+ "' does not exist: "+e_str)
+                print("Module '" +m+ "' not loaded: "+e_str)
+                logging.error("Module '" +m+ "' not loaded: "+e_str)
                 continue
             for fct, obj in inspect.getmembers(tmp):
                 if not (inspect.isclass(obj) and fct != 'main'):
@@ -161,8 +166,15 @@ class MainClass(object):
                 self.install[new_class.print()]=new_class
                 if new_class.is_in_menu():
                     self.menu.append(new_class.print())
-                if hk := new_class.get_hk() :
-                    self.ahk[hk] = new_class.print()
+                ahk, hhk = new_class.get_hk()
+                print (ahk)
+                print (hhk)
+                if len(ahk)>2 and len(hhk)>2:
+                    if ahk in self.ahk:
+                        logging.error("'"+ahk+"' set twice! '" +self.ahk[ahk]+"' / '"+new_class.print()+"'")
+                    else:
+                        self.ahk[ahk] = new_class.print()
+                        self.hhk.append(pynput.keyboard.HotKey(hhk),new_class.action())
         return 0
 
     def _create_notify(self):
@@ -236,20 +248,38 @@ class MainClass(object):
     def _restart(self, hwnd, msg, wparam, lparam):
         return True
 
+    # The function called when a hotkey is pressed
+    def _on_activate(self):
+        print('Hotkey pressed')
+
+    def _on_activate_h(self):
+        print('<ctrl>+<alt>+h pressed')
+
+    def _on_activate_i(self):
+        print('<ctrl>+<alt>+i pressed')
+
     def wait(self):
-        keyboard.add_hotkey((21, 29, 56), print, args =('alt + y'))
-        #keyboard.add_hotkey('Ctrl + alt + y', print, args =('alt + y'))
-        keyboard.add_hotkey("ctrl+left windows+y", print, args =('Windows + y'),suppress=True)
-        keyboard.add_hotkey("ctrl+windows gauche+up", print, args =('ctrl + t'),suppress=False)
-        for i in dir(keyboard._winkeyboard):
-            print(i)
-        #print (keyboard.parse_hotkey_combinations("plus"))
-        #print (keyboard.all_modifiers)
-        #print (keyboard.get_hotkey_name(['+', 'left ctrl', 'shift']))
-        #print (keyboard.key_to_scan_codes("ctrl"))
-        #print (keyboard.is_modifier("ctrl"))
-        #print (keyboard.read_hotkey())
-        #print (keyboard.normalize_name("ctrl+ winDows gauche+y"))
+        # for i in dir(pynput.keyboard.Key):
+            # print(i)
+        try :
+            hhk=pynput.keyboard.HotKey.parse('d+<ctrl_l>+<cmd>+<alt>+<enter>+c')
+            print(hhk)
+            for h in hhk:
+                if "value" in dir(h):
+                    print(h.name)
+                    print(pynput.keyboard._NORMAL_MODIFIERS.get(h.value, None))
+                    #win=>cmd
+                # if h in pynput.keyboard.Key:
+                    # print(h)
+                # else:
+                    # print("just a char "+h)
+        except Exception as e:
+            e_str = str(e)
+            print("oups"+e_str)
+        self.hk_thread = pynput.keyboard.GlobalHotKeys({
+            '<ctrl>+<cmd>+h': self._on_activate_h,
+            '<ctrl>+<alt>+i': self._on_activate_i})
+        self.hk_thread.start()
         if True:
             print ("----- avail ------")
             print (self.avail)

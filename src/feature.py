@@ -1,5 +1,6 @@
 import logging
 import icon
+import pynput
 
 class main:
     def __init__(self,show,val,giftray):
@@ -10,7 +11,7 @@ class main:
         self.ahk    = ""
         self.menu   = False
         self.error  = []
-        self.hhk    = ""
+        self.hhk    = []
         for i in val:
             k = i.casefold()
             if k == "function".casefold():
@@ -78,7 +79,7 @@ class main:
         return self.menu
 
     def get_hk(self):
-        return self.ahk
+        return self.ahk, self.hhk
 
     def print(self):
         return self.show
@@ -92,7 +93,7 @@ class main:
     def _build_hk(self):
         if not self.ahk:
             return
-        hhk = ""
+        hhk = []
         #create hhk
         if not hhk:
             logging.error("Issue on conversion of ahk ("+self.ahk+")")
