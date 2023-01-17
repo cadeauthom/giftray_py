@@ -1,0 +1,31 @@
+
+
+# Installation of dependencies
+export path_python=/mnt/c/Users/tcadeau/AppData/Local/Programs/Python/Python310
+#or 7 for bpy
+alias wpython='$path_python/python.exe'
+
+wpython -m pip install --upgrade pip
+wpython -m pip install --upgrade wheel setuptools future_fstrings
+wpython -m pip install --upgrade pyinstaller pywin32 psutil
+#wpython -m pip install numpy
+#wpython -m pip install Pyside2
+#wpython -m pip install keyboard
+#wpython -m pip install pynput
+#wpython -m pip install bpy && $path_python/Scripts/bpy_post_install.exe
+
+
+curl -s https://api.github.com/repos/upx/upx/releases/latest | grep "browser_download_url.*win64.zip" | cut -d '"' -f 4  |wget -qi  -
+unzip upx-*-win64.zip
+UPX-PATH=$(wslpath -w $(ls -d upx*-win64 | sort | tail -1))
+
+# Build
+
+wpython -m PyInstaller --onefile test.py
+wpython -m PyInstaller --noconfirm --upx-dir="$UPX-PATH" --icon virtualBox_KillVMs.ico test.spec
+#--log-level TRACE
+
+# Debug run/kill/logs
+wpython src/giftray.py
+kill $(ps aux | grep python | grep init | sed -e 's-^\w\+\s\+\([0-9]\+\)\s\+.\+$-\1-g')
+tail -f giftray.log
