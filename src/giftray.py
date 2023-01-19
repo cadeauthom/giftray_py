@@ -8,6 +8,7 @@ import threading
 import time
 import win32api         # package pywin32
 import win32con
+import win32process
 import configparser
 try:
     import winxpgui as win32gui
@@ -81,14 +82,14 @@ class MainClass(object):
         self.app                = PyQt6.QtWidgets.QApplication([])
         self.app.setQuitOnLastWindowClosed (
                                   False )
-        self.win_main           = PyQt6.QtWidgets.QWidget()
+        #self.win_handler        = PyQt6.QtWidgets.QWidget()
         self.tray               = PyQt6.QtWidgets.QSystemTrayIcon()
-        self.tray.setIcon       ( self.win_main.style().standardIcon(
+        self.tray.setIcon       ( PyQt6.QtWidgets.QWidget().style().standardIcon( #or self.win_handler
                                     PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
         self.tray.setToolTip    ( "GifTray" )
         self.tray.setVisible    ( True )
         #self.tray.activated.connect( self.__del__)
-        #self.tray.showMessage("1","2",self.win_main.style().standardIcon(
+        #self.tray.showMessage("1","2",self.win_handler.style().standardIcon(
         #                            PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
         self.ahk_thread         = threading.Thread(target=self._ahk_thread)
         self.menu_thread        = threading.Thread(target=self._menu_thread)
@@ -155,6 +156,7 @@ class MainClass(object):
             self.icos.clear()
         else:
             self.icos = []
+        #TODO: clean self.main_sicon, self.main_hicon
         if hasattr(self, "nb_hotkey"):
             for i in range(self.nb_hotkey):
                 ctypes.windll.user32.UnregisterHotKey(None, i)
@@ -357,6 +359,54 @@ class MainClass(object):
         # return
 
     def popup(self, title, msg):
+        def callback (hwnd, hwnds):
+            _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
+            if found_pid == pid and win32gui.GetWindowText(hwnd) == "QTrayIconMessageWindow":
+                hwnds.append (hwnd)
+            return True
+        hwnds = []
+        pid=win32process.GetCurrentProcessId()
+        win32gui.EnumWindows (callback, hwnds)
+        if not hwnds:
+            return
+        hwnd = hwnds[0]
+        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY,
+                                    (hwnd, 0, win32gui.NIF_INFO, win32con.WM_USER + 20,
+                                      self.main_hicon, "Balloon Tooltip", msg, 200, title, win32gui.NIIF_NOSOUND))
+        #(hwnd, id, win32gui.NIF_*, CallbackMessage, hicon, Tooltip text (opt), Balloon tooltip text (opt), Timeout (ms), title (opt),  win32gui.NIIF_*)
+        return
+        #-------------------------------
+        # Register the window class.
+        wc = win32gui.WNDCLASS()
+        hinst = wc.hInstance = win32gui.GetModuleHandle(None)
+        wc.lpszClassName = str("PythonTaskbar")  # must be a string
+        wc.lpfnWndProc = {}#message_map  # could also specify a wndproc.
+        # Create the Window.
+        classAtom = win32gui.RegisterClass(wc)
+        style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
+        hwnd = win32gui.CreateWindow(  classAtom, self.showname+"TaskBar", style,
+                                            0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
+                                            0, 0, hinst, None)
+        win32gui.UpdateWindow(hwnd)
+        flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
+        nid = (hwnd, 0, flags, win32con.WM_USER+20, win32gui.LoadIcon(0, win32con.IDI_APPLICATION), self.name)
+        win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, nid)
+        # Taskbar icon
+        flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
+        nid = (hwnd, 0, flags, win32con.WM_USER+20, self.main_hicon, self.showname)
+        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, nid)
+        # Notification
+        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY,
+                                    (hwnd, 0, win32gui.NIF_INFO, win32con.WM_USER + 20,
+                                      self.main_hicon, "Balloon Tooltip", msg, 200, title, win32gui.NIIF_NOSOUND))
+        # take a rest then destroy
+        time.sleep(5)
+        win32gui.DestroyWindow(hwnd)
+        win32gui.UnregisterClass(wc.lpszClassName, None)
+        nid = (hwnd, 0)
+        win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
+        return None
+        #-------------------------------
         #win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, \
         #                 (self.hwnd, 0, win32gui.NIF_INFO,  win32con.WM_USER+20,\
         #                  self.main_hicon, "",msg,400,title, win32gui.NIIF_NOSOUND))
@@ -370,12 +420,43 @@ class MainClass(object):
         notification.icon=''
         notification.send()
         return
+        #-------------------------------
         if not hasattr(self, "PyQt6_ico"):
             img=PyQt6.QtGui.QImage(50, 50, PyQt6.QtGui.QImage.Format.Format_ARGB32)
             img.fill(PyQt6.QtGui.qRgba(0, 0, 0, 0));
             self.PyQt6_ico=PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(img));
         if self.tray.supportsMessages():
             self.tray.showMessage(title,msg,self.PyQt6_ico,msecs=1000)
+        return
+        #def get_hwnds_for_pid (pid):
+        #    def callback (hwnd, hwnds):
+        #        if win32gui.IsWindowVisible (hwnd) and win32gui.IsWindowEnabled (hwnd):
+        #            _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
+        #            if found_pid == pid:
+        #                hwnds.append (hwnd)
+        #        return True
+        #    hwnds = []
+        #    win32gui.EnumWindows (callback, hwnds)
+        #    print(hwnds)
+        #    return hwnds
+        #for hwnd in get_hwnds_for_pid (self.menu_thread.native_id):
+        #    print (hwnd, "=>", win32gui.GetWindowText (hwnd))
+        #for hwnd in get_hwnds_for_pid (win32process.GetCurrentProcessId()):
+        #    print (hwnd, "=>", win32gui.GetWindowText (hwnd))
+        #hwnd = win32gui.CreateWindowEx(win32con.WS_EX_TRANSPARENT,
+	    #    "static",
+	    #	"ETest #1",
+	    #	win32con.SS_NOTIFY | win32con.WS_POPUP,
+	    #	10, 10,
+	    #	100,
+	    #	100,
+	    #	None,
+	    #	None,
+	    #	None,
+	    #	None)
+        #win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY,
+        #                 (hwnd, 0, win32gui.NIF_INFO,  win32con.WM_USER+20,
+        #                  self.main_hicon, "",msg,400,title, win32gui.NIIF_NOSOUND))
         #self.tray.showMessage(title,msg,PyQt6.QtGui.QIcon(),100000)
         #self.tray.showMessage(title,msg,self.main_hicon)
 
