@@ -1,6 +1,7 @@
 import os
 import io
 import sys
+import posixpath
 import signal
 import inspect
 import threading
@@ -16,6 +17,7 @@ except ImportError:
 import logging
 import importlib
 import ctypes, ctypes.wintypes
+import PyQt6.QtWidgets, PyQt6.QtGui
 
 import general
 import icon
@@ -26,10 +28,7 @@ when (function), it is planned, not done yet
 def __init__(self):
     obviously called
 def __del__(self):
-    obviously called
-def _begin(self):
-    called to initialized
-    by __init__
+    obviously called_
 def _reset(self):
     called to reset variables
     by __init__ (and by reload)
@@ -39,33 +38,25 @@ def _load_modules(self,mods):
 def _read_conf(self):
     called to read conf and build all variables
     by __init__ (and by reload)
-def _create_hotkeys(self):
-    register all hotkeys
-    by __init__
-def _create_notify(self):
-    build the main tray gui windows (not the menu)
-    by __init__
-def _show_menu(self):
-    show the main tray gui (while clickink)
-    by _notify
-def _create_menu(self, menu, menu_options):
-    build the menu of the tray gui windows
-    by _show_menu
+            def _show_menu(self):
+                show the main tray gui (while clickink)
+                by _notify
+            def _create_menu(self, menu, menu_options):
+                build the menu of the tray gui windows
+                by _show_menu
 def popup(self, title, msg):
     popup message when action is run
     (by run)
-def _notify(self, hwnd, msg, wparam, lparam):
-def _destroy(self, hwnd, msg, wparam, lparam):
-def _command(self, hwnd, msg, wparam, lparam):
-def _restart(self, hwnd, msg, wparam, lparam):
-    for taskbar menu
-    by _begin
+            def _notify(self, hwnd, msg, wparam, lparam):
+            def _destroy(self, hwnd, msg, wparam, lparam):
+            def _command(self, hwnd, msg, wparam, lparam):
+            def _restart(self, hwnd, msg, wparam, lparam):
+                for taskbar menu
+                by _begin
 def hhk2ahk(self,hhk):
 def ahk2hhk(self,ahk):
     translate hk from/to lisible/tool
     by feature module
-#def _callhk(self):
-    temp fct maybe by thread ?
 def _print_conf(self):
     return configuration in ini format
     (by save_conf, show_conf windows ?)
@@ -84,52 +75,42 @@ def run(self):
 
 class MainClass(object):
     def __init__(self):
-        self._begin()
-        self._reset()
-        self._load_modules(['wsl','windows'])
-        self._read_conf()
-        #self._create_hotkeys()
-        self._create_notify()
-
-    def __del__(self):
-        self._reset()
-
-    def _begin(self):
         self.showname           = "GifTray"
         self.name               = "giftray"
+        self.app                = PyQt6.QtWidgets.QApplication([])
+        self.app.setQuitOnLastWindowClosed (
+                                  False )
+        self.win_main           = PyQt6.QtWidgets.QWidget()
+        self.tray               = PyQt6.QtWidgets.QSystemTrayIcon()
+        self.tray.setIcon       ( self.win_main.style().standardIcon(
+                                    PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
+        self.tray.setToolTip    ( "GifTray" )
+        self.tray.setVisible    ( True )
+        #self.tray.activated.connect( self.__del__)
+        #self.tray.showMessage("1","2",self.win_main.style().standardIcon(
+        #                            PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
+        self.popup("1","2")
         self.ahk_thread         = threading.Thread(target=self._ahk_thread)
         self.menu_thread        = threading.Thread(target=self._menu_thread)
         self.lock               = threading.Lock()
-        logging.basicConfig(filename="giftray.log",level=0,format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
-        self.logger = logging.getLogger(__name__)
-        #self.logger.info("Initialising main class")
-        message_map = {win32gui.RegisterWindowMessage("TaskbarCreated"): self._restart,
-                       win32con.WM_DESTROY: self._destroy,
-                       win32con.WM_COMMAND: self._command,
-                       win32con.WM_USER+20 : self._notify,}
-        # Register the Window class.
-        wc = win32gui.WNDCLASS()
-        hinst = wc.hInstance = win32gui.GetModuleHandle(None)
-        wc.lpszClassName = "PythonTaskbar"
-        wc.lpfnWndProc = message_map # could also specify a wndproc.
-        classAtom = win32gui.RegisterClass(wc)
-        # Create the Window.
-        style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
-        self.hwnd = win32gui.CreateWindow( classAtom, self.showname+"TaskBar", style, \
-                0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
-                0, 0, hinst, None)
-        win32gui.UpdateWindow(self.hwnd)
-        flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
-        nid = (self.hwnd, 0, flags, win32con.WM_USER+20, win32gui.LoadIcon(0, win32con.IDI_APPLICATION), self.name)
-        win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, nid)
+        self.stop_process       = False
+        logging.basicConfig     ( filename=self.name+".log",
+                                  level=0,
+                                  format='%(asctime)s - %(levelname)s - %(message)s',
+                                  datefmt='%d-%b-%y %H:%M:%S')
+        self.logger             = logging.getLogger(__name__)
+        self._reset             ()
+        self._load_modules      ( ['wsl','windows'] )
+        self._read_conf         ()
+
+    def __del__(self):
+        self.stop_process = True
+        self._reset()
 
     def _reset(self):
         if hasattr(self, "ahk_thread"):
             if self.ahk_thread.is_alive():
                 ctypes.windll.user32.PostThreadMessageW(self.ahk_thread.native_id, win32con.WM_QUIT, 0, 0)
-        if hasattr(self, "menu_thread"):
-            if self.menu_thread.is_alive():
-                ctypes.windll.user32.PostThreadMessageW(self.menu_thread.native_id, win32con.WM_QUIT, 0, 0)
         if hasattr(self, "menu_thread"):
             if self.menu_thread.is_alive():
                 ctypes.windll.user32.PostThreadMessageW(self.menu_thread.native_id, win32con.WM_QUIT, 0, 0)
@@ -146,7 +127,7 @@ class MainClass(object):
                     self.ahk_keys[item] = value
                     self.ahk_keys[value] = item
         if hasattr(self, "avail"):
-          pass
+            pass
         else:
             self.avail = []
         if hasattr(self, "error"):
@@ -178,11 +159,12 @@ class MainClass(object):
             for i in range(self.nb_hotkey):
                 ctypes.windll.user32.UnregisterHotKey(None, i)
         self.nb_hotkey = 0
-        self.conf_colormainicon = "blue"
-        self.conf_coloricons    = "blue"
+        self.conf_colormainicon = ""
+        self.conf_coloricons    = ""
         self.conf_loglevel      = "WARNING"
         self.conf_ico_default   = "default_default"
         self.conf_ico_empty     = "default_empty"
+        self.conf_ico           = ""
         self.conf_icoPath       = ""
         self.iconPath           = ""
         self.main_error         = ""
@@ -249,6 +231,10 @@ class MainClass(object):
                             self.logger.setLevel(level=LevelNamesMapping[levelname])
                         else:
                             print("nop")
+                    elif k.casefold() == 'Ico'.casefold():
+                        self.conf_ico = str(config[section][k])
+                    elif k.casefold() == 'IcoPath'.casefold():
+                        self.conf_icoPath = str(config[section][k])
                     else :
                         self.logger.error(section+"->"+k+"not supported")
             else:
@@ -284,85 +270,128 @@ class MainClass(object):
                 if new_class.is_in_menu():
                     self.menu.append(new_class.show)
 
+        self.iconPath=icon.ValidateIconPath(path = self.conf_icoPath,
+                                            color   = self.conf_colormainicon,
+                                            project = self.name)
+        if self.conf_ico:
+            self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.conf_ico)
+        else:
+            self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.name+"-0.ico")
+        d_path_ico = icon.GetIcon(
+                            icon.ValidateIconPath(path = "", color   = self.conf_colormainicon, project = self.name),
+                            self,
+                            ico=self.name+"-0.ico")[1]
+        print(path_ico)
+        print(d_path_ico)
+        if not path_ico:
+            self.conf_icoPath       = ""
+            self.conf_ico           = ""
+            self.conf_colormainicon = ""
+        else:
+            name_ico     = os.path.basename(path_ico)
+            path_ico     = os.path.dirname(path_ico)
+            col_ico      = os.path.basename(path_ico)
+            path_ico     = os.path.dirname(path_ico)
+            if not d_path_ico:
+                if self.conf_colormainicon:
+                    self.conf_icoPath = path_ico
+                    self.conf_colormainicon = col_ico
+                else:
+                    self.conf_icoPath = posixpath.join(path_ico,col_ico)
+                self.conf_ico = name_ico
+            else:
+                d_name_ico  = os.path.basename(d_path_ico)
+                d_path_ico  = os.path.dirname(d_path_ico)
+                d_col_ico   = os.path.basename(d_path_ico)
+                d_path_ico  = os.path.dirname(d_path_ico)
+                if (d_name_ico != name_ico):
+                    self.conf_ico = name_ico
+                if (d_path_ico != path_ico):
+                    if self.conf_colormainicon:
+                        self.conf_icoPath = path_ico
+                        self.conf_colormainicon = col_ico
+                    else:
+                        self.conf_icoPath = posixpath.join(path_ico,col_ico) 
+                else:
+                    self.conf_colormainicon = col_ico
+        print("conf_colormainicon   = "+self.conf_colormainicon)
+        print("conf_coloricons      = "+self.conf_coloricons)
+        print("conf_icoPath         = "+self.conf_icoPath)
+        print("conf_ico             = "+self.conf_ico)
         return 0
 
-    def _create_hotkeys(self):
-        for ahk in self.ahk:
-            if (ctypes.windll.user32.RegisterHotKey(None, self.nb_hotkey+1, self.install[self.ahk[ahk]].hhk["mod"] , self.install[self.ahk[ahk]].hhk["key"])):
-                self.nb_hotkey += 1
-            else:
-                self.install[self.ahk[ahk]].error.append("Fail to register Hotkey ("+ahk+")")
+    # def _show_menu(self):
+        # menu = win32gui.CreatePopupMenu()
+        # #self._create_menu(menu, self.menu_options)
+        # #win32gui.SetMenuDefaultItem(menu, 1000, 0)
+        # pos = win32gui.GetCursorPos()
+        # # See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winui/menus_0hdi.asp
+        # win32gui.SetForegroundWindow(self.hwnd)
+        # win32gui.TrackPopupMenu(menu,
+                                # win32con.TPM_LEFTALIGN,
+                                # pos[0],
+                                # pos[1],
+                                # 0,
+                                # self.hwnd,
+                                # None)
+        # win32gui.PostMessage(self.hwnd, win32con.WM_NULL, 0, 0)
+        # return
 
-    def _create_notify(self):
-        self.iconPath=icon.ValidateIconPath( path    = self.conf_icoPath,\
-                                             color   = self.conf_colormainicon, \
-                                             project = self.name)
-        self.main_hicon=icon.GetIcon(self.iconPath, ico=self.name+"-0.ico")[0]
-        flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
-        nid = (self.hwnd, 0, flags, win32con.WM_USER+20, self.main_hicon, self.showname)
-        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, nid)
+    # def _create_menu(self, menu, menu_options):
+        # for option_text, option_icon, option_action, option_id in menu_options[::-1]:
+            # if option_icon:
+                # option_icon = self.prep_menu_icon(option_icon)
 
-    def _show_menu(self):
-        menu = win32gui.CreatePopupMenu()
-        #self._create_menu(menu, self.menu_options)
-        #win32gui.SetMenuDefaultItem(menu, 1000, 0)
-
-        pos = win32gui.GetCursorPos()
-        # See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winui/menus_0hdi.asp
-        win32gui.SetForegroundWindow(self.hwnd)
-        win32gui.TrackPopupMenu(menu,
-                                win32con.TPM_LEFTALIGN,
-                                pos[0],
-                                pos[1],
-                                0,
-                                self.hwnd,
-                                None)
-        win32gui.PostMessage(self.hwnd, win32con.WM_NULL, 0, 0)
-
-    def _create_menu(self, menu, menu_options):
-        for option_text, option_icon, option_action, option_id in menu_options[::-1]:
-            if option_icon:
-                option_icon = self.prep_menu_icon(option_icon)
-
-            if option_id in self.menu_actions_by_id:
-                item, extras = win32gui_struct.PackMENUITEMINFO(text=option_text,
-                                                                hbmpItem=option_icon,
-                                                                wID=option_id)
-                win32gui.InsertMenuItem(menu, 0, 1, item)
-            else:
-                submenu = win32gui.CreatePopupMenu()
-                self.create_menu(submenu, option_action)
-                item, extras = win32gui_struct.PackMENUITEMINFO(text=option_text,
-                                                                hbmpItem=option_icon,
-                                                                hSubMenu=submenu)
-                win32gui.InsertMenuItem(menu, 0, 1, item)
+            # if option_id in self.menu_actions_by_id:
+                # item, extras = win32gui_struct.PackMENUITEMINFO(text=option_text,
+                                                                # hbmpItem=option_icon,
+                                                                # wID=option_id)
+                # win32gui.InsertMenuItem(menu, 0, 1, item)
+            # else:
+                # submenu = win32gui.CreatePopupMenu()
+                # self.create_menu(submenu, option_action)
+                # item, extras = win32gui_struct.PackMENUITEMINFO(text=option_text,
+                                                                # hbmpItem=option_icon,
+                                                                # hSubMenu=submenu)
+                # win32gui.InsertMenuItem(menu, 0, 1, item)
+        # return
 
     def popup(self, title, msg):
-        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, \
-                         (self.hwnd, 0, win32gui.NIF_INFO,  win32con.WM_USER+20,\
-                          self.main_hicon, "",msg,400,title, win32gui.NIIF_NOSOUND))
+        #win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, \
+        #                 (self.hwnd, 0, win32gui.NIF_INFO,  win32con.WM_USER+20,\
+        #                  self.main_hicon, "",msg,400,title, win32gui.NIIF_NOSOUND))
+        pq_hwnd = self.win_main.winId()
+        print(pq_hwnd.asstring())
+        return
+        import ctypes
+        ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
+        ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
 
-    def _notify(self, hwnd, msg, wparam, lparam):
-        if lparam==win32con.WM_LBUTTONDBLCLK:
-            pass
-            #self.execute_menu_option(self.default_menu_index + self.FIRST_ID)
-        elif lparam==win32con.WM_RBUTTONUP:
-            self._show_menu()
-        elif lparam==win32con.WM_LBUTTONUP:
-            pass
-        return True
+        hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(pq_hwnd)
+        print(hwnd)
+        #self.tray.showMessage(title,msg,self.main_hicon)
 
-    def _destroy(self, hwnd, msg, wparam, lparam):
-        nid = (self.hwnd, 0)
-        win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
-        win32gui.PostQuitMessage(0) # Terminate the app.
+    # def _notify(self, hwnd, msg, wparam, lparam):
+        # if lparam==win32con.WM_LBUTTONDBLCLK:
+            # self.__del__()
+            # #self.execute_menu_option(self.default_menu_index + self.FIRST_ID)
+        # elif lparam==win32con.WM_RBUTTONUP:
+            # self._show_menu()
+        # elif lparam==win32con.WM_LBUTTONUP:
+            # pass
+        # return True
 
-    def _command(self, hwnd, msg, wparam, lparam):
-        id = win32gui.LOWORD(wparam)
-        self.execute_menu_option(id)
+    # def _destroy(self, hwnd, msg, wparam, lparam):
+        # nid = (self.hwnd, 0)
+        # win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
+        # win32gui.PostQuitMessage(0) # Terminate the app.
 
-    def _restart(self, hwnd, msg, wparam, lparam):
-        return True
+    # def _command(self, hwnd, msg, wparam, lparam):
+        # id = win32gui.LOWORD(wparam)
+        # self.execute_menu_option(id)
+
+    # def _restart(self, hwnd, msg, wparam, lparam):
+        # return True
 
     def hhk2ahk(self,hhk):
         ahk = ""
@@ -467,8 +496,41 @@ class MainClass(object):
             self.lock.release()
         return
 
+    def _menu_click(self, reason):
+        print("onTrayIconActivated:", reason)
+        #if reason == QSystemTrayIcon.Trigger:
+        #    self.disambiguateTimer.start(qApp.doubleClickInterval())
+        if reason == PyQt6.QtWidgets.QSystemTrayIcon.DoubleClick:
+            print ("Tray icon double clicked")
+        return
+
     def _menu_thread(self):
         self.logger.info("Starting menu thread")
+        
+        # message_map = {win32gui.RegisterWindowMessage("TaskbarCreated"): self._restart,
+                       # win32con.WM_DESTROY : self._destroy,
+                       # win32con.WM_COMMAND : self._command,
+                       # win32con.WM_USER+20 : self._notify,}
+        # # Register the Window class.
+        # wc = win32gui.WNDCLASS()
+        # hinst = wc.hInstance = win32gui.GetModuleHandle(None)
+        # wc.lpszClassName = "PythonTaskbar"
+        # wc.lpfnWndProc = message_map # could also specify a wndproc.
+        # classAtom = win32gui.RegisterClass(wc)
+        # # Create the Window.
+        # style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
+        # self.hwnd = win32gui.CreateWindow(  classAtom, self.showname+"TaskBar", style,
+                                            # 0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
+                                            # 0, 0, hinst, None)
+        # win32gui.UpdateWindow(self.hwnd)
+        # flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
+        # nid = (self.hwnd, 0, flags, win32con.WM_USER+20, win32gui.LoadIcon(0, win32con.IDI_APPLICATION), self.name)
+        # win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, nid)
+        
+        # flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
+        # nid = (self.hwnd, 0, flags, win32con.WM_USER+20, self.main_hicon, self.showname)
+        # win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, nid)
+        
         if False:
             print ("----- avail ------")
             print (self.avail)
@@ -487,7 +549,7 @@ class MainClass(object):
             print (self.ahk)
             print ("----- conf -----")
             print (self._print_conf())
-        win32gui.PumpMessages()
+        # win32gui.PumpMessages()
         self.logger.info("Ending menu thread")
         return
 
@@ -515,10 +577,8 @@ class MainClass(object):
     def run(self):
         self.menu_thread.start()
         self.ahk_thread.start()
-        self.stop_process = False
         # Our signal handler
         def signal_handler(signum, frame):
-            self.stop_process = True
             self.__del__()
         # Register our signal handler with `SIGINT`(CTRL + C)
         signal.signal(signal.SIGINT, signal_handler)

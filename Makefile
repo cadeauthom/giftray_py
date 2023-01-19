@@ -17,8 +17,7 @@
 
 PATH_CONVERT	= /usr/bin/convert
 FLAGS_CONVERT	= -background none -define icon:auto-resize=32 svg:-
-PATH_PYTHON	= /mnt/c/Users/tcadeau/AppData/Local/Programs/Python/Python310/python.exe
-PATH_PYTHON = /mnt/c/Users/tcadeau/AppData/Local/Microsoft/WindowsApps/python3.exe
+PATH_PYTHON     = /mnt/c/Users/$(USER)/AppData/Local/Microsoft/WindowsApps/python.exe
 FLAGS_PYTHON    = #--console
 PATH_UPX	= V:\git\perso\py.git\upx-3.96-win64
 
@@ -45,7 +44,7 @@ exec: $(EXEC)
 ico: $(ICOS_BLUE) $(ICOS_BLACK) $(ICOS_RED) $(ICOS_GREEN)
 
 $(EXEC): $(SPEC) $(ICO) $(SRCS)
-	$(PATH_PYTHON) -m PyInstaller $(FLAGS_PYTHON) --noconfirm --upx-dir="$(PATH_UPX)" --icon $(ICO) $(SPEC)
+	$(PATH_PYTHON) -m PyInstaller $(FLAGS_PYTHON) --noconfirm --upx-dir="$(PATH_UPX)" $(SPEC)
 
 $(PATH_ICO)/blue/%.ico: $(PATH_SVG)/%.svg
 	mkdir -p $(@D)
