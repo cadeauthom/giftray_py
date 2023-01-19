@@ -49,12 +49,6 @@ def _read_conf(self):
 def popup(self, title, msg):
     popup message when action is run
     (by run)
-            def _notify(self, hwnd, msg, wparam, lparam):
-            def _destroy(self, hwnd, msg, wparam, lparam):
-            def _command(self, hwnd, msg, wparam, lparam):
-            def _restart(self, hwnd, msg, wparam, lparam):
-                for taskbar menu
-                by _begin
 def hhk2ahk(self,hhk):
 def ahk2hhk(self,ahk):
     translate hk from/to lisible/tool
@@ -215,8 +209,6 @@ class MainClass(object):
             self.main_error = "Fail to read configuration (" + self.conf + "): " + str(e)
             self.logger.error(self.main_error)
             return 1
-        #self.logger.info(config.sections())
-        #config.write(fp)
         #Load config to variables
         for section in config.sections():
             if section.casefold() == 'GENERAL'.casefold():
@@ -313,7 +305,7 @@ class MainClass(object):
                         self.conf_icoPath = path_ico
                         self.conf_colormainicon = col_ico
                     else:
-                        self.conf_icoPath = posixpath.join(path_ico,col_ico) 
+                        self.conf_icoPath = posixpath.join(path_ico,col_ico)
                 else:
                     self.conf_colormainicon = col_ico
         print("conf_colormainicon   = "+self.conf_colormainicon)
@@ -375,112 +367,6 @@ class MainClass(object):
                                       self.main_hicon, "Balloon Tooltip", msg, 200, title, win32gui.NIIF_NOSOUND))
         #(hwnd, id, win32gui.NIF_*, CallbackMessage, hicon, Tooltip text (opt), Balloon tooltip text (opt), Timeout (ms), title (opt),  win32gui.NIIF_*)
         return
-        #-------------------------------
-        # Register the window class.
-        wc = win32gui.WNDCLASS()
-        hinst = wc.hInstance = win32gui.GetModuleHandle(None)
-        wc.lpszClassName = str("PythonTaskbar")  # must be a string
-        wc.lpfnWndProc = {}#message_map  # could also specify a wndproc.
-        # Create the Window.
-        classAtom = win32gui.RegisterClass(wc)
-        style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
-        hwnd = win32gui.CreateWindow(  classAtom, self.showname+"TaskBar", style,
-                                            0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
-                                            0, 0, hinst, None)
-        win32gui.UpdateWindow(hwnd)
-        flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
-        nid = (hwnd, 0, flags, win32con.WM_USER+20, win32gui.LoadIcon(0, win32con.IDI_APPLICATION), self.name)
-        win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, nid)
-        # Taskbar icon
-        flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
-        nid = (hwnd, 0, flags, win32con.WM_USER+20, self.main_hicon, self.showname)
-        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, nid)
-        # Notification
-        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY,
-                                    (hwnd, 0, win32gui.NIF_INFO, win32con.WM_USER + 20,
-                                      self.main_hicon, "Balloon Tooltip", msg, 200, title, win32gui.NIIF_NOSOUND))
-        # take a rest then destroy
-        time.sleep(5)
-        win32gui.DestroyWindow(hwnd)
-        win32gui.UnregisterClass(wc.lpszClassName, None)
-        nid = (hwnd, 0)
-        win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
-        return None
-        #-------------------------------
-        #win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, \
-        #                 (self.hwnd, 0, win32gui.NIF_INFO,  win32con.WM_USER+20,\
-        #                  self.main_hicon, "",msg,400,title, win32gui.NIIF_NOSOUND))
-        notification = notifypy.Notify(
-        #    default_notification_icon="path/to/icon.png",
-            default_notification_audio="./silent_quarter-second.wav"
-            )
-        notification.application_name = " "+self.showname
-        notification.title = title
-        notification.message = msg
-        notification.icon=''
-        notification.send()
-        return
-        #-------------------------------
-        if not hasattr(self, "PyQt6_ico"):
-            img=PyQt6.QtGui.QImage(50, 50, PyQt6.QtGui.QImage.Format.Format_ARGB32)
-            img.fill(PyQt6.QtGui.qRgba(0, 0, 0, 0));
-            self.PyQt6_ico=PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(img));
-        if self.tray.supportsMessages():
-            self.tray.showMessage(title,msg,self.PyQt6_ico,msecs=1000)
-        return
-        #def get_hwnds_for_pid (pid):
-        #    def callback (hwnd, hwnds):
-        #        if win32gui.IsWindowVisible (hwnd) and win32gui.IsWindowEnabled (hwnd):
-        #            _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
-        #            if found_pid == pid:
-        #                hwnds.append (hwnd)
-        #        return True
-        #    hwnds = []
-        #    win32gui.EnumWindows (callback, hwnds)
-        #    print(hwnds)
-        #    return hwnds
-        #for hwnd in get_hwnds_for_pid (self.menu_thread.native_id):
-        #    print (hwnd, "=>", win32gui.GetWindowText (hwnd))
-        #for hwnd in get_hwnds_for_pid (win32process.GetCurrentProcessId()):
-        #    print (hwnd, "=>", win32gui.GetWindowText (hwnd))
-        #hwnd = win32gui.CreateWindowEx(win32con.WS_EX_TRANSPARENT,
-	    #    "static",
-	    #	"ETest #1",
-	    #	win32con.SS_NOTIFY | win32con.WS_POPUP,
-	    #	10, 10,
-	    #	100,
-	    #	100,
-	    #	None,
-	    #	None,
-	    #	None,
-	    #	None)
-        #win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY,
-        #                 (hwnd, 0, win32gui.NIF_INFO,  win32con.WM_USER+20,
-        #                  self.main_hicon, "",msg,400,title, win32gui.NIIF_NOSOUND))
-        #self.tray.showMessage(title,msg,PyQt6.QtGui.QIcon(),100000)
-        #self.tray.showMessage(title,msg,self.main_hicon)
-
-    # def _notify(self, hwnd, msg, wparam, lparam):
-        # if lparam==win32con.WM_LBUTTONDBLCLK:
-            # self.__del__()
-            # #self.execute_menu_option(self.default_menu_index + self.FIRST_ID)
-        # elif lparam==win32con.WM_RBUTTONUP:
-            # self._show_menu()
-        # elif lparam==win32con.WM_LBUTTONUP:
-            # pass
-        # return True
-
-    # def _destroy(self, hwnd, msg, wparam, lparam):
-        # nid = (self.hwnd, 0)
-        # win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
-        # win32gui.PostQuitMessage(0) # Terminate the app.
-
-    # def _command(self, hwnd, msg, wparam, lparam):
-        # id = win32gui.LOWORD(wparam)
-        # self.execute_menu_option(id)
-
-    # def _restart(self, hwnd, msg, wparam, lparam):
-        # return True
 
     def hhk2ahk(self,hhk):
         ahk = ""
@@ -566,9 +452,8 @@ class MainClass(object):
                 else:
                     if (col_ico != main_col_ico):
                         config[i]["color"] = col_ico
-                    if (name_ico != self.install[i].module+ "_" + self.install[i].name + ".ico"):            #if ico:
+                    if (name_ico != self.install[i].module+ "_" + self.install[i].name + ".ico"):
                         config[i]["ico"] = name_ico
-            #    pass
             for opt in self.install[i].get_opt():
                 config[i][opt]=str(getattr(self.install[i], opt))
         f = io.StringIO()
@@ -595,31 +480,6 @@ class MainClass(object):
 
     def _menu_thread(self):
         self.logger.info("Starting menu thread")
-        
-        # message_map = {win32gui.RegisterWindowMessage("TaskbarCreated"): self._restart,
-                       # win32con.WM_DESTROY : self._destroy,
-                       # win32con.WM_COMMAND : self._command,
-                       # win32con.WM_USER+20 : self._notify,}
-        # # Register the Window class.
-        # wc = win32gui.WNDCLASS()
-        # hinst = wc.hInstance = win32gui.GetModuleHandle(None)
-        # wc.lpszClassName = "PythonTaskbar"
-        # wc.lpfnWndProc = message_map # could also specify a wndproc.
-        # classAtom = win32gui.RegisterClass(wc)
-        # # Create the Window.
-        # style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
-        # self.hwnd = win32gui.CreateWindow(  classAtom, self.showname+"TaskBar", style,
-                                            # 0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
-                                            # 0, 0, hinst, None)
-        # win32gui.UpdateWindow(self.hwnd)
-        # flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
-        # nid = (self.hwnd, 0, flags, win32con.WM_USER+20, win32gui.LoadIcon(0, win32con.IDI_APPLICATION), self.name)
-        # win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, nid)
-        
-        # flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
-        # nid = (self.hwnd, 0, flags, win32con.WM_USER+20, self.main_hicon, self.showname)
-        # win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, nid)
-        
         if False:
             print ("----- avail ------")
             print (self.avail)
@@ -638,7 +498,6 @@ class MainClass(object):
             print (self.ahk)
             print ("----- conf -----")
             print (self._print_conf())
-        # win32gui.PumpMessages()
         self.logger.info("Ending menu thread")
         return
 
@@ -664,16 +523,14 @@ class MainClass(object):
         return
 
     def run(self):
-        self.menu_thread.start()
-        self.ahk_thread.start()
-        # Our signal handler
-        self.popup("1","3")
         def signal_handler(signum, frame):
             self.__del__()
         # Register our signal handler with `SIGINT`(CTRL + C)
         signal.signal(signal.SIGINT, signal_handler)
+        self.menu_thread.start()
+        self.ahk_thread.start()
         while not self.stop_process:
-            time.sleep(1)
+            time.sleep(0.2)
         return
 
 
@@ -683,6 +540,4 @@ if __name__ == '__main__':
     a.logger.info("Entering wait state")
     a.run()
     a.logger.info("Exiting")
-    #ball=WindowsBalloonTip.BalloonTip("my test","this is my test", ico="../dist/giftray/icons/black/giftray-0.ico",taskbarname="GifTray-Tip",time=20)
-    #ball.popup()
-    #  time.sleep(20)
+    #a.destroy()
