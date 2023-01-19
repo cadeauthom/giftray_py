@@ -89,7 +89,6 @@ class MainClass(object):
         #self.tray.activated.connect( self.__del__)
         #self.tray.showMessage("1","2",self.win_main.style().standardIcon(
         #                            PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
-        self.popup("1","2")
         self.ahk_thread         = threading.Thread(target=self._ahk_thread)
         self.menu_thread        = threading.Thread(target=self._menu_thread)
         self.lock               = threading.Lock()
@@ -360,15 +359,15 @@ class MainClass(object):
         #win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, \
         #                 (self.hwnd, 0, win32gui.NIF_INFO,  win32con.WM_USER+20,\
         #                  self.main_hicon, "",msg,400,title, win32gui.NIIF_NOSOUND))
-        pq_hwnd = self.win_main.winId()
-        print(pq_hwnd.asstring())
-        return
-        import ctypes
-        ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
-        ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
-
-        hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(pq_hwnd)
-        print(hwnd)
+        theid=win32process.GetCurrentProcessId()
+        theid=self.menu_thread.native_id
+        if not hasattr(self, "PyQt6_ico"):
+            img=PyQt6.QtGui.QImage(50, 50, PyQt6.QtGui.QImage.Format.Format_ARGB32)
+            img.fill(PyQt6.QtGui.qRgba(0, 0, 0, 0));
+            self.PyQt6_ico=PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(img));
+        if self.tray.supportsMessages():
+            self.tray.showMessage(title,msg,self.PyQt6_ico,msecs=1000)
+        #self.tray.showMessage(title,msg,PyQt6.QtGui.QIcon(),100000)
         #self.tray.showMessage(title,msg,self.main_hicon)
 
     # def _notify(self, hwnd, msg, wparam, lparam):
@@ -578,6 +577,7 @@ class MainClass(object):
         self.menu_thread.start()
         self.ahk_thread.start()
         # Our signal handler
+        self.popup("1","3")
         def signal_handler(signum, frame):
             self.__del__()
         # Register our signal handler with `SIGINT`(CTRL + C)
