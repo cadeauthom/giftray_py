@@ -18,6 +18,7 @@ import logging
 import importlib
 import ctypes, ctypes.wintypes
 import PyQt6.QtWidgets, PyQt6.QtGui
+import notifypy
 
 import general
 import icon
@@ -359,8 +360,16 @@ class MainClass(object):
         #win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, \
         #                 (self.hwnd, 0, win32gui.NIF_INFO,  win32con.WM_USER+20,\
         #                  self.main_hicon, "",msg,400,title, win32gui.NIIF_NOSOUND))
-        theid=win32process.GetCurrentProcessId()
-        theid=self.menu_thread.native_id
+        notification = notifypy.Notify(
+        #    default_notification_icon="path/to/icon.png",
+            default_notification_audio="./silent_quarter-second.wav"
+            )
+        notification.application_name = " "+self.showname
+        notification.title = title
+        notification.message = msg
+        notification.icon=''
+        notification.send()
+        return
         if not hasattr(self, "PyQt6_ico"):
             img=PyQt6.QtGui.QImage(50, 50, PyQt6.QtGui.QImage.Format.Format_ARGB32)
             img.fill(PyQt6.QtGui.qRgba(0, 0, 0, 0));
