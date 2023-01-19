@@ -63,7 +63,7 @@ class main:
                                               project = self.giftray.name)
         if not iconPath:
             iconPath = self.giftray.iconPath
-        self.hicon, self.used_ico = icon.GetIcon(iconPath, giftray, self.ico)
+        self.sicon, self.hicon, self.used_ico = icon.GetIcon(iconPath, giftray, self.ico)
         if self.ahk:
             self.hhk, self.ahk, err = self.giftray.ahk2hhk(self.ahk)
             if len(err):

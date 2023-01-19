@@ -276,13 +276,13 @@ class MainClass(object):
                                             color   = self.conf_colormainicon,
                                             project = self.name)
         if self.conf_ico:
-            self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.conf_ico)
+            self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.conf_ico)
         else:
-            self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.name+"-0.ico")
+            self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.name+"-0.ico")
         d_path_ico = icon.GetIcon(
                             icon.ValidateIconPath(path = "", color   = self.conf_colormainicon, project = self.name),
                             self,
-                            ico=self.name+"-0.ico")[1]
+                            ico=self.name+"-0.ico")[2]
         print(path_ico)
         print(d_path_ico)
         if not path_ico:

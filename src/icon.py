@@ -55,19 +55,22 @@ def GetIcon(path,giftray,ico="default_default.ico"):
     last_try=False
     if ico=="default_default.ico":
         last_try=True
+    icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
     iconPathName = os.path.abspath(posixpath.join( path, ico )).replace('\\','/')
     if os.path.isfile(iconPathName):
         try:
             standardIcon = PyQt6.QtGui.QIcon(iconPathName)
+            hicon = win32gui.LoadImage(0, iconPathName, win32con.IMAGE_ICON, 0, 0, icon_flags)
             if standardIcon.availableSizes() != []:
-                return standardIcon, iconPathName
+                return standardIcon, hicon, iconPathName
         except:
             pass
     if not last_try:
         return GetIcon(path,giftray)
+    hicon = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
     standardIcon = giftray.win_main.style().standardIcon(
                         PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton)
-    return standardIcon, ""    
+    return standardIcon, hicon, ""
     
 # def GetIcon(path,ico="default_default.ico"):
     # if not ico:
