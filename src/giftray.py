@@ -85,9 +85,6 @@ class MainClass(object):
         #self.tray.activated.connect( self.__del__)
         #self.tray.showMessage("1","2",self.win_handler.style().standardIcon(
         #                            PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
-        self.ahk_thread         = threading.Thread(target=self._ahk_thread)
-        self.menu_thread        = threading.Thread(target=self._menu_thread)
-        self.lock               = threading.Lock()
         self.stop_process       = False
         logging.basicConfig     ( filename=self.name+".log",
                                   level=0,
@@ -106,9 +103,16 @@ class MainClass(object):
         if hasattr(self, "ahk_thread"):
             if self.ahk_thread.is_alive():
                 ctypes.windll.user32.PostThreadMessageW(self.ahk_thread.native_id, win32con.WM_QUIT, 0, 0)
+        self.ahk_thread         = threading.Thread(target=self._ahk_thread)
         if hasattr(self, "menu_thread"):
             if self.menu_thread.is_alive():
                 ctypes.windll.user32.PostThreadMessageW(self.menu_thread.native_id, win32con.WM_QUIT, 0, 0)
+        self.menu_thread        = threading.Thread(target=self._menu_thread)
+        if hasattr(self, "lock"):
+            if self.lock.locked():
+                self.lock.release()
+        else:
+            self.lock               = threading.Lock()
         if hasattr(self, "ahk_mods"):
             pass
         else:
@@ -464,12 +468,30 @@ class MainClass(object):
         f.close()
         return out
 
-    def _run_action(self,action):
+
+    def _test_action(self,args):
         if self.lock.acquire(timeout=1):
-            out = action.run()
-            if out:
-                self.popup(action.show,out)
+            print(args)
+            action=self.install[self.ahk[args]]
+            th = threading.Thread(target=action.run)
+            th.start()
+            th.join(1)
+            if th.is_alive():
+                ctypes.windll.user32.PostThreadMessageW(th.native_id, win32con.WM_QUIT, 0, 0)
+                print("kill")
+            while th.is_alive():
+                print("alive")
+                ctypes.windll.user32.TerminateThread(th.native_id,1)
+            #time.sleep(3)
+            print("end: "+action.show)
             self.lock.release()
+        return
+
+    def _run_action(self,ahk):
+        if self.lock.locked():
+            self.logger.debug('Lock locked for ' +action.show)
+            return
+        threading.Thread(target=self._test_action,args=[ahk]).start()
         return
 
     def _menu_click(self, reason):
@@ -518,7 +540,8 @@ class MainClass(object):
                 ahk = self.hhk2ahk({ "mod" : msg.lParam & 0b1111111111111111,
                                      "key" : msg.lParam >> 16})
                 if ahk in self.ahk:
-                    self._run_action(self.install[self.ahk[ahk]])
+                    #TODO : generic: name
+                    self._run_action(ahk)
             ctypes.windll.user32.TranslateMessage(ctypes.byref(msg))
             ctypes.windll.user32.DispatchMessageA(ctypes.byref(msg))
         self.logger.info("Ending ahk thread")

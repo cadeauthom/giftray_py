@@ -94,7 +94,10 @@ class main:
             print("Action '" +self.show+ "' failed: "+e_str)
             self.giftray.logger.error("Action '" +self.show+ "' failed: "+e_str)
             out = "Action '" +self.show+ "' failed: "+e_str
-        return out
+        #return out
+        if out:
+            self.giftray.popup(self.show, out)
+        return
 
     def _custom_run(self):
         return
