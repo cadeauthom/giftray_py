@@ -353,8 +353,10 @@ class MainClass(object):
     def popup(self, title, msg):
         def callback (hwnd, hwnds):
             _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
-            if found_pid == pid and win32gui.GetWindowText(hwnd) == "QTrayIconMessageWindow":
-                hwnds.append (hwnd)
+            if found_pid == pid:
+                # if win32gui.GetWindowText(hwnd) == "QTrayIconMessageWindow":
+                if win32gui.GetClassName(hwnd) == "Qt642TrayIconMessageWindowClass":
+                    hwnds.append (hwnd)
             return True
         hwnds = []
         pid=win32process.GetCurrentProcessId()
