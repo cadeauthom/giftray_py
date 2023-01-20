@@ -474,16 +474,18 @@ class MainClass(object):
     def _run_thread(self,args):
         if self.lock.acquire(timeout=1):
             action=self.install[self.ahk[args]]
-            show = action.show+datetime.datetime.now().strftime(" [%H%M%S]")
+            start_time = datetime.datetime.now()
+            show = action.show+start_time.strftime(" [%H%M%S]")
             self.logger.debug('Run '+show)
             th = general.KThread(target=action.run)
             th.start()
             th.join(10)
+            duration = datetime.datetime.now() - start_time
             if th.is_alive():
-                self.logger.debug('Kill '+show)
+                self.logger.debug('Kill '+show +' after '+str(duration.seconds)+' sec')
                 th.kill()
             else:
-                self.logger.debug(show+ ' ended')
+                self.logger.debug(show+ ' ended'+' after '+str(duration.seconds)+' sec')
             #few seconds before releasing lock
             #TODO: in configuration ?
             time.sleep(3)
