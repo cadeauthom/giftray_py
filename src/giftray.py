@@ -284,10 +284,15 @@ class MainClass(object):
         self.iconPath=icon.ValidateIconPath(path = self.conf_icoPath,
                                             color   = self.conf_colormainicon,
                                             project = self.name)
+
+        print(icon.GetTrayIcon(color="blue",project=self.name))
+
         if self.conf_ico:
             self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.conf_ico)
         else:
             self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.name+"-0.ico")
+        if not path_ico or "default_default" in path_ico:
+            self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.name+".ico")
         d_path_ico = icon.GetIcon(
                             icon.ValidateIconPath(path = "", color   = self.conf_colormainicon, project = self.name),
                             self,
@@ -569,7 +574,8 @@ class MainClass(object):
         logger = logging.getLogger()
         while True:
             logger.handlers[0].flush()
-            time.sleep(10)
+            for i in range(10):
+                time.sleep(1)
         return
 
     def run(self):
