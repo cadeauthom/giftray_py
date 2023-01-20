@@ -554,6 +554,13 @@ class MainClass(object):
         self.logger.info("Ending ahk thread")
         return
 
+    def _flush_thread(self):
+        logger = logging.getLogger()
+        while True:
+            logger.handlers[0].flush()
+            time.sleep(10)
+        return
+
     def run(self):
         def signal_handler(signum, frame):
             self.__del__()
@@ -561,8 +568,13 @@ class MainClass(object):
         signal.signal(signal.SIGINT, signal_handler)
         self.menu_thread.start()
         self.ahk_thread.start()
+        th = general.KThread(target=self._flush_thread)
+        th.start()
         while not self.stop_process:
             time.sleep(0.2)
+        if th.is_alive():
+            self.logger.debug('Kill flusher')
+            th.kill()
         return
 
 
