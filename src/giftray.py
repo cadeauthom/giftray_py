@@ -26,14 +26,14 @@ import icon
 import feature
 
 '''
-when (function), it is planned, not done yet
+#when (function), development is planned, not done yet
 def __init__(self):
     obviously called
 def __del__(self):
-    obviously called_
+    obviously called
 def _reset(self):
     called to reset variables
-    by __init__ (and by reload)
+    by __init__, __del__ (and by reload)
 def _load_modules(self,mods):
     check/load modules
     by __init__
@@ -56,13 +56,23 @@ def ahk2hhk(self,ahk):
 def _print_conf(self):
     return configuration in ini format
     (by save_conf, show_conf windows ?)
+        def _run_thread(self,args):
+def _run_thread(self,args):
+    thread to run called action
+    by _run_action 
 def _run_action(self,action):
-    run called action
+    start run thread for called action
     by _ahk_thread (and click on menu)
+def _menu_click(self, reason):
+   TODO _menu_click doc
 def _menu_thread(self):
 def _ahk_thread(self):
     threads to wait ahk/menu, started in main function
-    by _reset
+    set in _reset
+    by run
+def _flush_thread(self):
+    thread to flush logs
+    by run
 def run(self):
     main function
     print debug info
@@ -93,7 +103,7 @@ class MainClass(object):
         self.logger             = logging.getLogger(__name__)
         self._reset             ()
         #self._load_modules      ( ['template'] ) # to debug with empty application
-        self._load_modules      ( ['wsl','windows'] )
+        self._load_modules      ( ['wsl','windows','template'] )
         self._read_conf         ()
 
     def __del__(self):
@@ -157,7 +167,7 @@ class MainClass(object):
             self.icos.clear()
         else:
             self.icos = []
-        #TODO: clean self.main_sicon, self.main_hicon
+        #TODO: clean self.main_sicon, self.main_hicon in reset
         if hasattr(self, "nb_hotkey"):
             for i in range(self.nb_hotkey):
                 ctypes.windll.user32.UnregisterHotKey(None, i)
@@ -437,7 +447,7 @@ class MainClass(object):
         return hhk, ahk, ""
 
     def _print_conf(self):
-        #TODO: level for default, all, ?
+        #TODO: _print_conf: level for default, all, ?
         config = configparser.ConfigParser()
         config["GENERAL"] = { "ColorMainIcon" : self.conf_colormainicon,  #default "blue"
                               "ColorIcons"    : self.conf_coloricons   ,  #default "blue"
@@ -488,7 +498,7 @@ class MainClass(object):
             else:
                 self.logger.debug(show+ ' ended'+' after '+str(duration.seconds)+' sec')
             #few seconds before releasing lock
-            #TODO: in configuration ?
+            #TODO: releasing lock time in configuration
             time.sleep(3)
             self.logger.debug('Release lock')
             self.lock.release()
@@ -548,7 +558,7 @@ class MainClass(object):
                 ahk = self.hhk2ahk({ "mod" : msg.lParam & 0b1111111111111111,
                                      "key" : msg.lParam >> 16})
                 if ahk in self.ahk:
-                    #TODO : generic: name
+                    #TODO : generic arg in run_action
                     self._run_action(ahk)
             ctypes.windll.user32.TranslateMessage(ctypes.byref(msg))
             ctypes.windll.user32.DispatchMessageA(ctypes.byref(msg))
