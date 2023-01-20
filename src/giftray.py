@@ -4,8 +4,8 @@ import sys
 import posixpath
 import signal
 import inspect
-import threading
 import time
+import datetime
 import win32api         # package pywin32
 import win32con
 import win32process
@@ -102,17 +102,19 @@ class MainClass(object):
     def _reset(self):
         if hasattr(self, "ahk_thread"):
             if self.ahk_thread.is_alive():
+                #self.ahk_thread.kill()
                 ctypes.windll.user32.PostThreadMessageW(self.ahk_thread.native_id, win32con.WM_QUIT, 0, 0)
-        self.ahk_thread         = threading.Thread(target=self._ahk_thread)
+        self.ahk_thread         = general.KThread(target=self._ahk_thread)
         if hasattr(self, "menu_thread"):
             if self.menu_thread.is_alive():
+                #self.menu_thread.kill()
                 ctypes.windll.user32.PostThreadMessageW(self.menu_thread.native_id, win32con.WM_QUIT, 0, 0)
-        self.menu_thread        = threading.Thread(target=self._menu_thread)
+        self.menu_thread        = general.KThread(target=self._menu_thread)
         if hasattr(self, "lock"):
             if self.lock.locked():
                 self.lock.release()
         else:
-            self.lock               = threading.Lock()
+            self.lock               = general.Lock()
         if hasattr(self, "ahk_mods"):
             pass
         else:
@@ -469,29 +471,32 @@ class MainClass(object):
         return out
 
 
-    def _test_action(self,args):
+    def _run_thread(self,args):
         if self.lock.acquire(timeout=1):
-            print(args)
             action=self.install[self.ahk[args]]
-            th = threading.Thread(target=action.run)
+            show = action.show+datetime.datetime.now().strftime(" [%H%M%S]")
+            self.logger.debug('Run '+show)
+            th = general.KThread(target=action.run)
             th.start()
-            th.join(1)
+            th.join(10)
             if th.is_alive():
-                ctypes.windll.user32.PostThreadMessageW(th.native_id, win32con.WM_QUIT, 0, 0)
-                print("kill")
-            while th.is_alive():
-                print("alive")
-                ctypes.windll.user32.TerminateThread(th.native_id,1)
-            #time.sleep(3)
-            print("end: "+action.show)
+                self.logger.debug('Kill '+show)
+                th.kill()
+            else:
+                self.logger.debug(show+ ' ended')
+            #few seconds before releasing lock
+            #TODO: in configuration ?
+            time.sleep(3)
+            self.logger.debug('Release lock')
             self.lock.release()
         return
 
     def _run_action(self,ahk):
         if self.lock.locked():
-            self.logger.debug('Lock locked for ' +action.show)
+            self.logger.debug('Lock locked for ' + self.install[self.ahk[ahk]].show)
             return
-        threading.Thread(target=self._test_action,args=[ahk]).start()
+        a=general.KThread(target=self._run_thread,args=[ahk])
+        a.start()
         return
 
     def _menu_click(self, reason):
@@ -564,5 +569,14 @@ if __name__ == '__main__':
     a=MainClass()
     a.logger.info("Entering wait state")
     a.run()
-    a.logger.info("Exiting")
+    #a.logger.info("Exiting")
     #a.destroy()
+    '''
+    import threading
+    main_thread = threading.current_thread()
+    for t in threading.enumerate():
+        if t is main_thread:
+           pass
+        else:
+            ctypes.windll.user32.PostThreadMessageW(t.native_id, win32con.WM_QUIT, 0, 0)
+    '''
