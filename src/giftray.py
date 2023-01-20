@@ -92,6 +92,7 @@ class MainClass(object):
                                   datefmt='%d-%b-%y %H:%M:%S')
         self.logger             = logging.getLogger(__name__)
         self._reset             ()
+        #self._load_modules      ( ['template'] ) # to debug with empty application
         self._load_modules      ( ['wsl','windows'] )
         self._read_conf         ()
 

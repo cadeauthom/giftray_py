@@ -67,6 +67,6 @@ def GetIcon(path,giftray,ico="default_default.ico"):
     if not last_try:
         return GetIcon(path,giftray)
     hicon = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
-    standardIcon = giftray.win_main.style().standardIcon(
+    standardIcon = PyQt6.QtWidgets.QWidget().style().standardIcon(
                         PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton)
     return standardIcon, hicon, ""
