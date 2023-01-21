@@ -31,6 +31,9 @@ def __init__(self):
     obviously called
 def __del__(self):
     obviously called
+def _define_tray(self):
+    define tray and click events
+    by __init__
 def _reset(self):
     called to reset variables
     by __init__, __del__ (and by reload)
@@ -63,9 +66,12 @@ def _run_thread(self,args):
 def _run_action(self,action):
     start run thread for called action
     by _ahk_thread (and click on menu)
-def _menu_click(self, reason): & _tray_activation
-   TODO _menu_click doc
-def _menu_thread(self):
+def _tray_activation(self, reason):
+    catch click on menu
+    by __init__
+def _debug_print(self):
+    print some internal variables
+    by run (with hack)
 def _ahk_thread(self):
     threads to wait ahk/menu, started in main function
     set in _reset
@@ -86,6 +92,7 @@ class MainClass(object):
             self.__del__()
         # Register our signal handler with `SIGINT`(CTRL + C)
         signal.signal(signal.SIGINT, signal_handler)
+        #signal.signal(signal.SIGINT, signal.SIG_DFL)
         self.showname           = "GifTray"
         self.name               = "giftray"
         logging.basicConfig     ( filename=self.name+".log",
@@ -93,35 +100,39 @@ class MainClass(object):
                                   format='%(asctime)s - %(levelname)s - %(message)s',
                                   datefmt='%d-%b-%y %H:%M:%S')
         self.logger             = logging.getLogger(__name__)
-
-        self.app                = PyQt6.QtWidgets.QApplication([])
-        self.app.setQuitOnLastWindowClosed (
-                                  False )
-        #self.win_handler        = PyQt6.QtWidgets.QWidget()
-        self.tray               = PyQt6.QtWidgets.QSystemTrayIcon(
-                                    PyQt6.QtWidgets.QWidget().style().standardIcon( #or self.win_handler
-                                        PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
-        self.tray.setToolTip    ( str(self.showname) )
-        self.tray.setVisible    ( True )
-        self.tray.show()
-        def tray_activation(signal):
-            print('r')
-            self._tray_activation(signal)
-        self.tray.activated.connect( tray_activation )
-        self.qmenu = PyQt6.QtWidgets.QMenu()
-        self.qaction =  PyQt6.QtGui.QAction('plop',self.qmenu)
-        self.qaction.triggered.connect(tray_activation)
-        self.tray.setContextMenu(self.qmenu)
-        print(self.tray.receivers(self.tray.activated))
+        self._define_tray       ()
         self._reset             ()
         #self._load_modules      ( ['template'] ) # to debug with empty application
         self._load_modules      ( ['wsl','windows','template'] )
         self._read_conf         ()
 
     def __del__(self):
+        self.app.quit()
         self.stop_process = True
         self._reset()
         self.logger.info("Exiting")
+
+    def _define_tray(self):
+        # Define app
+        self.app  = PyQt6.QtWidgets.QApplication([])
+        self.app.setQuitOnLastWindowClosed ( False )
+        #self.win_handler        = PyQt6.QtWidgets.QWidget()
+        # Define tray
+        self.tray = PyQt6.QtWidgets.QSystemTrayIcon(
+                        PyQt6.QtWidgets.QWidget().style().standardIcon( #or self.win_handler
+                            PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
+        self.tray.setToolTip ( str(self.showname) )
+        self.tray.setVisible ( True )
+        self.tray.show()
+        self.tray.activated.connect( self._tray_activation )
+        # Define menu right click
+        self.menu_right = PyQt6.QtWidgets.QMenu()
+        action =  PyQt6.QtGui.QAction('Exit',self.menu_right)
+        action.triggered.connect(self.__del__)
+        # Define menu left click
+        self.menu_left = PyQt6.QtWidgets.QMenu()
+        #self.tray.setContextMenu(self.menu_right)
+        return
 
     def _reset(self):
         if hasattr(self, "ahk_thread"):
@@ -129,11 +140,6 @@ class MainClass(object):
                 #self.ahk_thread.kill()
                 ctypes.windll.user32.PostThreadMessageW(self.ahk_thread.native_id, win32con.WM_QUIT, 0, 0)
         self.ahk_thread         = general.KThread(target=self._ahk_thread)
-        if hasattr(self, "menu_thread"):
-            if self.menu_thread.is_alive():
-                #self.menu_thread.kill()
-                ctypes.windll.user32.PostThreadMessageW(self.menu_thread.native_id, win32con.WM_QUIT, 0, 0)
-        self.menu_thread        = general.KThread(target=self._menu_thread)
         if hasattr(self, "lock"):
             if self.lock.locked():
                 self.lock.release()
@@ -504,11 +510,14 @@ class MainClass(object):
         return out
 
     def _tray_activation(self,reason):
-        print("onTrayIconActivated:", reason)
-        #if reason == QSystemTrayIcon.Trigger:
-        #    self.disambiguateTimer.start(qApp.doubleClickInterval())
-        if reason == PyQt6.QtWidgets.QSystemTrayIcon.DoubleClick:
+        if reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Trigger:
+            print("SysTrayIcon left clicked")
+        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Context:
+            print ("SysTrayIcon tight clicked")
+        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
             print ("Tray icon double clicked")
+        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.MiddleClick:
+            self.__del__()
         return
 
     def _run_thread(self,args):
@@ -541,28 +550,24 @@ class MainClass(object):
         a.start()
         return
 
-    def _menu_thread(self):
-        self.logger.info("Starting menu thread")
-        if False:
-            print ("----- avail ------")
-            print (self.avail)
-            print ("----- error ------")
-            print (self.error)
-            print ("----- install ------")
-            print (self.install)
-            #for i in self.install:
-                #out = self.install[i].run()
-                #if out:
-                #    self.popup(i,out)
-            print ("----- menu ------")
-            print (self.menu)
-            print ("----- ahk ------")
-            print (self.nb_hotkey)
-            print (self.ahk)
-            print ("----- conf -----")
-            print (self._print_conf())
-        self.logger.info("Ending menu thread")
-        return
+    def _debug_print(self):
+        print ("----- avail ------")
+        print (self.avail)
+        print ("----- error ------")
+        print (self.error)
+        print ("----- install ------")
+        print (self.install)
+        #for i in self.install:
+            #out = self.install[i].run()
+            #if out:
+            #    self.popup(i,out)
+        print ("----- menu ------")
+        print (self.menu)
+        print ("----- ahk ------")
+        print (self.nb_hotkey)
+        print (self.ahk)
+        print ("----- conf -----")
+        print (self._print_conf())
 
     def _ahk_thread(self):
         self.logger.info("Starting ahk thread")
@@ -594,13 +599,14 @@ class MainClass(object):
         return
 
     def run(self):
-
-        self.menu_thread.start()
         self.ahk_thread.start()
         th = general.KThread(target=self._flush_thread)
         th.start()
-        while not self.stop_process:
-            time.sleep(0.2)
+        timer = PyQt6.QtCore.QTimer()
+        timer.start(500)  # You may change this if you wish.
+        timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
+        if True: self._debug_print()
+        self.app.exec()
         if th.is_alive():
             self.logger.debug('Kill flusher')
             th.kill()
