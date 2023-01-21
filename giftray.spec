@@ -10,7 +10,10 @@ a = Analysis(['src/giftray.py'],
              datas=[
                     ('build/giftray/icons','icons')
                 ],
-             hiddenimports=[],
+             hiddenimports=['pywintypes',
+                            'general','icon','feature',
+                            'wsl'
+                            ],
              hookspath=[],
              hooksconfig={},
              runtime_hooks=[],

@@ -63,7 +63,7 @@ def _run_thread(self,args):
 def _run_action(self,action):
     start run thread for called action
     by _ahk_thread (and click on menu)
-def _menu_click(self, reason):
+def _menu_click(self, reason): & _tray_activation
    TODO _menu_click doc
 def _menu_thread(self):
 def _ahk_thread(self):
@@ -81,26 +81,38 @@ def run(self):
 
 class MainClass(object):
     def __init__(self):
+        self.stop_process       = False
+        def signal_handler(signum, frame):
+            self.__del__()
+        # Register our signal handler with `SIGINT`(CTRL + C)
+        signal.signal(signal.SIGINT, signal_handler)
         self.showname           = "GifTray"
         self.name               = "giftray"
-        self.app                = PyQt6.QtWidgets.QApplication([])
-        self.app.setQuitOnLastWindowClosed (
-                                  False )
-        #self.win_handler        = PyQt6.QtWidgets.QWidget()
-        self.tray               = PyQt6.QtWidgets.QSystemTrayIcon()
-        self.tray.setIcon       ( PyQt6.QtWidgets.QWidget().style().standardIcon( #or self.win_handler
-                                    PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
-        self.tray.setToolTip    ( "GifTray" )
-        self.tray.setVisible    ( True )
-        #self.tray.activated.connect( self.__del__)
-        #self.tray.showMessage("1","2",self.win_handler.style().standardIcon(
-        #                            PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
-        self.stop_process       = False
         logging.basicConfig     ( filename=self.name+".log",
                                   level=0,
                                   format='%(asctime)s - %(levelname)s - %(message)s',
                                   datefmt='%d-%b-%y %H:%M:%S')
         self.logger             = logging.getLogger(__name__)
+
+        self.app                = PyQt6.QtWidgets.QApplication([])
+        self.app.setQuitOnLastWindowClosed (
+                                  False )
+        #self.win_handler        = PyQt6.QtWidgets.QWidget()
+        self.tray               = PyQt6.QtWidgets.QSystemTrayIcon(
+                                    PyQt6.QtWidgets.QWidget().style().standardIcon( #or self.win_handler
+                                        PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
+        self.tray.setToolTip    ( str(self.showname) )
+        self.tray.setVisible    ( True )
+        self.tray.show()
+        def tray_activation(signal):
+            print('r')
+            self._tray_activation(signal)
+        self.tray.activated.connect( tray_activation )
+        self.qmenu = PyQt6.QtWidgets.QMenu()
+        self.qaction =  PyQt6.QtGui.QAction('plop',self.qmenu)
+        self.qaction.triggered.connect(tray_activation)
+        self.tray.setContextMenu(self.qmenu)
+        print(self.tray.receivers(self.tray.activated))
         self._reset             ()
         #self._load_modules      ( ['template'] ) # to debug with empty application
         self._load_modules      ( ['wsl','windows','template'] )
@@ -109,6 +121,7 @@ class MainClass(object):
     def __del__(self):
         self.stop_process = True
         self._reset()
+        self.logger.info("Exiting")
 
     def _reset(self):
         if hasattr(self, "ahk_thread"):
@@ -281,18 +294,22 @@ class MainClass(object):
                 if new_class.is_in_menu():
                     self.menu.append(new_class.show)
 
+        #Get ico for Tray
         self.iconPath=icon.ValidateIconPath(path = self.conf_icoPath,
                                             color   = self.conf_colormainicon,
                                             project = self.name)
-
         print(icon.GetTrayIcon(color="blue",project=self.name))
-
         if self.conf_ico:
             self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.conf_ico)
         else:
             self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.name+"-0.ico")
         if not path_ico or "default_default" in path_ico:
             self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.name+".ico")
+
+        #Set ico to Tray
+        self.tray.setIcon(self.main_sicon)
+
+        #Save info of ico for conf
         d_path_ico = icon.GetIcon(
                             icon.ValidateIconPath(path = "", color   = self.conf_colormainicon, project = self.name),
                             self,
@@ -486,6 +503,13 @@ class MainClass(object):
         f.close()
         return out
 
+    def _tray_activation(self,reason):
+        print("onTrayIconActivated:", reason)
+        #if reason == QSystemTrayIcon.Trigger:
+        #    self.disambiguateTimer.start(qApp.doubleClickInterval())
+        if reason == PyQt6.QtWidgets.QSystemTrayIcon.DoubleClick:
+            print ("Tray icon double clicked")
+        return
 
     def _run_thread(self,args):
         if self.lock.acquire(timeout=1):
@@ -515,14 +539,6 @@ class MainClass(object):
             return
         a=general.KThread(target=self._run_thread,args=[ahk])
         a.start()
-        return
-
-    def _menu_click(self, reason):
-        print("onTrayIconActivated:", reason)
-        #if reason == QSystemTrayIcon.Trigger:
-        #    self.disambiguateTimer.start(qApp.doubleClickInterval())
-        if reason == PyQt6.QtWidgets.QSystemTrayIcon.DoubleClick:
-            print ("Tray icon double clicked")
         return
 
     def _menu_thread(self):
@@ -574,15 +590,11 @@ class MainClass(object):
         logger = logging.getLogger()
         while True:
             logger.handlers[0].flush()
-            for i in range(10):
-                time.sleep(1)
+            for i in range(10): time.sleep(1)
         return
 
     def run(self):
-        def signal_handler(signum, frame):
-            self.__del__()
-        # Register our signal handler with `SIGINT`(CTRL + C)
-        signal.signal(signal.SIGINT, signal_handler)
+
         self.menu_thread.start()
         self.ahk_thread.start()
         th = general.KThread(target=self._flush_thread)
@@ -600,8 +612,7 @@ if __name__ == '__main__':
     a=MainClass()
     a.logger.info("Entering wait state")
     a.run()
-    #a.logger.info("Exiting")
-    #a.destroy()
+
     '''
     import threading
     main_thread = threading.current_thread()
