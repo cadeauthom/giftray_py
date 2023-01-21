@@ -9,6 +9,27 @@ except ImportError:
     import win32gui
 import PyQt6.QtWidgets, PyQt6.QtGui
 
+def _GetTrayIcon(rec):
+    try:
+        return win32gui.CreateIconFromResource(rec, True)
+    except:
+        return
+    
+def GetTrayIcon(color="black",project=""):
+    try:
+        p=os.getcwd()+"/build/"+project+"/"+project+".exe"
+        if not os.path.isfile(p):
+            p=sys.executable
+        hlib = win32api.LoadLibrary(p)
+        icon_names = win32api.EnumResourceNames(hlib, win32con.RT_ICON)
+        for icon_name in icon_names:
+            rec = win32api.LoadResource(hlib, win32con.RT_ICON, icon_name)
+            hicon = _GetTrayIcon(rec)
+            if hicon:
+                return hicon
+    except:
+        pass
+    return PyQt6.QtWidgets.QWidget().style().standardIcon(PyQt6.QtWidgets.QStyle.StandardPixmap.SP_DialogHelpButton)
 
 def ValidateIconPath(path="",color="black",project=""):
     return _ValidateIconPath_sub(path,color,project).replace('/','\\')
@@ -67,6 +88,6 @@ def GetIcon(path,giftray,ico="default_default.ico"):
     if not last_try:
         return GetIcon(path,giftray)
     hicon = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
-    standardIcon = giftray.win_main.style().standardIcon(
+    standardIcon = PyQt6.QtWidgets.QWidget().style().standardIcon(
                         PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton)
     return standardIcon, hicon, ""

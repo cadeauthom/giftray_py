@@ -4,8 +4,8 @@ import sys
 import posixpath
 import signal
 import inspect
-import threading
 import time
+import datetime
 import win32api         # package pywin32
 import win32con
 import win32process
@@ -26,14 +26,14 @@ import icon
 import feature
 
 '''
-when (function), it is planned, not done yet
+#when (function), development is planned, not done yet
 def __init__(self):
     obviously called
 def __del__(self):
-    obviously called_
+    obviously called
 def _reset(self):
     called to reset variables
-    by __init__ (and by reload)
+    by __init__, __del__ (and by reload)
 def _load_modules(self,mods):
     check/load modules
     by __init__
@@ -56,13 +56,23 @@ def ahk2hhk(self,ahk):
 def _print_conf(self):
     return configuration in ini format
     (by save_conf, show_conf windows ?)
+        def _run_thread(self,args):
+def _run_thread(self,args):
+    thread to run called action
+    by _run_action 
 def _run_action(self,action):
-    run called action
+    start run thread for called action
     by _ahk_thread (and click on menu)
+def _menu_click(self, reason):
+   TODO _menu_click doc
 def _menu_thread(self):
 def _ahk_thread(self):
     threads to wait ahk/menu, started in main function
-    by _reset
+    set in _reset
+    by run
+def _flush_thread(self):
+    thread to flush logs
+    by run
 def run(self):
     main function
     print debug info
@@ -92,7 +102,8 @@ class MainClass(object):
                                   datefmt='%d-%b-%y %H:%M:%S')
         self.logger             = logging.getLogger(__name__)
         self._reset             ()
-        self._load_modules      ( ['wsl','windows'] )
+        #self._load_modules      ( ['template'] ) # to debug with empty application
+        self._load_modules      ( ['wsl','windows','template'] )
         self._read_conf         ()
 
     def __del__(self):
@@ -102,17 +113,19 @@ class MainClass(object):
     def _reset(self):
         if hasattr(self, "ahk_thread"):
             if self.ahk_thread.is_alive():
+                #self.ahk_thread.kill()
                 ctypes.windll.user32.PostThreadMessageW(self.ahk_thread.native_id, win32con.WM_QUIT, 0, 0)
-        self.ahk_thread         = threading.Thread(target=self._ahk_thread)
+        self.ahk_thread         = general.KThread(target=self._ahk_thread)
         if hasattr(self, "menu_thread"):
             if self.menu_thread.is_alive():
+                #self.menu_thread.kill()
                 ctypes.windll.user32.PostThreadMessageW(self.menu_thread.native_id, win32con.WM_QUIT, 0, 0)
-        self.menu_thread        = threading.Thread(target=self._menu_thread)
+        self.menu_thread        = general.KThread(target=self._menu_thread)
         if hasattr(self, "lock"):
             if self.lock.locked():
                 self.lock.release()
         else:
-            self.lock               = threading.Lock()
+            self.lock               = general.Lock()
         if hasattr(self, "ahk_mods"):
             pass
         else:
@@ -154,7 +167,7 @@ class MainClass(object):
             self.icos.clear()
         else:
             self.icos = []
-        #TODO: clean self.main_sicon, self.main_hicon
+        #TODO: clean self.main_sicon, self.main_hicon in reset
         if hasattr(self, "nb_hotkey"):
             for i in range(self.nb_hotkey):
                 ctypes.windll.user32.UnregisterHotKey(None, i)
@@ -271,10 +284,15 @@ class MainClass(object):
         self.iconPath=icon.ValidateIconPath(path = self.conf_icoPath,
                                             color   = self.conf_colormainicon,
                                             project = self.name)
+
+        print(icon.GetTrayIcon(color="blue",project=self.name))
+
         if self.conf_ico:
             self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.conf_ico)
         else:
             self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.name+"-0.ico")
+        if not path_ico or "default_default" in path_ico:
+            self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.name+".ico")
         d_path_ico = icon.GetIcon(
                             icon.ValidateIconPath(path = "", color   = self.conf_colormainicon, project = self.name),
                             self,
@@ -434,7 +452,7 @@ class MainClass(object):
         return hhk, ahk, ""
 
     def _print_conf(self):
-        #TODO: level for default, all, ?
+        #TODO: _print_conf: level for default, all, ?
         config = configparser.ConfigParser()
         config["GENERAL"] = { "ColorMainIcon" : self.conf_colormainicon,  #default "blue"
                               "ColorIcons"    : self.conf_coloricons   ,  #default "blue"
@@ -469,29 +487,34 @@ class MainClass(object):
         return out
 
 
-    def _test_action(self,args):
+    def _run_thread(self,args):
         if self.lock.acquire(timeout=1):
-            print(args)
             action=self.install[self.ahk[args]]
-            th = threading.Thread(target=action.run)
+            start_time = datetime.datetime.now()
+            show = action.show+start_time.strftime(" [%H%M%S]")
+            self.logger.debug('Run '+show)
+            th = general.KThread(target=action.run)
             th.start()
-            th.join(1)
+            th.join(10)
+            duration = datetime.datetime.now() - start_time
             if th.is_alive():
-                ctypes.windll.user32.PostThreadMessageW(th.native_id, win32con.WM_QUIT, 0, 0)
-                print("kill")
-            while th.is_alive():
-                print("alive")
-                ctypes.windll.user32.TerminateThread(th.native_id,1)
-            #time.sleep(3)
-            print("end: "+action.show)
+                self.logger.debug('Kill '+show +' after '+str(duration.seconds)+' sec')
+                th.kill()
+            else:
+                self.logger.debug(show+ ' ended'+' after '+str(duration.seconds)+' sec')
+            #few seconds before releasing lock
+            #TODO: releasing lock time in configuration
+            time.sleep(3)
+            self.logger.debug('Release lock')
             self.lock.release()
         return
 
     def _run_action(self,ahk):
         if self.lock.locked():
-            self.logger.debug('Lock locked for ' +action.show)
+            self.logger.debug('Lock locked for ' + self.install[self.ahk[ahk]].show)
             return
-        threading.Thread(target=self._test_action,args=[ahk]).start()
+        a=general.KThread(target=self._run_thread,args=[ahk])
+        a.start()
         return
 
     def _menu_click(self, reason):
@@ -540,11 +563,19 @@ class MainClass(object):
                 ahk = self.hhk2ahk({ "mod" : msg.lParam & 0b1111111111111111,
                                      "key" : msg.lParam >> 16})
                 if ahk in self.ahk:
-                    #TODO : generic: name
+                    #TODO : generic arg in run_action
                     self._run_action(ahk)
             ctypes.windll.user32.TranslateMessage(ctypes.byref(msg))
             ctypes.windll.user32.DispatchMessageA(ctypes.byref(msg))
         self.logger.info("Ending ahk thread")
+        return
+
+    def _flush_thread(self):
+        logger = logging.getLogger()
+        while True:
+            logger.handlers[0].flush()
+            for i in range(10):
+                time.sleep(1)
         return
 
     def run(self):
@@ -554,8 +585,13 @@ class MainClass(object):
         signal.signal(signal.SIGINT, signal_handler)
         self.menu_thread.start()
         self.ahk_thread.start()
+        th = general.KThread(target=self._flush_thread)
+        th.start()
         while not self.stop_process:
             time.sleep(0.2)
+        if th.is_alive():
+            self.logger.debug('Kill flusher')
+            th.kill()
         return
 
 
@@ -564,5 +600,14 @@ if __name__ == '__main__':
     a=MainClass()
     a.logger.info("Entering wait state")
     a.run()
-    a.logger.info("Exiting")
+    #a.logger.info("Exiting")
     #a.destroy()
+    '''
+    import threading
+    main_thread = threading.current_thread()
+    for t in threading.enumerate():
+        if t is main_thread:
+           pass
+        else:
+            ctypes.windll.user32.PostThreadMessageW(t.native_id, win32con.WM_QUIT, 0, 0)
+    '''
