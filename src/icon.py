@@ -76,7 +76,10 @@ def GetIcon(path,giftray,ico="default_default.ico"):
     if ico=="default_default.ico":
         last_try=True
     icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
-    iconPathName = os.path.abspath(posixpath.join( path, ico )).replace('\\','/')
+    if ':' in ico:
+        iconPathName = os.path.abspath(ico).replace('\\','/')
+    else:
+        iconPathName = os.path.abspath(posixpath.join( path, ico )).replace('\\','/')
     if os.path.isfile(iconPathName):
         try:
             standardIcon = PyQt6.QtGui.QIcon(iconPathName)
