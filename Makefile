@@ -51,7 +51,7 @@ all: ico exec
 
 exec: $(EXEC)
 
-ico: $(ICOS_BLUE) $(ICOS_BLACK) $(ICOS_RED) $(ICOS_GREEN)
+ico: $(ICOS_BLUE) $(ICOS_BLACK) $(ICOS_RED) $(ICOS_GREEN) $(ICO)
 
 $(ICO): $(PNG)
 	$(PATH_CONVERT) $(FLAGS_CONVERT_ICO) $(PNG) $(ICO)
