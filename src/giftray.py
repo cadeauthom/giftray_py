@@ -8,7 +8,6 @@ import time
 import datetime
 import win32api         # package pywin32
 import win32con
-import win32process
 import configparser
 try:
     import winxpgui as win32gui
@@ -44,19 +43,12 @@ def _load_modules(self,mods):
 def _read_conf(self):
     called to read conf and build all variables
     by __init__ (and by reload)
-            def _show_menu(self):
-                show the main tray gui (while clickink)
-                by _notify
-            def _create_menu(self, menu, menu_options):
-                build the menu of the tray gui windows
-                by _show_menu
-def popup(self, title, msg):
-    popup message when action is run
-    (by run)
-def hhk2ahk(self,hhk):
-def ahk2hhk(self,ahk):
-    translate hk from/to lisible/tool
-    by feature module
+def _set_icon(self):
+    define main info of icons
+    by _read_conf
+def _create_menu(self):
+    build the menu of the tray gui windows
+    by _start
 def _print_conf(self):
     return configuration in ini format
     (by save_conf, show_conf windows ?)
@@ -113,9 +105,20 @@ class MainClass(object):
                                   datefmt='%d-%b-%y %H:%M:%S')
         self.logger             = logging.getLogger(__name__)
         self._define_tray       ()
-        self._reset             ()
         self._load_modules      ( self.modules )
-        self._read_conf         ()
+        self._reload            ()
+        self.logger.info        ("Entering wait state")
+        th = general.KThread(target=self._flush_thread)
+        th.start()
+        timer = PyQt6.QtCore.QTimer()
+        timer.start(500)  # You may change this if you wish.
+        timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
+        if False: self._debug_print()
+        self.app.exec()
+        if th.is_alive():
+            self.logger.debug('Kill flusher')
+            th.kill()
+        return
 
     def __del__(self):
         self.app.quit()
@@ -136,13 +139,6 @@ class MainClass(object):
         self.tray.setVisible ( True )
         self.tray.show()
         self.tray.activated.connect( self._tray_activation )
-        # Define menu right click
-        # self.menu_right = PyQt6.QtWidgets.QMenu()
-        # self.menu_right.addAction('Exit',self.__del__)
-        #action =  PyQt6.QtGui.QAction('Exit',self.menu_right)
-        #action.triggered.connect(self.__del__)
-        # Define menu left click
-        #self.tray.setContextMenu(self.menu_right)
         return
 
     def _reset(self):
@@ -160,22 +156,10 @@ class MainClass(object):
                 self.lock.release()
         else:
             self.lock               = general.Lock()
-        if hasattr(self, "ahk_mods"):
+        if hasattr(self, "ahk_translator"):
             pass
         else:
-            self.ahk_mods = {}
-            self.ahk_keys = {}
-            for item, value in vars(win32con).items():
-                if item.startswith("MOD_"):
-                    self.ahk_mods[item] = value
-                    self.ahk_mods[value] = item
-                elif item.startswith("VK_"):
-                    self.ahk_keys[item] = value
-                    self.ahk_keys[value] = item
-        if hasattr(self, "avail"):
-            pass
-        else:
-            self.avail = []
+            self.ahk_translator = general.ahk()
         if hasattr(self, "error"):
             self.error.clear()
         else:
@@ -196,7 +180,7 @@ class MainClass(object):
             self.hhk.clear()
         else:
             self.hhk = []
-        self.conf               = os.getenv('USERPROFILE')+'/'+self.name+'/'+self.name+".conf"
+        self.conf = os.getenv('USERPROFILE')+'/'+self.name+'/'+self.name+".conf"
         if hasattr(self, "icos"):
             self.icos.clear()
         else:
@@ -217,6 +201,7 @@ class MainClass(object):
         self.main_error         = ""
 
     def _load_modules(self,mods):
+        self.avail = []
         for m in mods:
             try :
                 tmp = importlib.import_module(m)
@@ -284,6 +269,52 @@ class MainClass(object):
                         self.logger.error(section+"->"+k+"not supported")
 
         #Get ico for Tray
+        self._set_icon()
+
+        #Load actions config to variables
+        for section in config.sections():
+            if section.casefold() != 'GENERAL'.casefold():
+                for i in config[section]:
+                    if "\n" in config[section][i]:
+                        self.error[section] = "Indentation issue in '" + section +"'"
+                        self.logger.error("Indentation issue in '" + section +"'")
+                        continue
+                if section in self.error: continue
+                if "function" in config[section]:
+                    fct = config[section]["function"].casefold()
+                else:
+                    self.logger.error("'function' not defined in '"+section+"'")
+                if fct.count('.') != 1:
+                    self.logger.error("'"+fct+"' does not contain exactly 1 '.' in '"+section+"'")
+                    continue
+                split_section = fct.split(".")
+                module = split_section[0]
+                feat = split_section[1]
+                if not module in sys.modules.keys():
+                    self.error[section] = "Module '"+module+"' not loaded"
+                    self.logger.error("Module '"+module+"' not loaded for '"+section+"'")
+                    continue
+                if not fct in self.avail:
+                    self.error[section] = "'"+feat+"' not defined in module '" +module + "'"
+                    self.logger.error("'"+feat+"' not defined in module '" +module+"' from '"+section+"'")
+                    continue
+                new_class = general.str_to_class(module,feat)(section,config[section],self)
+                ahk, hhk = new_class.get_hk()
+                if len(ahk)>2 and "key" in hhk:
+                    if ahk in self.ahk:
+                        new_class.error.append("Duplicated ahk " + self.ahk[ahk])
+                        self.logger.error("'"+ahk+"' set twice! '" +self.ahk[ahk]+"' / '"+new_class.show+"'")
+                    else:
+                        self.ahk[ahk] = new_class.show
+                if not new_class.is_ok():
+                    self.error[new_class.show] = new_class.print_error(sep=",",prefix="")
+                self.install[new_class.show]=new_class
+                if new_class.is_in_menu():
+                    self.menu.append(new_class.show)
+
+        return 0
+
+    def _set_icon(self):
         self.iconPath=icon.ValidateIconPath(path    = self.conf_icoPath,
                                             color   = self.conf_colormainicon,
                                             project = self.name)
@@ -346,47 +377,42 @@ class MainClass(object):
                                             color   = self.conf_coloricons,
                                             project = self.name)
 
-        #Load actions config to variables
-        for section in config.sections():
-            if section.casefold() != 'GENERAL'.casefold():
-                for i in config[section]:
-                    if "\n" in config[section][i]:
-                        self.error[section] = "Indentation issue in '" + section +"'"
-                        self.logger.error("Indentation issue in '" + section +"'")
-                        continue
-                if section in self.error: continue
-                if "function" in config[section]:
-                    fct = config[section]["function"].casefold()
+    def _print_conf(self):
+        #TODO: _print_conf: level for default, all, ?
+        config = configparser.ConfigParser()
+        config["GENERAL"] = { "ColorMainIcon" : self.conf_colormainicon,  #default "blue"
+                              "ColorIcons"    : self.conf_coloricons   ,  #default "blue"
+                              "LogLevel"      : self.conf_loglevel     }  #default "WARNING"
+        for i in self.install:
+            config[i]={ "function" : self.install[i].module+ "." + self.install[i].name}
+            #mandatory options
+            config[i]["ahk"]=self.install[i].ahk
+            config[i]["menu"]=str(self.install[i].menu)
+            #optional options
+            path_ico     = self.install[i].used_ico
+            if path_ico:
+                name_ico     = os.path.basename(path_ico)
+                path_ico     = os.path.dirname(path_ico)
+                col_ico      = os.path.basename(path_ico)
+                path_ico     = os.path.dirname(path_ico)
+                main_path_ico= os.path.dirname(self.iconPath)
+                main_col_ico = os.path.basename(self.iconPath)
+                if (main_path_ico != path_ico):
+                    config[i]["ico"] = self.install[i].used_ico
                 else:
-                    self.logger.error("'function' not defined in '"+section+"'")
-                if fct.count('.') != 1:
-                    self.logger.error("'"+fct+"' does not contain exactly 1 '.' in '"+section+"'")
-                    continue
-                split_section = fct.split(".")
-                module = split_section[0]
-                feat = split_section[1]
-                if not module in sys.modules.keys():
-                    self.error[section] = "Module '"+module+"' not loaded"
-                    self.logger.error("Module '"+module+"' not loaded for '"+section+"'")
-                    continue
-                if not fct in self.avail:
-                    self.error[section] = "'"+feat+"' not defined in module '" +module + "'"
-                    self.logger.error("'"+feat+"' not defined in module '" +module+"' from '"+section+"'")
-                    continue
-                new_class = general.str_to_class(module,feat)(section,config[section],self)
-                ahk, hhk = new_class.get_hk()
-                if len(ahk)>2 and "key" in hhk:
-                    if ahk in self.ahk:
-                        new_class.error.append("Duplicated ahk " + self.ahk[ahk])
-                        self.logger.error("'"+ahk+"' set twice! '" +self.ahk[ahk]+"' / '"+new_class.show+"'")
-                    else:
-                        self.ahk[ahk] = new_class.show
-                if not new_class.is_ok():
-                    self.error[new_class.show] = new_class.print_error(sep=",",prefix="")
-                self.install[new_class.show]=new_class
-                if new_class.is_in_menu():
-                    self.menu.append(new_class.show)
+                    if (col_ico != main_col_ico):
+                        config[i]["color"] = col_ico
+                    if (name_ico != self.install[i].module+ "_" + self.install[i].name + ".ico"):
+                        config[i]["ico"] = name_ico
+            for opt in self.install[i].get_opt():
+                config[i][opt]=str(getattr(self.install[i], opt))
+        f = io.StringIO()
+        config.write(f)
+        out = f.getvalue()
+        f.close()
+        return out
 
+    def _create_menu(self):
         # Define menu configured actions
         # loop on modules for main menu and for Not Clickable
         menu_not = PyQt6.QtWidgets.QMenu('Not clickable',self.tray_menu)
@@ -448,6 +474,7 @@ class MainClass(object):
         act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
         if picon:
             act.setIcon(sicon)
+        act.triggered.connect(self._about)
         self.tray_menu.addAction(act)
         sicon, hicon, picon = icon.GetIcon(self.iconPath, self, ico='default_reload.ico')
         act=PyQt6.QtGui.QAction('Reload '+self.showname,self.tray_menu)
@@ -464,121 +491,7 @@ class MainClass(object):
         self.tray_menu.addAction(act)
 
         self.tray.setContextMenu(self.tray_menu)
-        return 0
-
-    def popup(self, title, msg):
-        def callback (hwnd, hwnds):
-            _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
-            if found_pid == pid:
-                # if win32gui.GetWindowText(hwnd) == "QTrayIconMessageWindow":
-                if win32gui.GetClassName(hwnd) == "Qt642TrayIconMessageWindowClass":
-                    hwnds.append (hwnd)
-            return True
-        hwnds = []
-        pid=win32process.GetCurrentProcessId()
-        win32gui.EnumWindows (callback, hwnds)
-        if not hwnds:
-            return
-        hwnd = hwnds[0]
-        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY,
-                                    (hwnd, 0, win32gui.NIF_INFO, win32con.WM_USER + 20,
-                                      self.main_hicon, "Balloon Tooltip", msg, 200, title, win32gui.NIIF_NOSOUND))
-        #(hwnd, id, win32gui.NIF_*, CallbackMessage, hicon, Tooltip text (opt), Balloon tooltip text (opt), Timeout (ms), title (opt),  win32gui.NIIF_*)
         return
-
-    def hhk2ahk(self,hhk):
-        ahk = ""
-        if hhk["mod"] & self.ahk_mods["MOD_CONTROL"]:
-            ahk += "Ctrl + "
-        if hhk["mod"] & self.ahk_mods["MOD_WIN"]:
-            ahk += "Win + "
-        if hhk["mod"] & self.ahk_mods["MOD_SHIFT"]:
-            ahk += "Shift + "
-        if hhk["mod"] & self.ahk_mods["MOD_ALT"]:
-            ahk += "Alt + "
-        if hhk["key"] in self.ahk_keys:
-            ahk += self.ahk_keys[hhk["key"]][3:]
-        else:
-            ahk += chr(hhk["key"]).lower()
-        return ahk
-
-    def ahk2hhk(self,ahk):
-        hhk = {}
-        nb_k=0
-        nb_m=0
-        hhk["mod"] = 0
-        arr = ahk.upper()
-        arr = arr.split("+")
-        if len(arr)<2:
-            return {"mod":0}, ahk, "Shortcut too short"+ahk+")"
-        for i in range(len(arr)):
-            mod = arr[i].strip()
-            if mod in ['CTRL',"LCTRL","RCTRL","CONTROL","LCONTROL","RCONTROL"]:
-                nb_m += 1
-                hhk["mod"] |= self.ahk_mods["MOD_CONTROL"]
-            elif mod in ['WIN','LWIN','RWIN','WINDOWS','LWINDOWS','RWINDOWS']:
-                nb_m += 1
-                hhk["mod"] |= self.ahk_mods["MOD_WIN"]
-            elif mod in ['ALT','LALT','RALT']:
-                nb_m += 1
-                hhk["mod"] |= self.ahk_mods["MOD_ALT"]
-            elif mod in ['SHIFT','LSHIFT','RSHIFT','MAJ','LMAJ','RMAJ']:
-                hhk["mod"] |= self.ahk_mods["MOD_SHIFT"]
-            elif "VK_"+mod in self.ahk_keys:
-                hhk["key"] = self.ahk_keys["VK_"+mod]
-                nb_k += 1
-            elif len(mod)==1:
-                k=win32api.VkKeyScan(mod[0].lower())
-                k = k & 0xFF
-                hhk["key"] = k
-                nb_k += 1
-            else :
-                return {"mod":0}, ahk, "Shortcut not well defined ("+mod+" in "+ahk+")"
-        if not 'key' in hhk:
-            return {"mod":0}, ahk, "Shortcut without key ("+ahk+")"
-        if mod == 0 :
-            return {"mod":0}, ahk, "Shortcut without modifier ("+ahk+")"
-        if nb_m == 0 :
-            return {"mod":0}, ahk, "Shortcut with only Shift modifier ("+ahk+")"
-        if nb_k > 1:
-            return {"mod":0}, ahk, "Shortcut with several keys ("+ahk+")"
-        ahk = self.hhk2ahk(hhk)
-        return hhk, ahk, ""
-
-    def _print_conf(self):
-        #TODO: _print_conf: level for default, all, ?
-        config = configparser.ConfigParser()
-        config["GENERAL"] = { "ColorMainIcon" : self.conf_colormainicon,  #default "blue"
-                              "ColorIcons"    : self.conf_coloricons   ,  #default "blue"
-                              "LogLevel"      : self.conf_loglevel     }  #default "WARNING"
-        for i in self.install:
-            config[i]={ "function" : self.install[i].module+ "." + self.install[i].name}
-            #mandatory options
-            config[i]["ahk"]=self.install[i].ahk
-            config[i]["menu"]=str(self.install[i].menu)
-            #optional options
-            path_ico     = self.install[i].used_ico
-            if path_ico:
-                name_ico     = os.path.basename(path_ico)
-                path_ico     = os.path.dirname(path_ico)
-                col_ico      = os.path.basename(path_ico)
-                path_ico     = os.path.dirname(path_ico)
-                main_path_ico= os.path.dirname(self.iconPath)
-                main_col_ico = os.path.basename(self.iconPath)
-                if (main_path_ico != path_ico):
-                    config[i]["ico"] = self.install[i].used_ico
-                else:
-                    if (col_ico != main_col_ico):
-                        config[i]["color"] = col_ico
-                    if (name_ico != self.install[i].module+ "_" + self.install[i].name + ".ico"):
-                        config[i]["ico"] = name_ico
-            for opt in self.install[i].get_opt():
-                config[i][opt]=str(getattr(self.install[i], opt))
-        f = io.StringIO()
-        config.write(f)
-        out = f.getvalue()
-        f.close()
-        return out
 
     def _tray_activation(self,reason):
         if reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Trigger:
@@ -610,7 +523,7 @@ class MainClass(object):
             #TODO: releasing lock time in configuration
             time.sleep(3)
             self.logger.debug('Release lock')
-            self.lock.release()
+            if self.lock.locked(): self.lock.release()
         return
 
     def _run_action(self,feature):
@@ -648,11 +561,12 @@ class MainClass(object):
                 self.logger.debug("register "+str(ahk))
             else:
                 self.install[self.ahk[ahk]].error.append("Fail to register Hotkey ("+ahk+")")
+                self.error[self.ahk[ahk]]=self.install[self.ahk[ahk]].print_error(sep=",",prefix="")
                 self.logger.err("fail to register"+str(ahk))
         msg = ctypes.wintypes.MSG()
         while ctypes.windll.user32.GetMessageA(ctypes.byref(msg), None, 0, 0) != 0:
             if msg.message == win32con.WM_HOTKEY:
-                ahk = self.hhk2ahk({ "mod" : msg.lParam & 0b1111111111111111,
+                ahk = self.ahk_translator.hhk2ahk({ "mod" : msg.lParam & 0b1111111111111111,
                                      "key" : msg.lParam >> 16})
                 if ahk in self.ahk:
                     self._run_action(self.ahk[ahk])
@@ -669,6 +583,7 @@ class MainClass(object):
         return
 
     def _start(self):
+        self._create_menu()
         self.ahk_thread.start()
         return
 
@@ -704,26 +619,9 @@ class MainClass(object):
         self._start()
         return
 
-    def run(self):
-        self._start()
-        th = general.KThread(target=self._flush_thread)
-        th.start()
-        timer = PyQt6.QtCore.QTimer()
-        timer.start(500)  # You may change this if you wish.
-        timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
-        if False: self._debug_print()
-        self.app.exec()
-        if th.is_alive():
-            self.logger.debug('Kill flusher')
-            th.kill()
-        return
-
-
 if __name__ == '__main__':
     #import itertools, glob
     a=MainClass()
-    a.logger.info("Entering wait state")
-    a.run()
 
     '''
     import threading

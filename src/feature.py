@@ -1,4 +1,5 @@
 import icon
+import general
 
 '''
 def __init__(self,show,val,giftray):
@@ -65,7 +66,7 @@ class main:
             iconPath = self.giftray.iconPath
         self.sicon, self.hicon, self.used_ico = icon.GetIcon(iconPath, giftray, self.ico)
         if self.ahk:
-            self.hhk, self.ahk, err = self.giftray.ahk2hhk(self.ahk)
+            self.hhk, self.ahk, err = giftray.ahk_translator.ahk2hhk(self.ahk)
             if len(err):
                 self.error.append(err)
             
@@ -96,7 +97,7 @@ class main:
             out = "Action '" +self.show+ "' failed: "+e_str
         #return out
         if out:
-            self.giftray.popup(self.show, out)
+            general.popup(self.giftray.main_hicon, self.show, out)
         return
 
     def _custom_run(self):
@@ -110,12 +111,12 @@ class main:
             return False
         return True
 
-    def is_defined(self):
-        if self.hhk:
-            return True
-        if self.menu:
-            return True
-        return False
+    # def is_defined(self):
+        # if self.hhk:
+            # return True
+        # if self.menu:
+            # return True
+        # return False
 
     def is_in_menu(self):
         return self.menu

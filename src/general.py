@@ -2,8 +2,10 @@ import os
 import sys
 import shutil
 import trace, threading
-#import win32api         # package pywin32
-#import win32con
+import win32con
+import win32api
+import win32process
+
 try:
     import winxpgui as win32gui
 except ImportError:
@@ -48,6 +50,97 @@ def RealPath(app):
 
 def str_to_class(module,feat):
     return getattr(sys.modules[module], feat)
+
+def popup(hicon, title, msg):
+    def callback (hwnd, hwnds):
+        _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
+        if found_pid == pid:
+            # if win32gui.GetWindowText(hwnd) == "QTrayIconMessageWindow":
+            if win32gui.GetClassName(hwnd) == "Qt642TrayIconMessageWindowClass":
+                hwnds.append (hwnd)
+        return True
+    hwnds = []
+    pid=win32process.GetCurrentProcessId()
+    win32gui.EnumWindows (callback, hwnds)
+    if not hwnds:
+        return
+    hwnd = hwnds[0]
+    win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY,
+                                (hwnd, 0, win32gui.NIF_INFO, win32con.WM_USER + 20,
+                                  hicon, "Balloon Tooltip", msg, 200, title, win32gui.NIIF_NOSOUND))
+    #(hwnd, id, win32gui.NIF_*, CallbackMessage, hicon, Tooltip text (opt), Balloon tooltip text (opt), Timeout (ms), title (opt),  win32gui.NIIF_*)
+    return
+
+class ahk():
+    def __init__(self):
+        self.ahk_mods = {}
+        self.ahk_keys = {}
+        for item, value in vars(win32con).items():
+            if item.startswith("MOD_"):
+                self.ahk_mods[item] = value
+                self.ahk_mods[value] = item
+            elif item.startswith("VK_"):
+                self.ahk_keys[item] = value
+                self.ahk_keys[value] = item
+
+    def hhk2ahk(self,hhk):
+        ahk = ""
+        if hhk["mod"] & self.ahk_mods["MOD_CONTROL"]:
+            ahk += "Ctrl + "
+        if hhk["mod"] & self.ahk_mods["MOD_WIN"]:
+            ahk += "Win + "
+        if hhk["mod"] & self.ahk_mods["MOD_SHIFT"]:
+            ahk += "Shift + "
+        if hhk["mod"] & self.ahk_mods["MOD_ALT"]:
+            ahk += "Alt + "
+        if hhk["key"] in self.ahk_keys:
+            ahk += self.ahk_keys[hhk["key"]][3:]
+        else:
+            ahk += chr(hhk["key"]).lower()
+        return ahk
+
+    def ahk2hhk(self,ahk):
+        hhk = {}
+        nb_k=0
+        nb_m=0
+        hhk["mod"] = 0
+        arr = ahk.upper()
+        arr = arr.split("+")
+        if len(arr)<2:
+            return {"mod":0}, ahk, "Shortcut too short"+ahk+")"
+        for i in range(len(arr)):
+            mod = arr[i].strip()
+            if mod in ['CTRL',"LCTRL","RCTRL","CONTROL","LCONTROL","RCONTROL"]:
+                nb_m += 1
+                hhk["mod"] |= self.ahk_mods["MOD_CONTROL"]
+            elif mod in ['WIN','LWIN','RWIN','WINDOWS','LWINDOWS','RWINDOWS']:
+                nb_m += 1
+                hhk["mod"] |= self.ahk_mods["MOD_WIN"]
+            elif mod in ['ALT','LALT','RALT']:
+                nb_m += 1
+                hhk["mod"] |= self.ahk_mods["MOD_ALT"]
+            elif mod in ['SHIFT','LSHIFT','RSHIFT','MAJ','LMAJ','RMAJ']:
+                hhk["mod"] |= self.ahk_mods["MOD_SHIFT"]
+            elif "VK_"+mod in self.ahk_keys:
+                hhk["key"] = self.ahk_keys["VK_"+mod]
+                nb_k += 1
+            elif len(mod)==1:
+                k=win32api.VkKeyScan(mod[0].lower())
+                k = k & 0xFF
+                hhk["key"] = k
+                nb_k += 1
+            else :
+                return {"mod":0}, ahk, "Shortcut not well defined ("+mod+" in "+ahk+")"
+        if not 'key' in hhk:
+            return {"mod":0}, ahk, "Shortcut without key ("+ahk+")"
+        if mod == 0 :
+            return {"mod":0}, ahk, "Shortcut without modifier ("+ahk+")"
+        if nb_m == 0 :
+            return {"mod":0}, ahk, "Shortcut with only Shift modifier ("+ahk+")"
+        if nb_k > 1:
+            return {"mod":0}, ahk, "Shortcut with several keys ("+ahk+")"
+        ahk = self.hhk2ahk(hhk)
+        return hhk, ahk, ""
 
 #no import threading in main with:
 Lock = threading.Lock

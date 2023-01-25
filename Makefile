@@ -17,8 +17,7 @@
 
 PATH_CONVERT	= /usr/bin/convert
 #32
-FLAGS_CONVERT   = -background none svg:-
-FLAGS_CONVERT_ICO= -define icon:auto-resize=16,32,48,256 $(FLAGS_CONVERT)
+FLAGS_CONVERT_ICO= -define icon:auto-resize=16,32,48,256 -background none svg:-
 PATH_PYTHON     != wslpath "`where.exe python3`"
 #/mnt/c/Users/$(USER)/AppData/Local/Microsoft/WindowsApps/python3.exe
 FLAGS_PYTHON    = #--console
@@ -45,7 +44,7 @@ PNG             = $(patsubst $(PATH_SVG)/$(PROJECT)-%.svg, $(PATH_PNG)/$(PROJECT
                   $(patsubst $(PATH_SVG)/$(PROJECT)-%.svg, $(PATH_PNG)/$(PROJECT)-%-black.png,$(SVG_PNG)) \
                   $(patsubst $(PATH_SVG)/$(PROJECT)-%.svg, $(PATH_PNG)/$(PROJECT)-%-red.png,  $(SVG_PNG)) \
                   $(patsubst $(PATH_SVG)/$(PROJECT)-%.svg, $(PATH_PNG)/$(PROJECT)-%-green.png,$(SVG_PNG))
-
+PNG=$(PATH_PNG)/$(PROJECT)-0-blue.png
 
 all: ico exec
 
@@ -54,7 +53,7 @@ exec: $(EXEC)
 ico: $(ICOS_BLUE) $(ICOS_BLACK) $(ICOS_RED) $(ICOS_GREEN) $(ICO)
 
 $(ICO): $(PNG)
-	$(PATH_CONVERT) $(FLAGS_CONVERT_ICO) $(PNG) $(ICO)
+	$(PATH_CONVERT) -define icon:auto-resize=16,32,48,256 -background none $(PNG) $(ICO)
 
 $(EXEC): $(SPEC) $(ICO) $(SRCS)
 	$(PATH_PYTHON) -m PyInstaller $(FLAGS_PYTHON) --noconfirm --upx-dir="$(PATH_UPX)" $(SPEC)
@@ -62,7 +61,7 @@ $(EXEC): $(SPEC) $(ICO) $(SRCS)
 $(PATH_PNG)/$(PROJECT)-%-blue.png: $(PATH_SVG)/$(PROJECT)-%.svg
 	mkdir -p $(@D)
 	cat $< \
-	    | $(PATH_CONVERT) $(FLAGS_CONVERT) $@
+	    | $(PATH_CONVERT)  -background none svg:- $@
 
 $(PATH_PNG)/$(PROJECT)-%-black.png: $(PATH_SVG)/$(PROJECT)-%.svg
 	mkdir -p $(@D)
