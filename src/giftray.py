@@ -8,7 +8,6 @@ import time
 import datetime
 import win32api         # package pywin32
 import win32con
-import win32process
 import configparser
 try:
     import winxpgui as win32gui
@@ -50,13 +49,6 @@ def _set_icon(self):
 def _create_menu(self):
     build the menu of the tray gui windows
     by _start
-def popup(self, title, msg):
-    popup message when action is run
-    (by run)
-def hhk2ahk(self,hhk):
-def ahk2hhk(self,ahk):
-    translate hk from/to lisible/tool
-    by feature module
 def _print_conf(self):
     return configuration in ini format
     (by save_conf, show_conf windows ?)
@@ -113,9 +105,20 @@ class MainClass(object):
                                   datefmt='%d-%b-%y %H:%M:%S')
         self.logger             = logging.getLogger(__name__)
         self._define_tray       ()
-        self._reset             ()
         self._load_modules      ( self.modules )
-        self._read_conf         ()
+        self._reload            ()
+        self.logger.info        ("Entering wait state")
+        th = general.KThread(target=self._flush_thread)
+        th.start()
+        timer = PyQt6.QtCore.QTimer()
+        timer.start(500)  # You may change this if you wish.
+        timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
+        if False: self._debug_print()
+        self.app.exec()
+        if th.is_alive():
+            self.logger.debug('Kill flusher')
+            th.kill()
+        return
 
     def __del__(self):
         self.app.quit()
@@ -136,13 +139,6 @@ class MainClass(object):
         self.tray.setVisible ( True )
         self.tray.show()
         self.tray.activated.connect( self._tray_activation )
-        # Define menu right click
-        # self.menu_right = PyQt6.QtWidgets.QMenu()
-        # self.menu_right.addAction('Exit',self.__del__)
-        #action =  PyQt6.QtGui.QAction('Exit',self.menu_right)
-        #action.triggered.connect(self.__del__)
-        # Define menu left click
-        #self.tray.setContextMenu(self.menu_right)
         return
 
     def _reset(self):
@@ -164,10 +160,6 @@ class MainClass(object):
             pass
         else:
             self.ahk_translator = general.ahk()
-        if hasattr(self, "avail"):
-            pass
-        else:
-            self.avail = []
         if hasattr(self, "error"):
             self.error.clear()
         else:
@@ -188,7 +180,7 @@ class MainClass(object):
             self.hhk.clear()
         else:
             self.hhk = []
-        self.conf               = os.getenv('USERPROFILE')+'/'+self.name+'/'+self.name+".conf"
+        self.conf = os.getenv('USERPROFILE')+'/'+self.name+'/'+self.name+".conf"
         if hasattr(self, "icos"):
             self.icos.clear()
         else:
@@ -209,6 +201,7 @@ class MainClass(object):
         self.main_error         = ""
 
     def _load_modules(self,mods):
+        self.avail = []
         for m in mods:
             try :
                 tmp = importlib.import_module(m)
@@ -481,6 +474,7 @@ class MainClass(object):
         act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
         if picon:
             act.setIcon(sicon)
+        act.triggered.connect(self._about)
         self.tray_menu.addAction(act)
         sicon, hicon, picon = icon.GetIcon(self.iconPath, self, ico='default_reload.ico')
         act=PyQt6.QtGui.QAction('Reload '+self.showname,self.tray_menu)
@@ -529,7 +523,7 @@ class MainClass(object):
             #TODO: releasing lock time in configuration
             time.sleep(3)
             self.logger.debug('Release lock')
-            self.lock.release()
+            if self.lock.locked(): self.lock.release()
         return
 
     def _run_action(self,feature):
@@ -567,6 +561,7 @@ class MainClass(object):
                 self.logger.debug("register "+str(ahk))
             else:
                 self.install[self.ahk[ahk]].error.append("Fail to register Hotkey ("+ahk+")")
+                self.error[self.ahk[ahk]]=self.install[self.ahk[ahk]].print_error(sep=",",prefix="")
                 self.logger.err("fail to register"+str(ahk))
         msg = ctypes.wintypes.MSG()
         while ctypes.windll.user32.GetMessageA(ctypes.byref(msg), None, 0, 0) != 0:
@@ -624,26 +619,9 @@ class MainClass(object):
         self._start()
         return
 
-    def run(self):
-        self._start()
-        th = general.KThread(target=self._flush_thread)
-        th.start()
-        timer = PyQt6.QtCore.QTimer()
-        timer.start(500)  # You may change this if you wish.
-        timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
-        if False: self._debug_print()
-        self.app.exec()
-        if th.is_alive():
-            self.logger.debug('Kill flusher')
-            th.kill()
-        return
-
-
 if __name__ == '__main__':
     #import itertools, glob
     a=MainClass()
-    a.logger.info("Entering wait state")
-    a.run()
 
     '''
     import threading

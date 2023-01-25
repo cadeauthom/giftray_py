@@ -111,12 +111,12 @@ class main:
             return False
         return True
 
-    def is_defined(self):
-        if self.hhk:
-            return True
-        if self.menu:
-            return True
-        return False
+    # def is_defined(self):
+        # if self.hhk:
+            # return True
+        # if self.menu:
+            # return True
+        # return False
 
     def is_in_menu(self):
         return self.menu

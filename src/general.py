@@ -73,7 +73,6 @@ def popup(hicon, title, msg):
 
 class ahk():
     def __init__(self):
-        print('a')
         self.ahk_mods = {}
         self.ahk_keys = {}
         for item, value in vars(win32con).items():
