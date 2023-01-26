@@ -3,12 +3,12 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
-  <Identity Name="GifTray-Py" Version="2.0.0.0" Publisher="CN=Rainette" ProcessorArchitecture="x64" />
+  <Identity Name="GifTray" Version="2.0.0.0" Publisher="CN=Rainette" ProcessorArchitecture="x64" />
   <Properties>
     <DisplayName>GifTray</DisplayName>
     <PublisherDisplayName>Rainette</PublisherDisplayName>
     <Description>Tray and HotKeys for custom actions</Description>
-    <Logo>giftray-0-green.png</Logo>
+    <Logo>giftray-44.png</Logo>
   </Properties>
   <Resources>
     <Resource Language="en-us" />
@@ -21,8 +21,8 @@
   </Capabilities>
   <Applications>
     <Application Id="GifTray" Executable="giftray.exe" EntryPoint="Windows.FullTrustApplication">
-      <uap:VisualElements DisplayName="GifTray" Description="Tray&HotKey"	Square150x150Logo="giftray-150.png"
-        Square44x44Logo="giftray-44.png" BackgroundColor="#464646" />
+      <uap:VisualElements DisplayName="GifTray" Description="Tray and HotKeys"	Square150x150Logo="giftray-150.png"
+        Square44x44Logo="giftray-44.png" BackgroundColor="#445445" />
     </Application>
   </Applications>
 </Package>

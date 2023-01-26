@@ -8,7 +8,9 @@ a = Analysis(['src/giftray.py'],
              pathex=[],
              binaries=[],
              datas=[
-                    ('build/giftray/icons','icons')
+                    ('build/giftray/png','.'),
+                    ('build/giftray/icons','icons'),
+                    ('AppxManifest.xml','.')
                 ],
              hiddenimports=['pywintypes',
                             'general','icon','feature',

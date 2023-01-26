@@ -20,6 +20,9 @@ curl -s https://api.github.com/repos/upx/upx/releases/latest | grep "browser_dow
 unzip upx-*-win64.zip
 UPX-PATH=$(wslpath -w $(ls -d upx*-win64 | sort | tail -1))
 
+curl -s https://api.github.com/repos/microsoft/MSIX-Toolkit/releases | grep "browser_download_url.*64.zip" |head -1| cut -d '"' -f 4  |wget -qi  -
+unzip MSIX-*64.zip
+
 # Build
 
 wpython -m PyInstaller --onefile test.py

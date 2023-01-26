@@ -20,6 +20,7 @@ PATH_CONVERT	= /usr/bin/convert
 FLAGS_CONVERT_ICO= -define icon:auto-resize=16,32,48,256 -background none svg:-
 PATH_PYTHON     != wslpath "`where.exe python3`"
 #/mnt/c/Users/$(USER)/AppData/Local/Microsoft/WindowsApps/python3.exe
+PATH_MSI        = MSIX-Toolkit.x64/MakeAppx.exe
 FLAGS_PYTHON    = #--console
 PATH_UPX	= V:\git\perso\py.git\upx-3.96-win64
 
@@ -27,12 +28,13 @@ PROJECT 	= giftray
 DEFAULT_COLOR 	= blue
 
 PATH_BUILD	= ./build/$(PROJECT)
+PATH_DIST	= ./dist/$(PROJECT)
 PATH_SVG 	= ./svg
 PATH_ICO 	= $(PATH_BUILD)/icons
 PATH_PNG 	= $(PATH_BUILD)/png
 
 SPEC		= $(PROJECT).spec
-EXEC		= $(BUILDDIR)/$(PROJECT).exe
+EXEC		= ./dist/setup.msix
 ICO		= $(PATH_ICO)/$(PROJECT).ico
 SVG		= $(wildcard $(PATH_SVG)/*.svg)
 SVG_PNG = $(wildcard $(PATH_SVG)/$(PROJECT)-*.svg)
@@ -40,23 +42,38 @@ ICOS_BLUE   	= $(patsubst $(PATH_SVG)/%.svg, $(PATH_ICO)/blue/%.ico, $(SVG))
 ICOS_BLACK  	= $(patsubst $(PATH_SVG)/%.svg, $(PATH_ICO)/black/%.ico,$(SVG))
 ICOS_RED    	= $(patsubst $(PATH_SVG)/%.svg, $(PATH_ICO)/red/%.ico,  $(SVG))
 ICOS_GREEN  	= $(patsubst $(PATH_SVG)/%.svg, $(PATH_ICO)/green/%.ico,$(SVG))
-PNG             = $(patsubst $(PATH_SVG)/$(PROJECT)-%.svg, $(PATH_PNG)/$(PROJECT)-%-blue.png, $(SVG_PNG)) \
-                  $(patsubst $(PATH_SVG)/$(PROJECT)-%.svg, $(PATH_PNG)/$(PROJECT)-%-black.png,$(SVG_PNG)) \
-                  $(patsubst $(PATH_SVG)/$(PROJECT)-%.svg, $(PATH_PNG)/$(PROJECT)-%-red.png,  $(SVG_PNG)) \
-                  $(patsubst $(PATH_SVG)/$(PROJECT)-%.svg, $(PATH_PNG)/$(PROJECT)-%-green.png,$(SVG_PNG))
-PNG=$(PATH_PNG)/$(PROJECT)-0-blue.png
+#PNG             = $(patsubst $(PATH_SVG)/$(PROJECT)-0.svg, $(PATH_PNG)/$(PROJECT)-%-blue.png, $(SVG_PNG)) \
+#                  $(patsubst $(PATH_SVG)/$(PROJECT)-0.svg, $(PATH_PNG)/$(PROJECT)-%-black.png,$(SVG_PNG)) \
+#                  $(patsubst $(PATH_SVG)/$(PROJECT)-0.svg, $(PATH_PNG)/$(PROJECT)-%-red.png,  $(SVG_PNG)) \
+#                  $(patsubst $(PATH_SVG)/$(PROJECT)-0.svg, $(PATH_PNG)/$(PROJECT)-%-green.png,$(SVG_PNG))
+PNG44=$(PATH_PNG)/$(PROJECT)-44.png
+PNG150=$(PATH_PNG)/$(PROJECT)-150.png
+PNG=$(PNG44) $(PNG150)
+MANIFEST=AppxManifest.xml
 
-all: ico exec
+all: ico exec png
 
 exec: $(EXEC)
 
 ico: $(ICOS_BLUE) $(ICOS_BLACK) $(ICOS_RED) $(ICOS_GREEN) $(ICO)
 
+png: $(PNG)
+
 $(ICO): $(PNG)
 	$(PATH_CONVERT) -define icon:auto-resize=16,32,48,256 -background none $(PNG) $(ICO)
 
-$(EXEC): $(SPEC) $(ICO) $(SRCS)
+$(EXEC): $(SPEC) $(ICO) $(SRCS) $(MANIFEST)
 	$(PATH_PYTHON) -m PyInstaller $(FLAGS_PYTHON) --noconfirm --upx-dir="$(PATH_UPX)" $(SPEC)
+	$(PATH_MSI) pack /v /o /h SHA256 /d "$(PATH_DIST)" /p "$@"
+
+$(PNG44): $(PATH_SVG)/$(PROJECT)-0.svg
+	mkdir -p $(@D)
+	cat $< \
+	    | $(PATH_CONVERT) -resize 44x44 -background none svg:- $(PATH_PNG)/$(PROJECT)-44.png
+$(PNG150): $(PATH_SVG)/$(PROJECT)-0.svg
+	mkdir -p $(@D)
+	cat $< \
+	    | $(PATH_CONVERT) -resize 150x150 -background none svg:- $(PATH_PNG)/$(PROJECT)-150.png
 
 $(PATH_PNG)/$(PROJECT)-%-blue.png: $(PATH_SVG)/$(PROJECT)-%.svg
 	mkdir -p $(@D)
