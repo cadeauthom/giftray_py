@@ -71,6 +71,20 @@ def popup(hicon, title, msg):
     #(hwnd, id, win32gui.NIF_*, CallbackMessage, hicon, Tooltip text (opt), Balloon tooltip text (opt), Timeout (ms), title (opt),  win32gui.NIIF_*)
     return
 
+def daemon_is_runnung():
+    ''' TODO
+    prebuild fct ? google will help
+    or:
+    get PID
+    if lock file
+        read it
+        search this PID
+        if running: quit
+    write lock file
+    class __del__ destroy lock
+    '''
+    return
+
 class ahk():
     def __init__(self):
         self.ahk_mods = {}

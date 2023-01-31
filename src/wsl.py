@@ -95,20 +95,20 @@ class terminator(feature.main):
             cmd +=      " && echo 'mkdir -p " + driveL + "' >> " + file
             cmd +=      " && echo 'mount -t drvfs \'" + driveW + "\\\' " + driveL + " -o rw,noatime,uid=1000,gid=1000,case=off' >> " + file
             # or -o metadata
-            #(rw,noatime,uid=1000,gid=1000,case=off)
             cmd +=      " && echo 'EOF' >> " + file
             cmd +=      " && echo 'cd " + pathL + "' >> " + file
             cmd +=  ") >> /dev/null"
             wsl_cmd = [self.wsl, 'bash', '-c', cmd]
             x = subprocess.Popen( wsl_cmd, shell=True)
             x.wait()
-        wsl_cmd = [self.wsl, 'bash', '-c', '\'DISPLAY=localhost' + x_nb + ' terminator --working-directory=' + pathL +'\'']
-        #x = os.popen(general.RealPath("powershell")+" -Command  \"$host.ui.RawUI.WindowTitle ='" +wsl_cmd[0] + "'; " + ' '.join(wsl_cmd) +"\"")      
-        exit_code = os.spawnv(os.P_WAIT, general.RealPath("powershell"),[general.RealPath("powershell"), "-Command", "\"$host.ui.RawUI.WindowTitle ='" +wsl_cmd[0] + "'; " + ' '.join(wsl_cmd) +"\""])
-        if exit_code == 0:
-            return "Terminator started"
-        else:
-            return "Failed to start Terminator"
+        wsl_cmd = [self.wsl, 'bash', '-c', 'DISPLAY=localhost' + x_nb + ' terminator --working-directory=' + pathL +'']
+        exit_code = subprocess.Popen(wsl_cmd, shell=True)
+        return "Start Terminator"
+        #OK:exit_code = os.spawnv(os.P_WAIT, general.RealPath("powershell"),[general.RealPath("powershell"), "-Command", "\"$host.ui.RawUI.WindowTitle ='" +wsl_cmd[0] + "'; " + ' '.join(wsl_cmd) +"\""])
+        #if exit_code == 0:
+        #    return "Terminator started"
+        #else:
+        #    return "Failed to start Terminator"
 
 
 def _Path_Win2Lin(pathW):

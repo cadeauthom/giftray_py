@@ -233,6 +233,8 @@ class MainClass(object):
             self.conf=os.getcwd()+'/'+self.name+".conf"
         elif os.path.isfile(os.getcwd()+'/conf/'+self.name+".conf") :
             self.conf=os.getcwd()+'/conf/'+self.name+".conf"
+        elif os.path.isfile(os.getcwd()+'/../conf/'+self.name+'.conf') :
+            self.conf=os.getcwd()+'/../conf/'+self.name+'.conf'
         elif os.path.isfile(os.getcwd()+'/../../conf/'+self.name+'.conf') :
             self.conf=os.getcwd()+'/../../conf/'+self.name+'.conf'
         else :
@@ -260,7 +262,7 @@ class MainClass(object):
                             self.conf_loglevel = levelname.casefold()
                             self.logger.setLevel(level=LevelNamesMapping[levelname])
                         else:
-                            print("nop")
+                            self.logger.error('LogLevel->'+k+"not supported")
                     elif k.casefold() == 'Ico'.casefold():
                         self.conf_ico = str(config[section][k])
                     elif k.casefold() == 'IcoPath'.casefold():
@@ -315,10 +317,16 @@ class MainClass(object):
         return 0
 
     def _set_icon(self):
-        self.iconPath=icon.ValidateIconPath(path    = self.conf_icoPath,
-                                            color   = self.conf_colormainicon,
-                                            project = self.name)
-        print(icon.GetTrayIcon(color="blue",project=self.name))
+        if self.conf_colormainicon:
+            self.iconPath=icon.ValidateIconPath(path    = self.conf_icoPath,
+                                                color   = self.conf_colormainicon,
+                                                project = self.name)
+        else:
+            self.iconPath=icon.ValidateIconPath(path    = self.conf_icoPath,
+                                                project = self.name)
+        sicon = icon.GetTrayIcon(color="blue",project=self.name)
+        print(self.tray.setIcon(sicon))
+        time.sleep(3)
         if self.conf_ico:
             self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.conf_ico)
         else:
@@ -327,7 +335,7 @@ class MainClass(object):
             self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.name+".ico")
 
         #Set ico to Tray
-        self.tray.setIcon(self.main_sicon)
+        print(self.tray.setIcon(self.main_sicon))
 
         #Save info of ico for conf
         d_path_ico = icon.GetIcon(
@@ -518,7 +526,7 @@ class MainClass(object):
                 self.logger.debug('Kill '+show +' after '+str(duration.seconds)+' sec')
                 th.kill()
             else:
-                self.logger.debug(show+ ' ended'+' after '+str(duration.seconds)+' sec')
+                self.logger.debug(show+ ' ran in '+str(duration.seconds)+' sec')
             #few seconds before releasing lock
             #TODO: releasing lock time in configuration
             time.sleep(3)

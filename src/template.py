@@ -18,7 +18,7 @@ class template(feature.main):
         #initialisation of path and other variable
         self.localvar = [self.localopt]
         #log useful info
-        self.giftray.logger.info("set localvar to " + ' '.join(self.localvar))
+        self.giftray.logger.info("template:set localvar to " + ' '.join(self.localvar))
         return
 
     def _custom_get_opt(self):

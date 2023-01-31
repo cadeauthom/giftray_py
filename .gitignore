@@ -2,6 +2,10 @@ build/
 dist/
 tmp/
 upx*/
+MSIX*/
+wix/
 src/__pycache__/
 *.log
+*.zip
 modules/
+*.swp

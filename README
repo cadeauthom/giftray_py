@@ -23,6 +23,9 @@ UPX-PATH=$(wslpath -w $(ls -d upx*-win64 | sort | tail -1))
 curl -s https://api.github.com/repos/microsoft/MSIX-Toolkit/releases | grep "browser_download_url.*64.zip" |head -1| cut -d '"' -f 4  |wget -qi  -
 unzip MSIX-*64.zip
 
+curl -s https://api.github.com/repos/wixtoolset/wix3/releases/latest | grep "browser_download_url.*64.zip" |head -1| cut -d '"' -f 4  |wget -qi -
+mkdir wix; cd wix; unzip ../wix*.zip
+
 # Build
 
 wpython -m PyInstaller --onefile test.py

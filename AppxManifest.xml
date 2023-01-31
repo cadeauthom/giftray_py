@@ -3,7 +3,7 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
-  <Identity Name="GifTray" Version="2.0.0.0" Publisher="CN=Rainette" ProcessorArchitecture="x64" />
+  <Identity Name="GifTray" Version="1.0.0.0" Publisher="CN=Rainette" ProcessorArchitecture="neutral" />
   <Properties>
     <DisplayName>GifTray</DisplayName>
     <PublisherDisplayName>Rainette</PublisherDisplayName>
