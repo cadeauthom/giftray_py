@@ -21,9 +21,11 @@ import PyQt6.QtWidgets, PyQt6.QtGui
 import notifypy
 import functools
 
-import general
-import icon
-import feature
+from . import _general
+from . import _icon
+#from . import feature
+#from . import _template
+from . import _wsl
 
 '''
 #when (function), development is planned, not done yet
@@ -87,7 +89,7 @@ def run(self):
     should desappear
 '''
 
-class MainClass(object):
+class program(object):
     def __init__(self):
         self.stop_process       = False
         def signal_handler(signum, frame):
@@ -108,7 +110,7 @@ class MainClass(object):
         self._load_modules      ( self.modules )
         self._reload            ()
         self.logger.info        ("Entering wait state")
-        th = general.KThread(target=self._flush_thread)
+        th = _general.KThread(target=self._flush_thread)
         th.start()
         timer = PyQt6.QtCore.QTimer()
         timer.start(500)  # You may change this if you wish.
@@ -150,16 +152,16 @@ class MainClass(object):
             if self.ahk_thread.is_alive():
                 #self.ahk_thread.kill()
                 ctypes.windll.user32.PostThreadMessageW(self.ahk_thread.native_id, win32con.WM_QUIT, 0, 0)
-        self.ahk_thread         = general.KThread(target=self._ahk_thread)
+        self.ahk_thread         = _general.KThread(target=self._ahk_thread)
         if hasattr(self, "lock"):
             if self.lock.locked():
                 self.lock.release()
         else:
-            self.lock               = general.Lock()
+            self.lock               = _general.Lock()
         if hasattr(self, "ahk_translator"):
             pass
         else:
-            self.ahk_translator = general.ahk()
+            self.ahk_translator = _general.ahk()
         if hasattr(self, "error"):
             self.error.clear()
         else:
@@ -203,18 +205,17 @@ class MainClass(object):
     def _load_modules(self,mods):
         self.avail = []
         for m in mods:
-            try :
-                tmp = importlib.import_module(m)
-            except Exception as e:
-                e_str = str(e)
-                print("Module '" +m+ "' not loaded: "+e_str)
-                self.logger.error("Module '" +m+ "' not loaded: "+e_str)
+            mod=self.name+'._'+m
+            if not mod in sys.modules:
+                print("Module '" +m+ "' not loaded")
+                self.logger.error("Module '" +m+ "' not loaded")
                 continue
+            tmp = importlib.import_module(mod)
             for fct, obj in inspect.getmembers(tmp):
                 if not (inspect.isclass(obj) and fct != 'main'):
                     continue
                 full = m+"."+fct
-                if m != obj.__module__:
+                if mod != obj.__module__:
                     self.logger.error("Issue while loading '" +full+ "': mismatch modules name: '"+m+"'!='"+obj.__module__+"'")
                     continue
                 if fct != obj.__name__:
@@ -291,8 +292,9 @@ class MainClass(object):
                     continue
                 split_section = fct.split(".")
                 module = split_section[0]
+                mod = self.name+'._'+module
                 feat = split_section[1]
-                if not module in sys.modules.keys():
+                if not mod in sys.modules.keys():
                     self.error[section] = "Module '"+module+"' not loaded"
                     self.logger.error("Module '"+module+"' not loaded for '"+section+"'")
                     continue
@@ -300,7 +302,7 @@ class MainClass(object):
                     self.error[section] = "'"+feat+"' not defined in module '" +module + "'"
                     self.logger.error("'"+feat+"' not defined in module '" +module+"' from '"+section+"'")
                     continue
-                new_class = general.str_to_class(module,feat)(section,config[section],self)
+                new_class = _general.str_to_class(mod,feat)(section,config[section],self)
                 ahk, hhk = new_class.get_hk()
                 if len(ahk)>2 and "key" in hhk:
                     if ahk in self.ahk:
@@ -318,28 +320,28 @@ class MainClass(object):
 
     def _set_icon(self):
         if self.conf_colormainicon:
-            self.iconPath=icon.ValidateIconPath(path    = self.conf_icoPath,
+            self.iconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
                                                 color   = self.conf_colormainicon,
                                                 project = self.name)
         else:
-            self.iconPath=icon.ValidateIconPath(path    = self.conf_icoPath,
+            self.iconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
                                                 project = self.name)
-        sicon = icon.GetTrayIcon(color="blue",project=self.name)
+        sicon = _icon.GetTrayIcon(color="blue",project=self.name)
         print(self.tray.setIcon(sicon))
         time.sleep(3)
         if self.conf_ico:
-            self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.conf_ico)
+            self.main_sicon, self.main_hicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.conf_ico)
         else:
-            self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.name+"-0.ico")
+            self.main_sicon, self.main_hicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.name+"-0.ico")
         if not path_ico or "default_default" in path_ico:
-            self.main_sicon, self.main_hicon, path_ico = icon.GetIcon(self.iconPath, self, ico=self.name+".ico")
+            self.main_sicon, self.main_hicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.name+".ico")
 
         #Set ico to Tray
         print(self.tray.setIcon(self.main_sicon))
 
         #Save info of ico for conf
-        d_path_ico = icon.GetIcon(
-                            icon.ValidateIconPath(path = "", color   = self.conf_colormainicon, project = self.name),
+        d_path_ico = _icon.GetIcon(
+                            _icon.ValidateIconPath(path = "", color   = self.conf_colormainicon, project = self.name),
                             self,
                             ico=self.name+"-0.ico")[2]
         print(path_ico)
@@ -381,7 +383,7 @@ class MainClass(object):
         print("conf_ico             = "+self.conf_ico)
 
         #Get ico path
-        self.iconPath=icon.ValidateIconPath(path    = self.conf_icoPath,
+        self.iconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
                                             color   = self.conf_coloricons,
                                             project = self.name)
 
@@ -439,7 +441,7 @@ class MainClass(object):
 
         # loop on modules in error
         menu_err = PyQt6.QtWidgets.QMenu('In error',self.tray_menu)
-        sicon_err, _, _ = icon.GetIcon(self.iconPath, self, ico='default_empty.ico')
+        sicon_err, _, _ = _icon.GetIcon(self.iconPath, self, ico='default_empty.ico')
         for i in self.error:
             act=PyQt6.QtGui.QAction(sicon_err,i,menu_err)
             act.triggered.connect(functools.partial(self._error, i, self.error[i]))
@@ -464,7 +466,7 @@ class MainClass(object):
         self.tray_menu.addSeparator()
 
         # Define menu default actions
-        sicon, hicon, picon = icon.GetIcon(self.iconPath, self, ico='default_generator.ico')
+        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_generator.ico')
         act=PyQt6.QtGui.QAction('Generate HotKey',self.tray_menu)
         if picon:
             act.setIcon(sicon)
@@ -472,26 +474,26 @@ class MainClass(object):
         #act.setStatusTip('not developed')
         #act.setShortcut('Ctrl+R')
         self.tray_menu.addAction(act)
-        sicon, hicon, picon = icon.GetIcon(self.iconPath, self, ico='default_showconf.ico')
+        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_showconf.ico')
         act=PyQt6.QtGui.QAction('Show current configuration',self.tray_menu)
         if picon:
             act.setIcon(sicon)
         act.setDisabled(True)
         self.tray_menu.addAction(act)
-        sicon, hicon, picon = icon.GetIcon(self.iconPath, self, ico='default_about.ico')
+        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_about.ico')
         act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
         if picon:
             act.setIcon(sicon)
         act.triggered.connect(self._about)
         self.tray_menu.addAction(act)
-        sicon, hicon, picon = icon.GetIcon(self.iconPath, self, ico='default_reload.ico')
+        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_reload.ico')
         act=PyQt6.QtGui.QAction('Reload '+self.showname,self.tray_menu)
         if picon:
             act.setIcon(sicon)
         act.triggered.connect(self._reload)
         self.tray_menu.addAction(act)
         self.tray_menu.addSeparator()
-        sicon, hicon, picon = icon.GetIcon(self.iconPath, self, ico='default_exit.ico')
+        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_exit.ico')
         act=PyQt6.QtGui.QAction('Exit '+self.showname,self.tray_menu)
         if picon:
             act.setIcon(sicon)
@@ -518,7 +520,7 @@ class MainClass(object):
             start_time = datetime.datetime.now()
             show = action.show+start_time.strftime(" [%H%M%S]")
             self.logger.debug('Run '+show)
-            th = general.KThread(target=action.run)
+            th = _general.KThread(target=action.run)
             th.start()
             th.join(10)
             duration = datetime.datetime.now() - start_time
@@ -538,7 +540,7 @@ class MainClass(object):
         if self.lock.locked():
             self.logger.debug('Lock locked for ' + self.install[feature].show)
             return
-        a=general.KThread(target=self._run_thread,args=[feature])
+        a=_general.KThread(target=self._run_thread,args=[feature])
         a.start()
         return
 

@@ -2,10 +2,10 @@
 #import sys
 #import subprocess
 
-import feature
-import general
+from . import _feature
+from . import _general
 
-class template(feature.main):
+class template(_feature.main):
     def _custom_init(self,others):
         self.localopt = "value"
         for i in others:

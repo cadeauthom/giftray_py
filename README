@@ -9,6 +9,7 @@ wpython -m pip install --upgrade pip
 wpython -m pip install --upgrade wheel setuptools future_fstrings
 wpython -m pip install --upgrade pyinstaller pywin32 psutil
 wpython -m pip install --upgrade PyQt6 notify-py
+wpython -m pip install --upgrade cx_Freeze
 #wpython -m pip install numpy
 #wpython -m pip install Pyside2
 #wpython -m pip install keyboard

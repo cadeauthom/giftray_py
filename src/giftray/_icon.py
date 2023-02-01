@@ -79,7 +79,7 @@ def _ValidateIconPath_sub(path="",color="black",project=""):
         arrpath.append(os.path.dirname(sys.executable))
     arrpath.append(os.getcwd())
     for thispath in arrpath:
-        for endpath in [["icons"],["..","icons"],["build","icons"],["build","exe","icons"]]:
+        for endpath in [["icons"],["..","icons"],["build","icons"],["build","exe","icons"],["..","build","icons"]]:
             path = thispath
             for k in endpath:
                 path = posixpath.join( path, k)

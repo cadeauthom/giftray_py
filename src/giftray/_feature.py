@@ -1,5 +1,5 @@
-import icon
-import general
+from . import _icon
+from . import _general
 
 '''
 def __init__(self,show,val,giftray):
@@ -59,12 +59,12 @@ class main:
         self._custom_init(others)
         iconPath = ""
         if (self.color and self.color!=self.giftray.coloricons):
-            iconPath = icon.ValidateIconPath( path    = self.giftray.iconPath,\
+            iconPath = _icon.ValidateIconPath( path    = self.giftray.iconPath,\
                                               color   = self.color, \
                                               project = self.giftray.name)
         if not iconPath:
             iconPath = self.giftray.iconPath
-        self.sicon, self.hicon, self.used_ico = icon.GetIcon(iconPath, giftray, self.ico)
+        self.sicon, self.hicon, self.used_ico = _icon.GetIcon(iconPath, giftray, self.ico)
         if self.ahk:
             self.hhk, self.ahk, err = giftray.ahk_translator.ahk2hhk(self.ahk)
             if len(err):
@@ -97,7 +97,7 @@ class main:
             out = "Action '" +self.show+ "' failed: "+e_str
         #return out
         if out:
-            general.popup(self.giftray.main_hicon, self.show, out)
+            _general.popup(self.giftray.main_hicon, self.show, out)
         return
 
     def _custom_run(self):

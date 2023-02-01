@@ -4,11 +4,11 @@ import psutil
 import time
 import subprocess
 
-import feature
-import general
+from . import _feature
+from . import _general
 
 #TODO: move terminator to generic gui
-class terminator(feature.main):
+class terminator(_feature.main):
     def _custom_init(self,others):
         self.confvcxsrv = ""
         self.vcxsrv = ""
@@ -37,7 +37,7 @@ class terminator(feature.main):
             self.giftray.logger.error("'vcxsrv' path is not defined in '" +self.show+"'")
             self.error.append("'vcxsrv' path not defined")
         else:
-            tmp = general.RealPath(self.confvcxsrv)
+            tmp = _general.RealPath(self.confvcxsrv)
             if not tmp:
                 self.giftray.logger.error("'vcxsrv' does not exist in '" +self.show+"' ("+self.confvcxsrv+")")
                 self.error.append("'vcxsrv' ("+self.confvcxsrv+") does not exist")
@@ -45,7 +45,7 @@ class terminator(feature.main):
                 self.giftray.logger.info("'vcxsrv' set to "+tmp)
                 self.vcxsrv = tmp
         #not putting C:\Windows\System32\ in case windows upgrade changes the path
-        tmp = general.RealPath("wsl.exe")
+        tmp = _general.RealPath("wsl.exe")
         if not tmp:
             self.giftray.logger.error("WSL seems not installed on the system")
             self.error.append("WSL not found")
@@ -82,7 +82,7 @@ class terminator(feature.main):
             if x.poll() != None:
                 self.giftray.logger.error("Fail to start vcxsrv in '" +self.show+"' ("+' '.join(x_cmd)+")")
                 return "Fail to start vcxsrv : "+' '.join(x_cmd)
-        pathW = general.GetCurrentPath()
+        pathW = _general.GetCurrentPath()
         pathL,driveW,driveL = _Path_Win2Lin(pathW)
         if driveW != "":
             file = '~/.bash_mount_msg.sh'
@@ -104,7 +104,7 @@ class terminator(feature.main):
         wsl_cmd = [self.wsl, 'bash', '-c', 'DISPLAY=localhost' + x_nb + ' terminator --working-directory=' + pathL +'']
         exit_code = subprocess.Popen(wsl_cmd, shell=True)
         return "Start Terminator"
-        #OK:exit_code = os.spawnv(os.P_WAIT, general.RealPath("powershell"),[general.RealPath("powershell"), "-Command", "\"$host.ui.RawUI.WindowTitle ='" +wsl_cmd[0] + "'; " + ' '.join(wsl_cmd) +"\""])
+        #OK:exit_code = os.spawnv(os.P_WAIT, _general.RealPath("powershell"),[_general.RealPath("powershell"), "-Command", "\"$host.ui.RawUI.WindowTitle ='" +wsl_cmd[0] + "'; " + ' '.join(wsl_cmd) +"\""])
         #if exit_code == 0:
         #    return "Terminator started"
         #else:
