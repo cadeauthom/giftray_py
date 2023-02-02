@@ -37,3 +37,14 @@ wpython -m PyInstaller --noconfirm --upx-dir="$UPX-PATH" --icon virtualBox_KillV
 wpython src/giftray.py
 kill $(ps aux | grep python | grep init | sed -e 's-^\w\+\s\+\([0-9]\+\)\s\+.\+$-\1-g')
 tail -f giftray.log
+
+
+#Windows
+#	script (command, admin)
+#		C:\Windows\System32\powercfg.exe /hibernate on
+#		hibernate
+#	Reload Driver
+#	WinAlwaysontop
+#	kill process/service
+#android	connect (nmap, scrcpy)
+#VM start/stop VMs

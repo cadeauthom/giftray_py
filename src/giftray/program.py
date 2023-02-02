@@ -26,6 +26,7 @@ from . import _icon
 #from . import feature
 #from . import _template
 from . import _wsl
+from . import _windows
 
 '''
 #when (function), development is planned, not done yet
@@ -467,6 +468,10 @@ class program(object):
         self.tray_menu.addSeparator()
 
         # Define menu default actions
+        #ToDo generator Gui
+        #ToDo conf Gui
+        #ToDo about Gui
+        #ToDo update link
         sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_generator.ico')
         act=PyQt6.QtGui.QAction('Generate HotKey',self.tray_menu)
         if picon:
