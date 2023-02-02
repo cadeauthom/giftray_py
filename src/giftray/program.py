@@ -26,6 +26,7 @@ from . import _icon
 #from . import feature
 #from . import _template
 from . import _wsl
+from . import _windows
 
 '''
 #when (function), development is planned, not done yet
@@ -327,8 +328,8 @@ class program(object):
             self.iconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
                                                 project = self.name)
         sicon = _icon.GetTrayIcon(color="blue",project=self.name)
-        print(self.tray.setIcon(sicon))
-        time.sleep(3)
+        self.tray.setIcon(sicon)
+        #time.sleep(3)
         if self.conf_ico:
             self.main_sicon, self.main_hicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.conf_ico)
         else:
@@ -337,50 +338,51 @@ class program(object):
             self.main_sicon, self.main_hicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.name+".ico")
 
         #Set ico to Tray
-        print(self.tray.setIcon(self.main_sicon))
+        self.tray.setIcon(self.main_sicon)
 
         #Save info of ico for conf
         d_path_ico = _icon.GetIcon(
                             _icon.ValidateIconPath(path = "", color   = self.conf_colormainicon, project = self.name),
                             self,
                             ico=self.name+"-0.ico")[2]
-        print(path_ico)
-        print(d_path_ico)
-        if not path_ico:
-            self.conf_icoPath       = ""
-            self.conf_ico           = ""
-            self.conf_colormainicon = ""
-        else:
-            name_ico     = os.path.basename(path_ico)
-            path_ico     = os.path.dirname(path_ico)
-            col_ico      = os.path.basename(path_ico)
-            path_ico     = os.path.dirname(path_ico)
-            if not d_path_ico:
-                if self.conf_colormainicon:
-                    self.conf_icoPath = path_ico
-                    self.conf_colormainicon = col_ico
-                else:
-                    self.conf_icoPath = posixpath.join(path_ico,col_ico)
-                self.conf_ico = name_ico
+        if False:
+            print(path_ico)
+            print(d_path_ico)
+            if not path_ico:
+                self.conf_icoPath       = ""
+                self.conf_ico           = ""
+                self.conf_colormainicon = ""
             else:
-                d_name_ico  = os.path.basename(d_path_ico)
-                d_path_ico  = os.path.dirname(d_path_ico)
-                d_col_ico   = os.path.basename(d_path_ico)
-                d_path_ico  = os.path.dirname(d_path_ico)
-                if (d_name_ico != name_ico):
-                    self.conf_ico = name_ico
-                if (d_path_ico != path_ico):
+                name_ico     = os.path.basename(path_ico)
+                path_ico     = os.path.dirname(path_ico)
+                col_ico      = os.path.basename(path_ico)
+                path_ico     = os.path.dirname(path_ico)
+                if not d_path_ico:
                     if self.conf_colormainicon:
                         self.conf_icoPath = path_ico
                         self.conf_colormainicon = col_ico
                     else:
                         self.conf_icoPath = posixpath.join(path_ico,col_ico)
+                    self.conf_ico = name_ico
                 else:
-                    self.conf_colormainicon = col_ico
-        print("conf_colormainicon   = "+self.conf_colormainicon)
-        print("conf_coloricons      = "+self.conf_coloricons)
-        print("conf_icoPath         = "+self.conf_icoPath)
-        print("conf_ico             = "+self.conf_ico)
+                    d_name_ico  = os.path.basename(d_path_ico)
+                    d_path_ico  = os.path.dirname(d_path_ico)
+                    d_col_ico   = os.path.basename(d_path_ico)
+                    d_path_ico  = os.path.dirname(d_path_ico)
+                    if (d_name_ico != name_ico):
+                        self.conf_ico = name_ico
+                    if (d_path_ico != path_ico):
+                        if self.conf_colormainicon:
+                            self.conf_icoPath = path_ico
+                            self.conf_colormainicon = col_ico
+                        else:
+                            self.conf_icoPath = posixpath.join(path_ico,col_ico)
+                    else:
+                        self.conf_colormainicon = col_ico
+            print("conf_colormainicon   = "+self.conf_colormainicon)
+            print("conf_coloricons      = "+self.conf_coloricons)
+            print("conf_icoPath         = "+self.conf_icoPath)
+            print("conf_ico             = "+self.conf_ico)
 
         #Get ico path
         self.iconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
@@ -427,13 +429,13 @@ class program(object):
         # loop on modules for main menu and for Not Clickable
         menu_not = PyQt6.QtWidgets.QMenu('Not clickable',self.tray_menu)
         for i in self.install:
-            if i in self.menu:
+            if i in self.error:
+                # not filling here since not defined action are in error but not in install
+                pass
+            elif i in self.menu:
                 act = PyQt6.QtGui.QAction(self.install[i].sicon,i,self.tray_menu)
                 act.triggered.connect(functools.partial(self._run_action, i))
                 self.tray_menu.addAction(act)
-            elif i in self.error:
-                # not filling here since not defined action are in error but not in install
-                pass
             else:
                 act = PyQt6.QtGui.QAction(self.install[i].sicon,i,menu_not)
                 act.setDisabled(True)
@@ -466,6 +468,10 @@ class program(object):
         self.tray_menu.addSeparator()
 
         # Define menu default actions
+        #ToDo generator Gui
+        #ToDo conf Gui
+        #ToDo about Gui
+        #ToDo update link
         sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_generator.ico')
         act=PyQt6.QtGui.QAction('Generate HotKey',self.tray_menu)
         if picon:

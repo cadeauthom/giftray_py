@@ -31,7 +31,7 @@ class main:
         self.show    = show
         self.module  = type(self).__module__
         self.name    = type(self).__name__
-        self.ico     = self.module+"_"+self.name+".ico"
+        self.ico     = self.module[(len(self.giftray.name)+2):]+"_"+self.name+".ico"
         self.used_ico= ""
         self.ahk     = ""
         self.menu    = False
@@ -88,13 +88,16 @@ class main:
         return []
 
     def run(self):
-        try:
-            out = self._custom_run()
-        except Exception as e:
-            e_str = str(e)
-            print("Action '" +self.show+ "' failed: "+e_str)
-            self.giftray.logger.error("Action '" +self.show+ "' failed: "+e_str)
-            out = "Action '" +self.show+ "' failed: "+e_str
+        if self.error:
+            out = self.error
+        else:
+            try:
+                out = self._custom_run()
+            except Exception as e:
+                e_str = str(e)
+                print("Action '" +self.show+ "' failed: "+e_str)
+                self.giftray.logger.error("Action '" +self.show+ "' failed: "+e_str)
+                out = "Action '" +self.show+ "' failed: "+e_str
         #return out
         if out:
             _general.popup(self.giftray.main_hicon, self.show, out)
@@ -110,13 +113,6 @@ class main:
         if self.error:
             return False
         return True
-
-    # def is_defined(self):
-        # if self.hhk:
-            # return True
-        # if self.menu:
-            # return True
-        # return False
 
     def is_in_menu(self):
         return self.menu

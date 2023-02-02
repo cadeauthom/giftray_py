@@ -7,12 +7,51 @@ import subprocess
 from . import _feature
 from . import _general
 
+wsl_path = _general.RealPath('wsl.exe')
+
+class proxy(_feature.main):
+    def _custom_init(self,others):
+        self.host = ""
+        self.port = 8080
+        for i in others:
+            k = i.casefold()
+            if k == "host".casefold():
+                self.host = others[i]
+            elif k == "port".casefold():
+                try:
+                    self.port = int(others[i])
+                except ValueError:
+                    self.giftray.logger.error("'port' is not an integer in '" +self.show+"'")
+                    self.error.append("'port' not an intger")
+                if self.vcxsrv_timeout < 0 :
+                    self.giftray.logger.error("'port' is not positive in '" +self.show+"'")
+                    self.error.append("'port' not positive")
+            else:
+                self.giftray.logger.error("'"+i+"' not defined in '" +self.show+"'")
+                self.error.append("'"+i+"' not defined")
+        if not self.host:
+            self.giftray.logger.error("host not set in '" +self.show+"'")
+            self.error.append("host not set in '" +self.show+"'")
+        if not wsl_path:
+            self.giftray.logger.error("WSL seems not installed on the system")
+            self.error.append("WSL not found")
+        return
+
+    def _custom_get_opt(self):
+        return ["host","port"]
+
+    def _custom_run(self):
+        cmd = 'ssh -C2qTnNf ' + self.host +' -D ' + str(self.port)
+        wsl_cmd = [wsl_path, 'bash', '-c', 'ps aux | grep "'+cmd+'" |grep -v grep || '+cmd]
+        exit_code = subprocess.Popen(wsl_cmd, shell=True)
+        return 'Start Proxy '+self.host+' on port '+ str(self.port)
+
 #TODO: move terminator to generic gui
 class terminator(_feature.main):
     def _custom_init(self,others):
         self.confvcxsrv = ""
         self.vcxsrv = ""
-        self.wsl = ""
+        # self.wsl = ""
         self.vcxsrv_timeout = 2
         for i in others:
             k = i.casefold()
@@ -45,13 +84,13 @@ class terminator(_feature.main):
                 self.giftray.logger.info("'vcxsrv' set to "+tmp)
                 self.vcxsrv = tmp
         #not putting C:\Windows\System32\ in case windows upgrade changes the path
-        tmp = _general.RealPath("wsl.exe")
-        if not tmp:
+        #tmp = _general.RealPath("wsl.exe")
+        if not wsl_path:
             self.giftray.logger.error("WSL seems not installed on the system")
             self.error.append("WSL not found")
-        else:
-            self.giftray.logger.info("'wsl' set to "+tmp)
-            self.wsl = tmp
+        # else:
+            # self.giftray.logger.info("'wsl' set to "+tmp)
+            # self.wsl = tmp
         return
 
     def _custom_get_opt(self):
@@ -98,10 +137,10 @@ class terminator(_feature.main):
             cmd +=      " && echo 'EOF' >> " + file
             cmd +=      " && echo 'cd " + pathL + "' >> " + file
             cmd +=  ") >> /dev/null"
-            wsl_cmd = [self.wsl, 'bash', '-c', cmd]
+            wsl_cmd = [self.wsl_path, 'bash', '-c', cmd]
             x = subprocess.Popen( wsl_cmd, shell=True)
             x.wait()
-        wsl_cmd = [self.wsl, 'bash', '-c', 'DISPLAY=localhost' + x_nb + ' terminator --working-directory=' + pathL +'']
+        wsl_cmd = [wsl_path, 'bash', '-c', 'DISPLAY=localhost' + x_nb + ' terminator --working-directory=' + pathL +'']
         exit_code = subprocess.Popen(wsl_cmd, shell=True)
         return "Start Terminator"
         #OK:exit_code = os.spawnv(os.P_WAIT, _general.RealPath("powershell"),[_general.RealPath("powershell"), "-Command", "\"$host.ui.RawUI.WindowTitle ='" +wsl_cmd[0] + "'; " + ' '.join(wsl_cmd) +"\""])
