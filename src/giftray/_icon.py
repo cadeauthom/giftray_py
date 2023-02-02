@@ -36,20 +36,20 @@ def GetTrayIcon(color="black",project=""):
             # hicon = _GetTrayIcon(rec)
             # if hicon:
                 # return hicon
-        print(p)
-        icons = win32gui.ExtractIconEx(p, 0,10)
-        print(icons)
-        info = win32gui.GetIconInfo(icons[0][0])
-        print(dir(PyQt6.QtGui.QPixmap))
-        pixmap = PyQt6.QtGui.QPixmap.fromWinHBITMAP(info[4])
-        print(pixmap)
-        info[3].close()
-        print(info[3])
-        info[4].close()
-        print(info[4])
-        icon=PyQt6.QtGui.QIcon(pixmap)
-        print(icon)
-        return icon
+        # print(p)
+        # icons = win32gui.ExtractIconEx(p, 0,10)
+        # print(icons)
+        # info = win32gui.GetIconInfo(icons[0][0])
+        # print(dir(PyQt6.QtGui.QPixmap))
+        # pixmap = PyQt6.QtGui.QPixmap.fromWinHBITMAP(info[4])
+        # print(pixmap)
+        # info[3].close()
+        # print(info[3])
+        # info[4].close()
+        # print(info[4])
+        # icon=PyQt6.QtGui.QIcon(pixmap)
+        # print(icon)
+        # return icon
     except:
         pass
     # too dark

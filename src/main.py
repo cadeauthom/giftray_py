@@ -2,7 +2,6 @@ import giftray
 
 if __name__ == '__main__':
     #import itertools, glob
-    print(dir(giftray))
     a=giftray.program()
 
     '''
