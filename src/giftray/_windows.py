@@ -1,6 +1,6 @@
 #import os
 #import sys
-#import subprocess
+import subprocess
 
 from . import _feature
 from . import _general
@@ -37,8 +37,11 @@ class script(_feature.main):
         return ["cmd","args","admin"]
 
     def _custom_run(self):
-        out = self.cmd+' '+self.args
-        cmd = '& { Start-Process "'+out
+        out = self.cmd
+        cmd = '& { Start-Process "'+self.cmd+'"'
+        if self.args:
+            cmd += ' -ArgumentList "' + self.args+'"'
+            out += ' ' + self.args
         if self.admin:
             cmd += ' -Verb RunAs'
             out += ' as admin'

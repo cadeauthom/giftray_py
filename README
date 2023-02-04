@@ -48,3 +48,5 @@ tail -f giftray.log
 #	kill process/service
 #android	connect (nmap, scrcpy)
 #VM start/stop VMs
+
+TODO: get_opt => get_help

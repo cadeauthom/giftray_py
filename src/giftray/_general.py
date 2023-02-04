@@ -46,6 +46,8 @@ def GetCurrentPath():
 def RealPath(app):
     if not app:
         return
+    if os.path.exists(app):
+        return app
     return shutil.which(app)
 
 def str_to_class(module,feat):
