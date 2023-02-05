@@ -6,13 +6,13 @@ import signal
 import inspect
 import time
 import datetime
-import win32api         # package pywin32
+#import win32api         # package pywin32
 import win32con
 import configparser
 try:
-    import winxpgui as win32gui
-except ImportError:
     import win32gui
+except ImportError:
+    import winxpgui as win32gui
 # import win32gui_struct
 import logging
 import importlib
@@ -300,6 +300,7 @@ class program(object):
                     self.logger.error("Module '"+module+"' not loaded for '"+section+"'")
                     continue
                 if not fct in self.avail:
+                    print (fct)
                     self.error[section] = "'"+feat+"' not defined in module '" +module + "'"
                     self.logger.error("'"+feat+"' not defined in module '" +module+"' from '"+section+"'")
                     continue
@@ -578,7 +579,7 @@ class program(object):
             else:
                 self.install[self.ahk[ahk]].error.append("Fail to register Hotkey ("+ahk+")")
                 self.error[self.ahk[ahk]]=self.install[self.ahk[ahk]].print_error(sep=",",prefix="")
-                self.logger.err("fail to register"+str(ahk))
+                self.logger.error("fail to register"+str(ahk))
         msg = ctypes.wintypes.MSG()
         while ctypes.windll.user32.GetMessageA(ctypes.byref(msg), None, 0, 0) != 0:
             if msg.message == win32con.WM_HOTKEY:
