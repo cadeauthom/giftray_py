@@ -5,11 +5,10 @@ import trace, threading
 import win32con
 import win32api
 import win32process
-
 try:
-    import winxpgui as win32gui
-except ImportError:
     import win32gui
+except ImportError:
+    import winxpgui as win32gui
 
 handle_ToolbarWindow32 = []
 def _callback_enumChildWindows(handle, arg):
@@ -43,9 +42,25 @@ def GetCurrentPath():
         return
     return
 
+
+def _callback_EnumHandler( hwnd, ctx ):
+    if win32gui.IsWindowVisible( hwnd ):
+        dwExStyle = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE );
+        if ((dwExStyle  & win32con.WS_EX_TOPMOST) == win32con.WS_EX_TOPMOST):
+            print(hex( hwnd ), win32gui.GetClassName(hwnd),win32gui.GetWindowText( hwnd ))
+        # if ((dwExStyle & win32con.HWND_TOPMOST) != 0):
+            # print("HWND_TOPMOST")
+def GetAllWindowsName():
+    print("a")
+    handle_ToolbarWindow32.clear()
+    win32gui.EnumWindows( _callback_EnumHandler, None )
+    print(handle_ToolbarWindow32)
+
 def RealPath(app):
     if not app:
         return
+    if os.path.exists(app):
+        return app
     return shutil.which(app)
 
 def str_to_class(module,feat):

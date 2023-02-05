@@ -51,3 +51,4 @@ tail -f giftray.log
 #Sound (mute mic/sound, volume)
 #android
 #   = connect (nmap, scrcpy)
+TODO: get_opt => get_help
