@@ -40,11 +40,14 @@ tail -f giftray.log
 
 
 #Windows
-#	script (command, admin)
-#		C:\Windows\System32\powercfg.exe /hibernate on
-#		hibernate
-#	Reload Driver
-#	WinAlwaysontop
-#	kill process/service
-#android	connect (nmap, scrcpy)
-#VM start/stop VMs
+#	= script (command, admin) + env var
+#		- C:\Windows\System32\powercfg.exe /hibernate on
+#		- hibernate
+#	    - kill process/service (several)
+#       - VM start/stop VMs
+#       - mount Vera
+#	= Reload Driver (reload mic - regedit)
+#	= WinAlwaysontop
+#Sound (mute mic/sound, volume)
+#android
+#   = connect (nmap, scrcpy)
