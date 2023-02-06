@@ -137,7 +137,7 @@ class terminator(_feature.main):
             cmd +=      " && echo 'EOF' >> " + file
             cmd +=      " && echo 'cd " + pathL + "' >> " + file
             cmd +=  ") >> /dev/null"
-            wsl_cmd = [self.wsl_path, 'bash', '-c', cmd]
+            wsl_cmd = [wsl_path, 'bash', '-c', cmd]
             x = subprocess.Popen( wsl_cmd, shell=True)
             x.wait()
         wsl_cmd = [wsl_path, 'bash', '-c', 'DISPLAY=localhost' + x_nb + ' terminator --working-directory=' + pathL +'']

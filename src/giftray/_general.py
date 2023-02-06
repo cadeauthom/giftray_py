@@ -10,22 +10,26 @@ try:
 except ImportError:
     import winxpgui as win32gui
 
-handle_ToolbarWindow32 = []
-def _callback_enumChildWindows(handle, arg):
-    if win32gui.GetClassName(handle) == arg:
-        handle_ToolbarWindow32.append(handle)
-    return True
 
 def GetCurrentPath():
+    handle_ToolbarWindow32 = []
+    def _callback_enumChildWindows(handle, arg):
+        if win32gui.GetClassName(handle) == arg:
+            handle_ToolbarWindow32.append(handle)
+        return True
     hwnd      = win32gui.GetForegroundWindow()
     classname = win32gui.GetClassName(hwnd)
     #other windows: test if windows name contains a path
-    text = win32gui.GetWindowText(hwnd)
-    for text in text.split():
-        if os.path.isdir(text):
-            return text
-        if os.path.isfile(text):
-            return os.path.dirname(text)
+    full_text = (win32gui.GetWindowText(hwnd)).split()
+    for idx, t in enumerate(full_text):
+        if not(len(t)>3 and t[1]==':'):
+            continue
+        for i in range (len(full_text),idx,-1):
+            text = ' '.join(full_text[idx:i])
+            if os.path.isdir(text):
+                return text
+            if os.path.isfile(text):
+                return os.path.dirname(text)
     if (classname == "WorkerW"):
         #Desktop
         return
