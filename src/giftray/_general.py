@@ -10,55 +10,52 @@ try:
 except ImportError:
     import winxpgui as win32gui
 
-
-def GetCurrentPath():
-    handle_ToolbarWindow32 = []
-    def _callback_enumChildWindows(handle, arg):
+class WindowsHandler():
+    def __init__(self):
+        self.global_array = []
+    def _callback_enumChildWindows(self,handle, arg):
         if win32gui.GetClassName(handle) == arg:
-            handle_ToolbarWindow32.append(handle)
+            self.global_array.append(handle)
         return True
-    hwnd      = win32gui.GetForegroundWindow()
-    classname = win32gui.GetClassName(hwnd)
-    #other windows: test if windows name contains a path
-    full_text = (win32gui.GetWindowText(hwnd)).split()
-    for idx, t in enumerate(full_text):
-        if not(len(t)>3 and t[1]==':'):
-            continue
-        for i in range (len(full_text),idx,-1):
-            text = ' '.join(full_text[idx:i])
-            if os.path.isdir(text):
-                return text
-            if os.path.isfile(text):
-                return os.path.dirname(text)
-    if (classname == "WorkerW"):
-        #Desktop
-        return
-    if True or (classname == "CabinetWClass") or (classname == "ExploreWClass"):
-        #explorer (or other windows ?) if path in ToolbarWindow32
-        handle_ToolbarWindow32.clear()
-        win32gui.EnumChildWindows(hwnd, _callback_enumChildWindows, "ToolbarWindow32")
-        for i in handle_ToolbarWindow32 :
-            for text in win32gui.GetWindowText(i).split():
+    def GetCurrentPath(self):
+        hwnd      = win32gui.GetForegroundWindow()
+        classname = win32gui.GetClassName(hwnd)
+        #other windows: test if windows name contains a path
+        full_text = (win32gui.GetWindowText(hwnd)).split()
+        for idx, t in enumerate(full_text):
+            if not(len(t)>3 and t[1]==':'):
+                continue
+            for i in range (len(full_text),idx,-1):
+                text = ' '.join(full_text[idx:i])
                 if os.path.isdir(text):
                     return text
                 if os.path.isfile(text):
-                    return os.path.dirname(text)    
+                    return os.path.dirname(text)
+        if (classname == "WorkerW"):
+            #Desktop
+            return
+        if True or (classname == "CabinetWClass") or (classname == "ExploreWClass"):
+            #explorer (or other windows ?) if path in ToolbarWindow32
+            self.global_array.clear()
+            win32gui.EnumChildWindows(hwnd, self._callback_enumChildWindows, "ToolbarWindow32")
+            for i in self.global_array :
+                for text in win32gui.GetWindowText(i).split():
+                    if os.path.isdir(text):
+                        return text
+                    if os.path.isfile(text):
+                        return os.path.dirname(text)
+            return
         return
-    return
 
-
-def _callback_EnumHandler( hwnd, ctx ):
-    if win32gui.IsWindowVisible( hwnd ):
-        dwExStyle = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE );
-        if ((dwExStyle  & win32con.WS_EX_TOPMOST) == win32con.WS_EX_TOPMOST):
-            print(hex( hwnd ), win32gui.GetClassName(hwnd),win32gui.GetWindowText( hwnd ))
-        # if ((dwExStyle & win32con.HWND_TOPMOST) != 0):
-            # print("HWND_TOPMOST")
-def GetAllWindowsName():
-    print("a")
-    handle_ToolbarWindow32.clear()
-    win32gui.EnumWindows( _callback_EnumHandler, None )
-    print(handle_ToolbarWindow32)
+    def _callback_EnumHandler(self, hwnd, ctx ):
+        if win32gui.IsWindowVisible( hwnd ):
+            dwExStyle = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE );
+            if ((dwExStyle  & win32con.WS_EX_TOPMOST) == win32con.WS_EX_TOPMOST):
+                self.global_array.append(hwnd)
+    def GetAllOnTopWindowsName(self):
+        self.global_array.clear()
+        win32gui.EnumWindows( self._callback_EnumHandler, None )
+        return self.global_array
 
 def RealPath(app):
     if not app:

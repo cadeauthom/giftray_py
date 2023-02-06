@@ -69,7 +69,7 @@ class main:
             self.hhk, self.ahk, err = giftray.ahk_translator.ahk2hhk(self.ahk)
             if len(err):
                 self.error.append(err)
-            
+
         if not self.hhk and not self.menu:
             self.error.append("Nor in menu or shortcut")
 

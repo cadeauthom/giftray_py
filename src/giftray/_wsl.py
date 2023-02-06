@@ -65,10 +65,10 @@ class terminator(_feature.main):
                     self.error.append("'vcxsrv_timeout' not an intger")
                 if self.vcxsrv_timeout < 0 :
                     self.giftray.logger.error("'vcxsrv_timeout' is not positive in '" +self.show+"'")
-                    self.error.append("'vcxsrv_timeout' not positive") 
+                    self.error.append("'vcxsrv_timeout' not positive")
                 elif self.vcxsrv_timeout > 10:
                     self.giftray.logger.error("'vcxsrv_timeout' is to big in '" +self.show+"'")
-                    self.error.append("'vcxsrv_timeout' to big")            
+                    self.error.append("'vcxsrv_timeout' to big")
             else:
                 self.giftray.logger.error("'"+i+"' not defined in '" +self.show+"'")
                 self.error.append("'"+i+"' not defined")
@@ -121,7 +121,7 @@ class terminator(_feature.main):
             if x.poll() != None:
                 self.giftray.logger.error("Fail to start vcxsrv in '" +self.show+"' ("+' '.join(x_cmd)+")")
                 return "Fail to start vcxsrv : "+' '.join(x_cmd)
-        pathW = _general.GetCurrentPath()
+        pathW = _general.WindowsHandler().GetCurrentPath()
         pathL,driveW,driveL = _Path_Win2Lin(pathW)
         if driveW != "":
             file = '~/.bash_mount_msg.sh'
@@ -141,6 +141,7 @@ class terminator(_feature.main):
             x = subprocess.Popen( wsl_cmd, shell=True)
             x.wait()
         wsl_cmd = [wsl_path, 'bash', '-c', 'DISPLAY=localhost' + x_nb + ' terminator --working-directory=' + pathL +'']
+        print(wsl_cmd)
         exit_code = subprocess.Popen(wsl_cmd, shell=True)
         return "Start Terminator"
         #OK:exit_code = os.spawnv(os.P_WAIT, _general.RealPath("powershell"),[_general.RealPath("powershell"), "-Command", "\"$host.ui.RawUI.WindowTitle ='" +wsl_cmd[0] + "'; " + ' '.join(wsl_cmd) +"\""])

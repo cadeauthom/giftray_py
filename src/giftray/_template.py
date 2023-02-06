@@ -11,7 +11,7 @@ class template(_feature.main):
         for i in others:
             k = i.casefold()
             if k == "localopt".casefold():
-                self.confvcxsrv = others[i]      
+                self.confvcxsrv = others[i]
             else:
                 self.giftray.logger.error("'"+i+"' not defined in '" +self.show+"'")
                 self.error.append("'"+i+"' not defined")

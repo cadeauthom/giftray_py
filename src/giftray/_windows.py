@@ -2,10 +2,12 @@
 #import sys
 import subprocess
 import win32con
+import win32process
 try:
     import winxpgui as win32gui
 except ImportError:
     import win32gui
+import psutil
 
 from . import _feature
 from . import _general
@@ -18,11 +20,11 @@ class script(_feature.main):
         for i in others:
             k = i.casefold()
             if k == "cmd".casefold():
-                self.cmd = others[i]  
+                self.cmd = others[i]
             elif k == "args".casefold():
-                self.args = others[i]  
+                self.args = others[i]
             elif k == "admin".casefold():
-                self.admin = (others[i].lower().capitalize() == "True")   
+                self.admin = (others[i].lower().capitalize() == "True")
             else:
                 self.giftray.logger.error("'"+i+"' not defined in '" +self.show+"'")
                 self.error.append("'"+i+"' not defined")
@@ -57,10 +59,16 @@ class script(_feature.main):
 
 class alwaysontop(_feature.main):
     def __del__(self):
-        self._removeOnTop()
+        currentOnTop = _general.WindowsHandler().GetAllOnTopWindowsName()
+        for hwnd in self.top_hwnd:
+            if hwnd in currentOnTop:
+                win32gui.SetWindowPos(hwnd,
+                    win32con.HWND_NOTOPMOST,
+                    0,0,0,0,
+                    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
 
     def _custom_init(self,others):
-        self.top_hwnd = None
+        self.top_hwnd = set()
         self.menu = False
         for i in others:
             k = i.casefold()
@@ -75,31 +83,37 @@ class alwaysontop(_feature.main):
         return []
 
     def _custom_run(self):
-        _general.GetAllWindowsName()
         hwnd = win32gui.GetForegroundWindow()
         classname = win32gui.GetClassName(hwnd)
-        name = "name of the current window"
-        self._removeOnTop()
+        if (classname == "WorkerW"):
+            return "Unable to OnTop Windows Desktop"
+        if (classname == "Shell_TrayWnd"):
+            return "Unable to OnTop Windows Tray"
+        tid, pid = win32process.GetWindowThreadProcessId(hwnd)
+        name = psutil.Process(pid).name()
+        currentOnTop = _general.WindowsHandler().GetAllOnTopWindowsName()
         if not hwnd:
             return "Unable to set windows to top"
-        if hwnd == self.top_hwnd:
-            return "Unset OnTop to " + name
-        if (classname == "WorkerW"):
-            if not self.top_hwnd:
-                return "Unable to OnTop Desktop"
-        print(win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE ))
+        if hwnd in self.top_hwnd:
+            # we set it TopMost
+            self.top_hwnd.remove(hwnd)
+            if hwnd in currentOnTop:
+                # it is TopMost
+                # NoTopMost the window
+                win32gui.SetWindowPos(hwnd,
+                    win32con.HWND_NOTOPMOST,
+                    0,0,0,0,
+                    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+                return('UnTop '+name)
+            else:
+                return('(Already) UnTop '+name)
+        if hwnd in currentOnTop:
+            # already TopMost (don't touch)
+            return('OnTop of '+name+'managed outside of '+self.show)
+        # NoTopMost the window
         win32gui.SetWindowPos(hwnd,
             win32con.HWND_TOPMOST,
             0,0,0,0,
             win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
-        print(win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE ))
-        self.top_hwnd = hwnd
+        self.top_hwnd.add(hwnd)
         return "Set OnTop to " + name
-
-    def _removeOnTop(self):
-        if self.top_hwnd :
-            print(win32gui.GetWindowLong(self.top_hwnd, win32con.GWL_STYLE ))
-            print('test if win exists')
-            print('remove TOPMOST')
-            return True
-        return False
