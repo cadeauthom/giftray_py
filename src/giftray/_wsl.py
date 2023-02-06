@@ -141,7 +141,6 @@ class terminator(_feature.main):
             x = subprocess.Popen( wsl_cmd, shell=True)
             x.wait()
         wsl_cmd = [wsl_path, 'bash', '-c', 'DISPLAY=localhost' + x_nb + ' terminator --working-directory=' + pathL +'']
-        print(wsl_cmd)
         exit_code = subprocess.Popen(wsl_cmd, shell=True)
         return "Start Terminator"
         #OK:exit_code = os.spawnv(os.P_WAIT, _general.RealPath("powershell"),[_general.RealPath("powershell"), "-Command", "\"$host.ui.RawUI.WindowTitle ='" +wsl_cmd[0] + "'; " + ' '.join(wsl_cmd) +"\""])

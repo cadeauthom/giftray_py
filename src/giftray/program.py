@@ -6,6 +6,7 @@ import signal
 import inspect
 import time
 import datetime
+import glob
 #import win32api         # package pywin32
 import win32con
 import configparser
@@ -20,6 +21,7 @@ import ctypes, ctypes.wintypes
 import PyQt6.QtWidgets, PyQt6.QtGui
 import notifypy
 import functools
+import natsort
 
 from . import _general
 from . import _icon
@@ -229,26 +231,35 @@ class program(object):
     def _read_conf(self):
         #Find and read config file
         config = configparser.ConfigParser()
+        exist_conf = False
         if os.path.isfile(self.conf) :
-            pass
-        elif os.path.isfile(os.getcwd()+'/'+self.name+".conf") :
-            self.conf=os.getcwd()+'/'+self.name+".conf"
-        elif os.path.isfile(os.getcwd()+'/conf/'+self.name+".conf") :
-            self.conf=os.getcwd()+'/conf/'+self.name+".conf"
-        elif os.path.isfile(os.getcwd()+'/../conf/'+self.name+'.conf') :
-            self.conf=os.getcwd()+'/../conf/'+self.name+'.conf'
-        elif os.path.isfile(os.getcwd()+'/../../conf/'+self.name+'.conf') :
-            self.conf=os.getcwd()+'/../../conf/'+self.name+'.conf'
-        else :
-            self.main_error = "Fail to find configuration"
+            exist_conf = True
+        else:
+            thispath = os.getcwd()
+            for endpath in [[],
+                            ["conf"],
+                            ["..","conf"],
+                            ["..","..","conf"]]:
+                path = thispath
+                for k in endpath:
+                    path = posixpath.join( path, k)
+                path = os.path.abspath(posixpath.join( path, self.name+".conf"))
+                if os.path.isfile(path) :
+                    self.conf = path
+                    exist_conf = True
+                    break
+        if not exist_conf:
+            if self.main_error : self.main_error += ', '
+            self.main_error += "Fail to find configuration"
             self.logger.error(self.main_error)
-            #return 1
-        try:
-            config.read(self.conf)
-        except Exception as e:
-            self.main_error = "Fail to read configuration (" + self.conf + "): " + str(e)
-            self.logger.error(self.main_error)
-            #return 1
+        else:
+            try:
+                config.read(self.conf)
+            except Exception as e:
+                print_error = "Fail to read configuration (" + self.conf + "): " + str(e)
+                if self.main_error : self.main_error += ', '
+                self.main_error += print_error
+                self.logger.error(print_error)
         #Load GENERAL config to variables
         for section in config.sections():
             if section.casefold() == 'GENERAL'.casefold():
@@ -275,49 +286,74 @@ class program(object):
         #Get ico for Tray
         self._set_icon()
 
+        #Find other conf files
+        subconfs=glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf'))
         #Load actions config to variables
-        for section in config.sections():
-            if section.casefold() != 'GENERAL'.casefold():
-                for i in config[section]:
-                    if "\n" in config[section][i]:
-                        self.error[section] = "Indentation issue in '" + section +"'"
-                        self.logger.error("Indentation issue in '" + section +"'")
-                        continue
-                if section in self.error: continue
-                if "function" in config[section]:
-                    fct = config[section]["function"].casefold()
-                else:
-                    self.logger.error("'function' not defined in '"+section+"'")
-                if fct.count('.') != 1:
-                    self.logger.error("'"+fct+"' does not contain exactly 1 '.' in '"+section+"'")
-                    continue
-                split_section = fct.split(".")
-                module = split_section[0]
-                mod = self.name+'._'+module
-                feat = split_section[1]
-                if not mod in sys.modules.keys():
-                    self.error[section] = "Module '"+module+"' not loaded"
-                    self.logger.error("Module '"+module+"' not loaded for '"+section+"'")
-                    continue
-                if not fct in self.avail:
-                    print (fct)
-                    self.error[section] = "'"+feat+"' not defined in module '" +module + "'"
-                    self.logger.error("'"+feat+"' not defined in module '" +module+"' from '"+section+"'")
-                    continue
-                new_class = _general.str_to_class(mod,feat)(section,config[section],self)
-                ahk, hhk = new_class.get_hk()
-                if len(ahk)>2 and "key" in hhk:
-                    if ahk in self.ahk:
-                        new_class.error.append("Duplicated ahk " + self.ahk[ahk])
-                        self.logger.error("'"+ahk+"' set twice! '" +self.ahk[ahk]+"' / '"+new_class.show+"'")
+        for subconf in ['0000000000']+natsort.os_sorted(subconfs):
+            if subconf == self.conf:
+                continue
+            elif subconf != '0000000000':
+                try:
+                    config.read(subconf)
+                except Exception as e:
+                    print_error = "Fail to read configuration (" + subconf + "): " + str(e)
+                    if self.main_error : self.main_error += ', '
+                    self.main_error += print_error
+                    self.logger.error(print_error)
+            else:
+                subconf = self.conf
+            for section in config.sections():
+                if section.casefold() != 'GENERAL'.casefold():
+                    for i in config[section]:
+                        if "\n" in config[section][i]:
+                            self.error[section] = "Indentation issue in '" + section +"' ("+subconf+")"
+                            self.logger.error("Indentation issue in '" + section +"' ("+subconf+")")
+                            continue
+                    if section in self.error: continue
+                    if "function" in config[section]:
+                        fct = config[section]["function"].casefold()
                     else:
-                        self.ahk[ahk] = new_class.show
-                if not new_class.is_ok():
-                    self.error[new_class.show] = new_class.print_error(sep=",",prefix="")
-                self.install[new_class.show]=new_class
-                if new_class.is_in_menu():
-                    self.menu.append(new_class.show)
-
+                        self.logger.error("'function' not defined in '"+section+"' ("+subconf+")")
+                        continue
+                    if fct.count('.') != 1:
+                        self.logger.error("'"+fct+"' does not contain exactly 1 '.' in '"+section+"' ("+subconf+")")
+                        continue
+                    split_section = fct.split(".")
+                    module = split_section[0]
+                    mod = self.name+'._'+module
+                    feat = split_section[1]
+                    if not mod in sys.modules.keys():
+                        self.error[section] = "Module '"+module+"' not loaded ("+subconf+")"
+                        self.logger.error("Module '"+module+"' not loaded for '"+section+"' ("+subconf+")")
+                        continue
+                    if not fct in self.avail:
+                        self.error[section] = "'"+feat+"' not defined in module '" +module + "' ("+subconf+")"
+                        self.logger.error("'"+feat+"' not defined in module '" +module+"' from '"+section+"' ("+subconf+")")
+                        continue
+                    orig_section=section
+                    i=0
+                    while section in self.install:
+                        i+=1
+                        section = orig_section+' [Duplicate n°'+str(i)+']'
+                    new_class = _general.str_to_class(mod,feat)(section,config[orig_section],self)
+                    if not orig_section==section:
+                        new_class.add_error(orig_section+" already set ("+subconf+")")
+                        self.logger.error(orig_section+" already set ("+subconf+")")
+                    if new_class.is_ok():
+                        ahk, hhk = new_class.get_hk()
+                        if len(ahk)>2 and "key" in hhk:
+                            if ahk in self.ahk:
+                                new_class.add_error("Duplicated ahk " + self.ahk[ahk])
+                                self.logger.error("'"+ahk+"' set twice! '" +self.ahk[ahk]+"' / '"+new_class.show+"' ("+subconf+")")
+                            else:
+                                self.ahk[ahk] = new_class.show
+                    if not new_class.is_ok():
+                        self.error[new_class.show] = ""
+                    self.install[new_class.show]=new_class
+                    if new_class.is_ok():
+                        if new_class.is_in_menu():
+                            self.menu.append(new_class.show)
+            config.clear()
         return 0
 
     def _set_icon(self):
@@ -577,8 +613,8 @@ class program(object):
                 self.nb_hotkey += 1
                 self.logger.debug("register "+str(ahk))
             else:
-                self.install[self.ahk[ahk]].error.append("Fail to register Hotkey ("+ahk+")")
-                self.error[self.ahk[ahk]]=self.install[self.ahk[ahk]].print_error(sep=",",prefix="")
+                self.install[self.ahk[ahk]].add_error("Fail to register Hotkey ("+ahk+")")
+                self.error[self.ahk[ahk]]=""
                 self.logger.error("fail to register"+str(ahk))
         msg = ctypes.wintypes.MSG()
         while ctypes.windll.user32.GetMessageA(ctypes.byref(msg), None, 0, 0) != 0:
@@ -612,7 +648,11 @@ class program(object):
 
         info = '<ul>'
         l=0
-        for e in error.split(', '):
+        if error:
+            arr=[error]
+        else:
+            arr=self.install[name].GetError()
+        for e in arr:
             l = max(l,len(e))
             info += '<li>' + e + '</li>'
         info += '</ul>'
@@ -637,7 +677,6 @@ class program(object):
         return
 
 if __name__ == '__main__':
-    #import itertools, glob
     a=MainClass()
 
     '''

@@ -47,7 +47,6 @@ tail -f giftray.log
 #       - VM start/stop VMs
 #       - mount Vera
 #	= Reload Driver (reload mic - regedit)
-#	= WinAlwaysontop
 #Sound (mute mic/sound, volume)
 #android
 #   = connect (nmap, scrcpy)

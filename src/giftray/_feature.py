@@ -68,17 +68,17 @@ class main:
         if self.ahk:
             self.hhk, self.ahk, err = giftray.ahk_translator.ahk2hhk(self.ahk)
             if len(err):
-                self.error.append(err)
+                self.add_error(err)
 
         if not self.hhk and not self.menu:
-            self.error.append("Nor in menu or shortcut")
+            self.add_error("Nor in menu or shortcut")
 
         return
 
     def _custom_init(self,others):
         for i in others:
             self.giftray.logger.error("'"+i+"' not defined in '" +self.show+"'")
-            self.error.append("'"+i+"' not defined")
+            self.add_error("'"+i+"' not defined")
         return
 
     def get_opt(self):
@@ -86,6 +86,9 @@ class main:
 
     def _custom_get_opt(self):
         return []
+
+    def add_error(self,error):
+        self.error.append(error)
 
     def run(self):
         if self.error:
@@ -106,8 +109,8 @@ class main:
     def _custom_run(self):
         return
 
-    def print_error(self, sep='\n', prefix='\t- '):
-        return prefix+(sep+prefix).join(self.error)
+    def GetError(self):
+        return self.error
 
     def is_ok(self):
         if self.error:
