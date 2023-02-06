@@ -2,7 +2,7 @@ import giftray
 
 if __name__ == '__main__':
     #import itertools, glob
-    a=giftray.program()
+    a=giftray.giftray()
 
     '''
     import threading

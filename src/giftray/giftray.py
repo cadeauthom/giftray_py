@@ -92,7 +92,7 @@ def run(self):
     should desappear
 '''
 
-class program(object):
+class giftray(object):
     def __init__(self):
         self.stop_process       = False
         def signal_handler(signum, frame):

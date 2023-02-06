@@ -6,4 +6,4 @@
 #           "template",
 #           "wsl"
 #          ]
-from .program import program
+from .giftray import giftray
