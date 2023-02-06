@@ -335,23 +335,20 @@ class program(object):
                     while section in self.install:
                         i+=1
                         section = orig_section+' [Duplicate n°'+str(i)+']'
-                    new_class = _general.str_to_class(mod,feat)(section,config[orig_section],self)
+                    new_class = _general.Str2Class(mod,feat)(section,config[orig_section],self)
                     if not orig_section==section:
-                        new_class.add_error(orig_section+" already set ("+subconf+")")
-                        self.logger.error(orig_section+" already set ("+subconf+")")
-                    if new_class.is_ok():
-                        ahk, hhk = new_class.get_hk()
+                        new_class.AddError(orig_section+" already set ("+subconf+")")
+                    if new_class.IsOK():
+                        ahk, hhk = new_class.GetHK()
                         if len(ahk)>2 and "key" in hhk:
                             if ahk in self.ahk:
-                                new_class.add_error("Duplicated ahk " + self.ahk[ahk])
-                                self.logger.error("'"+ahk+"' set twice! '" +self.ahk[ahk]+"' / '"+new_class.show+"' ("+subconf+")")
+                                new_class.AddError("Duplicated ahk " + self.ahk[ahk])
                             else:
                                 self.ahk[ahk] = new_class.show
-                    if not new_class.is_ok():
+                    if not new_class.IsOK():
                         self.error[new_class.show] = ""
                     self.install[new_class.show]=new_class
-                    if new_class.is_ok():
-                        if new_class.is_in_menu():
+                    if new_class.IsOK() and new_class.IsInMenu():
                             self.menu.append(new_class.show)
             config.clear()
         return 0
@@ -483,7 +480,7 @@ class program(object):
         sicon_err, _, _ = _icon.GetIcon(self.iconPath, self, ico='default_empty.ico')
         for i in self.error:
             act=PyQt6.QtGui.QAction(sicon_err,i,menu_err)
-            act.triggered.connect(functools.partial(self._error, i, self.error[i]))
+            act.triggered.connect(functools.partial(self._fct_error, i, self.error[i]))
             menu_err.addAction(act)
 
         self.tray_menu.addSeparator()
@@ -527,7 +524,8 @@ class program(object):
         act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
         if picon:
             act.setIcon(sicon)
-        act.triggered.connect(self._about)
+        act.triggered.connect(self._fct_about)
+        act.setDisabled(True)
         self.tray_menu.addAction(act)
         sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_reload.ico')
         act=PyQt6.QtGui.QAction('Reload '+self.showname,self.tray_menu)
@@ -563,7 +561,7 @@ class program(object):
             start_time = datetime.datetime.now()
             show = action.show+start_time.strftime(" [%H%M%S]")
             self.logger.debug('Run '+show)
-            th = _general.KThread(target=action.run)
+            th = _general.KThread(target=action.Run)
             th.start()
             th.join(10)
             duration = datetime.datetime.now() - start_time
@@ -594,10 +592,6 @@ class program(object):
         print (self.error)
         print ("----- install ------")
         print (self.install)
-        #for i in self.install:
-            #out = self.install[i].run()
-            #if out:
-            #    self.popup(i,out)
         print ("----- menu ------")
         print (self.menu)
         print ("----- ahk ------")
@@ -613,9 +607,8 @@ class program(object):
                 self.nb_hotkey += 1
                 self.logger.debug("register "+str(ahk))
             else:
-                self.install[self.ahk[ahk]].add_error("Fail to register Hotkey ("+ahk+")")
+                self.install[self.ahk[ahk]].AddError("Fail to register Hotkey ("+ahk+")")
                 self.error[self.ahk[ahk]]=""
-                self.logger.error("fail to register"+str(ahk))
         msg = ctypes.wintypes.MSG()
         while ctypes.windll.user32.GetMessageA(ctypes.byref(msg), None, 0, 0) != 0:
             if msg.message == win32con.WM_HOTKEY:
@@ -640,12 +633,11 @@ class program(object):
         self.ahk_thread.start()
         return
 
-    def _about(self):
+    def _fct_about(self):
         return
 
-    def _error(self,name,error):
+    def _fct_error(self,name,error):
         text = '<h3>'+name+'</h3>'
-
         info = '<ul>'
         l=0
         if error:

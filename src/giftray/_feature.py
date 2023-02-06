@@ -56,7 +56,7 @@ class main:
             else:
                 others[i]=val[i]
 
-        self._custom_init(others)
+        self._Init(others)
         iconPath = ""
         if (self.color and self.color!=self.giftray.coloricons):
             iconPath = _icon.ValidateIconPath( path    = self.giftray.iconPath,\
@@ -68,34 +68,34 @@ class main:
         if self.ahk:
             self.hhk, self.ahk, err = giftray.ahk_translator.ahk2hhk(self.ahk)
             if len(err):
-                self.add_error(err)
+                self.AddError(err)
 
         if not self.hhk and not self.menu:
-            self.add_error("Nor in menu or shortcut")
+            self.AddError("Nor in menu or shortcut")
 
         return
 
-    def _custom_init(self,others):
+    def _Init(self,others):
         for i in others:
-            self.giftray.logger.error("'"+i+"' not defined in '" +self.show+"'")
-            self.add_error("'"+i+"' not defined")
+            self.AddError("'"+i+"' not defined")
         return
 
-    def get_opt(self):
-        return self._custom_get_opt()
+    def GetOpt(self):
+        return self._GetOpt()
 
     def _custom_get_opt(self):
         return []
 
-    def add_error(self,error):
+    def AddError(self,error):
+        self.giftray.logger.error(error + " in '" +self.show+"'")
         self.error.append(error)
 
-    def run(self):
+    def Run(self):
         if self.error:
             out = self.error
         else:
             try:
-                out = self._custom_run()
+                out = self._Run()
             except Exception as e:
                 e_str = str(e)
                 print("Action '" +self.show+ "' failed: "+e_str)
@@ -103,22 +103,22 @@ class main:
                 out = "Action '" +self.show+ "' failed: "+e_str
         #return out
         if out:
-            _general.popup(self.giftray.main_hicon, self.show, out)
+            _general.PopUp(self.giftray.main_hicon, self.show, out)
         return
 
-    def _custom_run(self):
+    def _Run(self):
         return
 
     def GetError(self):
         return self.error
 
-    def is_ok(self):
+    def IsOK(self):
         if self.error:
             return False
         return True
 
-    def is_in_menu(self):
+    def IsInMenu(self):
         return self.menu
 
-    def get_hk(self):
+    def GetHK(self):
         return self.ahk, self.hhk

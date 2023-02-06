@@ -13,6 +13,7 @@ except ImportError:
 class WindowsHandler():
     def __init__(self):
         self.global_array = []
+
     def _callback_enumChildWindows(self,handle, arg):
         if win32gui.GetClassName(handle) == arg:
             self.global_array.append(handle)
@@ -57,17 +58,17 @@ class WindowsHandler():
         win32gui.EnumWindows( self._callback_EnumHandler, None )
         return self.global_array
 
-def RealPath(app):
-    if not app:
-        return
-    if os.path.exists(app):
-        return app
-    return shutil.which(app)
+    def GetRealPath(self,app):
+        if not app:
+            return
+        if os.path.exists(app):
+            return app
+        return shutil.which(app)
 
-def str_to_class(module,feat):
+def Str2Class(module,feat):
     return getattr(sys.modules[module], feat)
 
-def popup(hicon, title, msg):
+def PopUp(hicon, title, msg):
     def callback (hwnd, hwnds):
         _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
         if found_pid == pid:
@@ -87,7 +88,7 @@ def popup(hicon, title, msg):
     #(hwnd, id, win32gui.NIF_*, CallbackMessage, hicon, Tooltip text (opt), Balloon tooltip text (opt), Timeout (ms), title (opt),  win32gui.NIIF_*)
     return
 
-def daemon_is_runnung():
+def IsAlreadyRunning():
     ''' TODO
     prebuild fct ? google will help
     or:

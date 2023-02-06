@@ -13,7 +13,7 @@ from . import _feature
 from . import _general
 
 class script(_feature.main):
-    def _custom_init(self,others):
+    def _Init(self,others):
         self.cmd = ""
         self.args = ""
         self.admin = False
@@ -26,24 +26,21 @@ class script(_feature.main):
             elif k == "admin".casefold():
                 self.admin = (others[i].lower().capitalize() == "True")
             else:
-                self.giftray.logger.error("'"+i+"' not defined in '" +self.show+"'")
-                self.error.append("'"+i+"' not defined")
+                self.AddError("'"+i+"' not defined")
         if not self.cmd:
-            self.giftray.logger.error("cmd not set in '" +self.show+"'")
-            self.error.append("cmd not set in '" +self.show+"'")
+            self.AddError("cmd not set in '" +self.show+"'")
         else:
-            cmd = _general.RealPath(self.cmd)
+            cmd = _general.WindowsHandler().GetRealPath(self.cmd)
             if not cmd:
-                self.giftray.logger.error(cmd + "not found in '" +self.show+"'")
-                self.error.append(cmd + "not found in '" +self.show+"'")
+                self.AddError(cmd + "not found in '" +self.show+"'")
             else:
                 self.cmd = cmd
         return
 
-    def _custom_get_opt(self):
+    def _GetOpt(self):
         return ["cmd","args","admin"]
 
-    def _custom_run(self):
+    def _Run(self):
         out = self.cmd
         cmd = '& { Start-Process "'+self.cmd+'"'
         if self.args:
@@ -67,7 +64,7 @@ class alwaysontop(_feature.main):
                     0,0,0,0,
                     win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
 
-    def _custom_init(self,others):
+    def _Init(self,others):
         self.top_hwnd = set()
         self.menu = False
         for i in others:
@@ -75,14 +72,13 @@ class alwaysontop(_feature.main):
             if False:
                 pass
             else:
-                self.giftray.logger.error("'"+i+"' not defined in '" +self.show+"'")
-                self.error.append("'"+i+"' not defined")
+                self.AddError("'"+i+"' not defined")
         return
 
-    def _custom_get_opt(self):
+    def _GetOpt(self):
         return []
 
-    def _custom_run(self):
+    def _Run(self):
         hwnd = win32gui.GetForegroundWindow()
         classname = win32gui.GetClassName(hwnd)
         if (classname == "WorkerW"):
