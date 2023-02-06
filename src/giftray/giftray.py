@@ -30,108 +30,21 @@ from . import _icon
 from . import _wsl
 from . import _windows
 
-'''
-#when (function), development is planned, not done yet
-def __init__(self):
-    obviously called
-def __del__(self):
-    obviously called
-def _define_tray(self):
-    define tray and click events
-    by __init__
-def _reset(self):
-    called to reset variables
-    by __init__, __del__ (and by reload)
-def _load_modules(self,mods):
-    check/load modules
-    by __init__
-def _read_conf(self):
-    called to read conf and build all variables
-    by __init__ (and by reload)
-def _set_icon(self):
-    define main info of icons
-    by _read_conf
-def _create_menu(self):
-    build the menu of the tray gui windows
-    by _start
-def _print_conf(self):
-    return configuration in ini format
-    (by save_conf, show_conf windows ?)
-        def _run_thread(self,args):
-def _run_thread(self,args):
-    thread to run called action
-    by _run_action
-def _run_action(self,action):
-    start run thread for called action
-    by _ahk_thread (and click on menu)
-def _tray_activation(self, reason):
-    catch click on menu
-    by __init__
-def _debug_print(self):
-    print some internal variables
-    by run (with hack)
-def _ahk_thread(self):
-    threads to wait ahk/menu, started in main function
-    set in _reset
-    by run
-def _flush_thread(self):
-    thread to flush logs
-    by run
-def _about(self):
-    action for about TOSA
-    by _read_conf
-def _reload(self):
-    action for reload
-    by _read_conf
-def _start(self):
-    start threads and any tools that can be reloaded
-    by run & _reload
-def run(self):
-    main function
-    print debug info
-    should desappear
-'''
-
 class giftray(object):
     def __init__(self):
-        self.stop_process       = False
         def signal_handler(signum, frame):
             self.__del__()
         # Register our signal handler with `SIGINT`(CTRL + C)
         signal.signal(signal.SIGINT, signal_handler)
-        #signal.signal(signal.SIGINT, signal.SIG_DFL)
         self.showname           = "GifTray"
         self.name               = "giftray"
-        self.modules            = ['wsl','windows','template']
+        self.modules            = ['wsl','windows']
         #self.modules           = ['template'] # to debug with empty application
         logging.basicConfig     ( filename=self.name+".log",
                                   level=0,
                                   format='%(asctime)s - %(levelname)s - %(message)s',
                                   datefmt='%d-%b-%y %H:%M:%S')
         self.logger             = logging.getLogger(__name__)
-        self._define_tray       ()
-        self._load_modules      ( self.modules )
-        self._reload            ()
-        self.logger.info        ("Entering wait state")
-        th = _general.KThread(target=self._flush_thread)
-        th.start()
-        timer = PyQt6.QtCore.QTimer()
-        timer.start(500)  # You may change this if you wish.
-        timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
-        if False: self._debug_print()
-        self.app.exec()
-        if th.is_alive():
-            self.logger.debug('Kill flusher')
-            th.kill()
-        return
-
-    def __del__(self):
-        self.app.quit()
-        self.stop_process = True
-        self._reset()
-        self.logger.info("Exiting")
-
-    def _define_tray(self):
         # Define app
         self.app  = PyQt6.QtWidgets.QApplication([])
         self.app.setQuitOnLastWindowClosed ( False )
@@ -140,13 +53,49 @@ class giftray(object):
         self.tray = PyQt6.QtWidgets.QSystemTrayIcon(
                         PyQt6.QtWidgets.QWidget().style().standardIcon( #or self.win_handler
                             PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
-        self.tray.setToolTip ( str(self.showname) )
-        self.tray.setVisible ( True )
-        self.tray.show()
-        self.tray.activated.connect( self._tray_activation )
+        self.tray.setToolTip    ( str(self.showname) )
+        self.tray.setVisible    ( True )
+        self.tray.show          ()
+        self.tray.activated.connect( self._ConnectorTray )
+        self.avail              = []
+        for m in self.modules:
+            mod=self.name+'._'+m
+            if not mod in sys.modules:
+                self.logger.error("Module '" +m+ "' not loaded")
+                continue
+            tmp = importlib.import_module(mod)
+            for fct, obj in inspect.getmembers(tmp):
+                if not (inspect.isclass(obj) and fct != 'main'):
+                    continue
+                full = m+"."+fct
+                if mod != obj.__module__:
+                    self.logger.error("Issue while loading '" +full+ "': mismatch modules name: '"+m+"'!='"+obj.__module__+"'")
+                    continue
+                if fct != obj.__name__:
+                    self.logger.error("Issue while loading '" +full+ "': mismatch feature name: '"+fct+"'!='"+obj.__name__+"'")
+                    continue
+                if not "_custom_run" in (dir(obj)):
+                    self.logger.error("Feature '" +full+ "' does not have '_custom_run' defined")
+                self.avail.append(full)
+        self._Restart            ()
+        self.logger.info        ("Entering wait state")
+        th = _general.KThread(target=self._Thread4Flush)
+        th.start()
+        timer = PyQt6.QtCore.QTimer()
+        timer.start(500)  # You may change this if you wish.
+        timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
+        self.app.exec()
+        if th.is_alive():
+            self.logger.debug('Kill flusher')
+            th.kill()
         return
 
-    def _reset(self):
+    def __del__(self):
+        self.app.quit()
+        self._ResetVar()
+        self.logger.info("Exiting")
+
+    def _ResetVar(self):
         if hasattr(self, "tray_menu"):
              self.tray_menu.clear()
         else:
@@ -155,7 +104,7 @@ class giftray(object):
             if self.ahk_thread.is_alive():
                 #self.ahk_thread.kill()
                 ctypes.windll.user32.PostThreadMessageW(self.ahk_thread.native_id, win32con.WM_QUIT, 0, 0)
-        self.ahk_thread         = _general.KThread(target=self._ahk_thread)
+        self.ahk_thread         = _general.KThread(target=self._Thread4ahk)
         if hasattr(self, "lock"):
             if self.lock.locked():
                 self.lock.release()
@@ -205,30 +154,8 @@ class giftray(object):
         self.iconPath           = ""
         self.main_error         = ""
 
-    def _load_modules(self,mods):
-        self.avail = []
-        for m in mods:
-            mod=self.name+'._'+m
-            if not mod in sys.modules:
-                print("Module '" +m+ "' not loaded")
-                self.logger.error("Module '" +m+ "' not loaded")
-                continue
-            tmp = importlib.import_module(mod)
-            for fct, obj in inspect.getmembers(tmp):
-                if not (inspect.isclass(obj) and fct != 'main'):
-                    continue
-                full = m+"."+fct
-                if mod != obj.__module__:
-                    self.logger.error("Issue while loading '" +full+ "': mismatch modules name: '"+m+"'!='"+obj.__module__+"'")
-                    continue
-                if fct != obj.__name__:
-                    self.logger.error("Issue while loading '" +full+ "': mismatch feature name: '"+fct+"'!='"+obj.__name__+"'")
-                    continue
-                if not "_custom_run" in (dir(obj)):
-                    self.logger.error("Feature '" +full+ "' does not have '_custom_run' defined")
-                self.avail.append(full)
-
-    def _read_conf(self):
+    def _Restart(self):
+        self._ResetVar()
         #Find and read config file
         config = configparser.ConfigParser()
         exist_conf = False
@@ -284,76 +211,6 @@ class giftray(object):
                         self.logger.error(section+"->"+k+"not supported")
 
         #Get ico for Tray
-        self._set_icon()
-
-        #Find other conf files
-        subconfs=glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf'))
-        #Load actions config to variables
-        for subconf in ['0000000000']+natsort.os_sorted(subconfs):
-            if subconf == self.conf:
-                continue
-            elif subconf != '0000000000':
-                try:
-                    config.read(subconf)
-                except Exception as e:
-                    print_error = "Fail to read configuration (" + subconf + "): " + str(e)
-                    if self.main_error : self.main_error += ', '
-                    self.main_error += print_error
-                    self.logger.error(print_error)
-            else:
-                subconf = self.conf
-            for section in config.sections():
-                if section.casefold() != 'GENERAL'.casefold():
-                    for i in config[section]:
-                        if "\n" in config[section][i]:
-                            self.error[section] = "Indentation issue in '" + section +"' ("+subconf+")"
-                            self.logger.error("Indentation issue in '" + section +"' ("+subconf+")")
-                            continue
-                    if section in self.error: continue
-                    if "function" in config[section]:
-                        fct = config[section]["function"].casefold()
-                    else:
-                        self.logger.error("'function' not defined in '"+section+"' ("+subconf+")")
-                        continue
-                    if fct.count('.') != 1:
-                        self.logger.error("'"+fct+"' does not contain exactly 1 '.' in '"+section+"' ("+subconf+")")
-                        continue
-                    split_section = fct.split(".")
-                    module = split_section[0]
-                    mod = self.name+'._'+module
-                    feat = split_section[1]
-                    if not mod in sys.modules.keys():
-                        self.error[section] = "Module '"+module+"' not loaded ("+subconf+")"
-                        self.logger.error("Module '"+module+"' not loaded for '"+section+"' ("+subconf+")")
-                        continue
-                    if not fct in self.avail:
-                        self.error[section] = "'"+feat+"' not defined in module '" +module + "' ("+subconf+")"
-                        self.logger.error("'"+feat+"' not defined in module '" +module+"' from '"+section+"' ("+subconf+")")
-                        continue
-                    orig_section=section
-                    i=0
-                    while section in self.install:
-                        i+=1
-                        section = orig_section+' [Duplicate n°'+str(i)+']'
-                    new_class = _general.Str2Class(mod,feat)(section,config[orig_section],self)
-                    if not orig_section==section:
-                        new_class.AddError(orig_section+" already set ("+subconf+")")
-                    if new_class.IsOK():
-                        ahk, hhk = new_class.GetHK()
-                        if len(ahk)>2 and "key" in hhk:
-                            if ahk in self.ahk:
-                                new_class.AddError("Duplicated ahk " + self.ahk[ahk])
-                            else:
-                                self.ahk[ahk] = new_class.show
-                    if not new_class.IsOK():
-                        self.error[new_class.show] = ""
-                    self.install[new_class.show]=new_class
-                    if new_class.IsOK() and new_class.IsInMenu():
-                            self.menu.append(new_class.show)
-            config.clear()
-        return 0
-
-    def _set_icon(self):
         if self.conf_colormainicon:
             self.iconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
                                                 color   = self.conf_colormainicon,
@@ -423,8 +280,156 @@ class giftray(object):
                                             color   = self.conf_coloricons,
                                             project = self.name)
 
-    def _print_conf(self):
-        #TODO: _print_conf: level for default, all, ?
+
+        #Find other conf files
+        subconfs=glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf'))
+        #Load actions config to variables
+        for subconf in ['0000000000']+natsort.os_sorted(subconfs):
+            if subconf == self.conf:
+                continue
+            elif subconf != '0000000000':
+                try:
+                    config.read(subconf)
+                except Exception as e:
+                    print_error = "Fail to read configuration (" + subconf + "): " + str(e)
+                    if self.main_error : self.main_error += ', '
+                    self.main_error += print_error
+                    self.logger.error(print_error)
+            else:
+                subconf = self.conf
+            for section in config.sections():
+                if section.casefold() != 'GENERAL'.casefold():
+                    for i in config[section]:
+                        if "\n" in config[section][i]:
+                            self.error[section] = "Indentation issue in '" + section +"' ("+subconf+")"
+                            self.logger.error("Indentation issue in '" + section +"' ("+subconf+")")
+                            continue
+                    if section in self.error: continue
+                    if "function" in config[section]:
+                        fct = config[section]["function"].casefold()
+                    else:
+                        self.logger.error("'function' not defined in '"+section+"' ("+subconf+")")
+                        continue
+                    if fct.count('.') != 1:
+                        self.logger.error("'"+fct+"' does not contain exactly 1 '.' in '"+section+"' ("+subconf+")")
+                        continue
+                    split_section = fct.split(".")
+                    module = split_section[0]
+                    mod = self.name+'._'+module
+                    feat = split_section[1]
+                    if not mod in sys.modules.keys():
+                        self.error[section] = "Module '"+module+"' not loaded ("+subconf+")"
+                        self.logger.error("Module '"+module+"' not loaded for '"+section+"' ("+subconf+")")
+                        continue
+                    if not fct in self.avail:
+                        self.error[section] = "'"+feat+"' not defined in module '" +module + "' ("+subconf+")"
+                        self.logger.error("'"+feat+"' not defined in module '" +module+"' from '"+section+"' ("+subconf+")")
+                        continue
+                    orig_section=section
+                    i=0
+                    while section in self.install:
+                        i+=1
+                        section = orig_section+' [Duplicate n°'+str(i)+']'
+                    new_class = _general.Str2Class(mod,feat)(section,config[orig_section],self)
+                    if not orig_section==section:
+                        new_class.AddError(orig_section+" already set ("+subconf+")")
+                    if new_class.IsOK():
+                        ahk, hhk = new_class.GetHK()
+                        if len(ahk)>2 and "key" in hhk:
+                            if ahk in self.ahk:
+                                new_class.AddError("Duplicated ahk " + self.ahk[ahk])
+                            else:
+                                self.ahk[ahk] = new_class.show
+                    if not new_class.IsOK():
+                        self.error[new_class.show] = ""
+                    self.install[new_class.show]=new_class
+                    if new_class.IsOK() and new_class.IsInMenu():
+                            self.menu.append(new_class.show)
+            config.clear()
+
+        # Define menu configured actions
+        # loop on modules for main menu and for Not Clickable
+        menu_not = PyQt6.QtWidgets.QMenu('Not clickable',self.tray_menu)
+        for i in self.install:
+            if i in self.error:
+                # not filling here since not defined action are in error but not in install
+                pass
+            elif i in self.menu:
+                act = PyQt6.QtGui.QAction(self.install[i].sicon,i,self.tray_menu)
+                act.triggered.connect(functools.partial(self._ConnectorAction, i))
+                self.tray_menu.addAction(act)
+            else:
+                act = PyQt6.QtGui.QAction(self.install[i].sicon,i,menu_not)
+                act.setDisabled(True)
+                menu_not.addAction(act)
+        # loop on modules in error
+        menu_err = PyQt6.QtWidgets.QMenu('In error',self.tray_menu)
+        sicon_err, _, _ = _icon.GetIcon(self.iconPath, self, ico='default_empty.ico')
+        for i in self.error:
+            act=PyQt6.QtGui.QAction(sicon_err,i,menu_err)
+            act.triggered.connect(functools.partial(self._ConnectorError, i, self.error[i]))
+            menu_err.addAction(act)
+
+        self.tray_menu.addSeparator()
+        menu_ina = PyQt6.QtWidgets.QMenu('Inactive',self.tray_menu)
+        #TODO find not use modules
+        if not menu_ina.isEmpty():
+            self.tray_menu.addMenu(menu_ina)
+        if not menu_not.isEmpty():
+            self.tray_menu.addMenu(menu_not)
+        if not menu_err.isEmpty():
+            self.tray_menu.addMenu(menu_err)
+        if self.main_error:
+            act = PyQt6.QtGui.QAction(self.showname + " Error",self.tray_menu)
+            act.triggered.connect(functools.partial(self._error, self.showname, self.main_error))
+            self.tray_menu.addAction(act)
+        self.tray_menu.addSeparator()
+        # Define menu default actions
+        #ToDo generator Gui
+        #ToDo conf Gui
+        #ToDo about Gui
+        #ToDo update link
+        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_generator.ico')
+        act=PyQt6.QtGui.QAction('Generate HotKey',self.tray_menu)
+        if picon:
+            act.setIcon(sicon)
+        act.setDisabled(True)
+        #act.setStatusTip('not developed')
+        #act.setShortcut('Ctrl+R')
+        self.tray_menu.addAction(act)
+        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_showconf.ico')
+        act=PyQt6.QtGui.QAction('Show current configuration',self.tray_menu)
+        if picon:
+            act.setIcon(sicon)
+        act.setDisabled(True)
+        self.tray_menu.addAction(act)
+        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_about.ico')
+        act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
+        if picon:
+            act.setIcon(sicon)
+        act.triggered.connect(self._ConnectorAbout)
+        act.setDisabled(True)
+        self.tray_menu.addAction(act)
+        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_reload.ico')
+        act=PyQt6.QtGui.QAction('Reload '+self.showname,self.tray_menu)
+        if picon:
+            act.setIcon(sicon)
+        act.triggered.connect(self._Restart)
+        self.tray_menu.addAction(act)
+        self.tray_menu.addSeparator()
+        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_exit.ico')
+        act=PyQt6.QtGui.QAction('Exit '+self.showname,self.tray_menu)
+        if picon:
+            act.setIcon(sicon)
+        act.triggered.connect(self.__del__)
+        self.tray_menu.addAction(act)
+        self.tray.setContextMenu(self.tray_menu)
+
+        self.ahk_thread.start()
+        return
+
+    def _PrintConf(self):
+        #TODO: _PrintConf: level for default, all, ?
         config = configparser.ConfigParser()
         config["GENERAL"] = { "ColorMainIcon" : self.conf_colormainicon,  #default "blue"
                               "ColorIcons"    : self.conf_coloricons   ,  #default "blue"
@@ -458,104 +463,7 @@ class giftray(object):
         f.close()
         return out
 
-    def _create_menu(self):
-        # Define menu configured actions
-        # loop on modules for main menu and for Not Clickable
-        menu_not = PyQt6.QtWidgets.QMenu('Not clickable',self.tray_menu)
-        for i in self.install:
-            if i in self.error:
-                # not filling here since not defined action are in error but not in install
-                pass
-            elif i in self.menu:
-                act = PyQt6.QtGui.QAction(self.install[i].sicon,i,self.tray_menu)
-                act.triggered.connect(functools.partial(self._run_action, i))
-                self.tray_menu.addAction(act)
-            else:
-                act = PyQt6.QtGui.QAction(self.install[i].sicon,i,menu_not)
-                act.setDisabled(True)
-                menu_not.addAction(act)
-
-        # loop on modules in error
-        menu_err = PyQt6.QtWidgets.QMenu('In error',self.tray_menu)
-        sicon_err, _, _ = _icon.GetIcon(self.iconPath, self, ico='default_empty.ico')
-        for i in self.error:
-            act=PyQt6.QtGui.QAction(sicon_err,i,menu_err)
-            act.triggered.connect(functools.partial(self._fct_error, i, self.error[i]))
-            menu_err.addAction(act)
-
-        self.tray_menu.addSeparator()
-        menu_ina = PyQt6.QtWidgets.QMenu('Inactive',self.tray_menu)
-        #TODO find not use modules
-        if not menu_ina.isEmpty():
-            self.tray_menu.addMenu(menu_ina)
-        if not menu_not.isEmpty():
-            self.tray_menu.addMenu(menu_not)
-        if not menu_err.isEmpty():
-            self.tray_menu.addMenu(menu_err)
-
-        if self.main_error:
-            act = PyQt6.QtGui.QAction(self.showname + " Error",self.tray_menu)
-            act.triggered.connect(functools.partial(self._error, self.showname, self.main_error))
-            self.tray_menu.addAction(act)
-
-
-        self.tray_menu.addSeparator()
-
-        # Define menu default actions
-        #ToDo generator Gui
-        #ToDo conf Gui
-        #ToDo about Gui
-        #ToDo update link
-        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_generator.ico')
-        act=PyQt6.QtGui.QAction('Generate HotKey',self.tray_menu)
-        if picon:
-            act.setIcon(sicon)
-        act.setDisabled(True)
-        #act.setStatusTip('not developed')
-        #act.setShortcut('Ctrl+R')
-        self.tray_menu.addAction(act)
-        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_showconf.ico')
-        act=PyQt6.QtGui.QAction('Show current configuration',self.tray_menu)
-        if picon:
-            act.setIcon(sicon)
-        act.setDisabled(True)
-        self.tray_menu.addAction(act)
-        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_about.ico')
-        act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
-        if picon:
-            act.setIcon(sicon)
-        act.triggered.connect(self._fct_about)
-        act.setDisabled(True)
-        self.tray_menu.addAction(act)
-        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_reload.ico')
-        act=PyQt6.QtGui.QAction('Reload '+self.showname,self.tray_menu)
-        if picon:
-            act.setIcon(sicon)
-        act.triggered.connect(self._reload)
-        self.tray_menu.addAction(act)
-        self.tray_menu.addSeparator()
-        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_exit.ico')
-        act=PyQt6.QtGui.QAction('Exit '+self.showname,self.tray_menu)
-        if picon:
-            act.setIcon(sicon)
-        act.triggered.connect(self.__del__)
-        self.tray_menu.addAction(act)
-
-        self.tray.setContextMenu(self.tray_menu)
-        return
-
-    def _tray_activation(self,reason):
-        if reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Trigger:
-            pass
-        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Context:
-            self.tray_menu.show()
-        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
-            self._about()
-        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.MiddleClick:
-            self.__del__()
-        return
-
-    def _run_thread(self,args):
+    def _Thread4Run(self,args):
         if self.lock.acquire(timeout=1):
             action=self.install[args]
             start_time = datetime.datetime.now()
@@ -577,30 +485,7 @@ class giftray(object):
             if self.lock.locked(): self.lock.release()
         return
 
-    def _run_action(self,feature):
-        if self.lock.locked():
-            self.logger.debug('Lock locked for ' + self.install[feature].show)
-            return
-        a=_general.KThread(target=self._run_thread,args=[feature])
-        a.start()
-        return
-
-    def _debug_print(self):
-        print ("----- avail ------")
-        print (self.avail)
-        print ("----- error ------")
-        print (self.error)
-        print ("----- install ------")
-        print (self.install)
-        print ("----- menu ------")
-        print (self.menu)
-        print ("----- ahk ------")
-        print (self.nb_hotkey)
-        print (self.ahk)
-        print ("----- conf -----")
-        print (self._print_conf())
-
-    def _ahk_thread(self):
+    def _Thread4ahk(self):
         self.logger.info("Starting ahk thread")
         for ahk in self.ahk:
             if (ctypes.windll.user32.RegisterHotKey(None, self.nb_hotkey+1, self.install[self.ahk[ahk]].hhk["mod"] , self.install[self.ahk[ahk]].hhk["key"])):
@@ -615,28 +500,42 @@ class giftray(object):
                 ahk = self.ahk_translator.hhk2ahk({ "mod" : msg.lParam & 0b1111111111111111,
                                      "key" : msg.lParam >> 16})
                 if ahk in self.ahk:
-                    self._run_action(self.ahk[ahk])
+                    self._ConnectorAction(self.ahk[ahk])
             ctypes.windll.user32.TranslateMessage(ctypes.byref(msg))
             ctypes.windll.user32.DispatchMessageA(ctypes.byref(msg))
         self.logger.info("Ending ahk thread")
         return
 
-    def _flush_thread(self):
+    def _Thread4Flush(self):
         logger = logging.getLogger()
         while True:
             logger.handlers[0].flush()
             for i in range(10): time.sleep(1)
         return
 
-    def _start(self):
-        self._create_menu()
-        self.ahk_thread.start()
+    def _ConnectorTray(self,reason):
+        if reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Trigger:
+            pass
+        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Context:
+            self.tray_menu.show()
+        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
+            self._about()
+        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.MiddleClick:
+            self.__del__()
         return
 
-    def _fct_about(self):
+    def _ConnectorAction(self,feature):
+        if self.lock.locked():
+            self.logger.debug('Lock locked for ' + self.install[feature].show)
+            return
+        a=_general.KThread(target=self._Thread4Run,args=[feature])
+        a.start()
         return
 
-    def _fct_error(self,name,error):
+    def _ConnectorAbout(self):
+        return
+
+    def _ConnectorError(self,name,error):
         text = '<h3>'+name+'</h3>'
         info = '<ul>'
         l=0
@@ -660,12 +559,6 @@ class giftray(object):
         p = self.main_sicon.pixmap(20)
         box.setIconPixmap(p)
         box.exec()
-        return
-
-    def _reload(self):
-        self._reset()
-        self._read_conf()
-        self._start()
         return
 
 if __name__ == '__main__':
