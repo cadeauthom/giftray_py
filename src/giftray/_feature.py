@@ -64,7 +64,7 @@ class main:
                                               project = self.giftray.name)
         if not iconPath:
             iconPath = self.giftray.iconPath
-        self.sicon, self.hicon, self.used_ico = _icon.GetIcon(iconPath, giftray, self.ico)
+        self.sicon, self.used_ico = _icon.GetIcon(iconPath, giftray, self.ico)
         if self.ahk:
             self.hhk, self.ahk, err = giftray.ahk_translator.ahk2hhk(self.ahk)
             if len(err):
@@ -103,7 +103,7 @@ class main:
                 out = "Action '" +self.show+ "' failed: "+e_str
         #return out
         if out:
-            _general.PopUp(self.giftray.main_hicon, self.show, out)
+            _general.PopUp(self.show, out)
         return
 
     def _Run(self):

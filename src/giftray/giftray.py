@@ -134,16 +134,19 @@ class giftray(object):
             self.hhk.clear()
         else:
             self.hhk = []
-        self.conf = os.getenv('USERPROFILE')+'/'+self.name+'/'+self.name+".conf"
         if hasattr(self, "icos"):
             self.icos.clear()
         else:
             self.icos = []
-        #TODO: clean self.main_sicon, self.main_hicon in reset
+        if hasattr(self, "main_error"):
+            self.main_error.clear()
+        else:
+            self.main_error = []
+        #TODO: clean self.main_sicon in reset
         if hasattr(self, "nb_hotkey"):
             for i in range(self.nb_hotkey):
                 ctypes.windll.user32.UnregisterHotKey(None, i)
-        self.nb_hotkey = 0
+        self.conf               = os.path.abspath(posixpath.join( os.getenv('USERPROFILE'), self.name, self.name+".conf"))
         self.conf_colormainicon = ""
         self.conf_coloricons    = ""
         self.conf_loglevel      = "WARNING"
@@ -152,7 +155,8 @@ class giftray(object):
         self.conf_ico           = ""
         self.conf_icoPath       = ""
         self.iconPath           = ""
-        self.main_error         = ""
+        self.conf_example       = False
+        self.nb_hotkey          = 0
 
     def _Restart(self):
         self._ResetVar()
@@ -207,6 +211,8 @@ class giftray(object):
                         self.conf_ico = str(config[section][k])
                     elif k.casefold() == 'IcoPath'.casefold():
                         self.conf_icoPath = str(config[section][k])
+                    elif k.casefold() == 'Examples'.casefold():
+                        self.conf_example = (config[section][k].lower().capitalize() == "True")
                     else :
                         self.logger.error(section+"->"+k+"not supported")
 
@@ -222,11 +228,11 @@ class giftray(object):
         self.tray.setIcon(sicon)
         #time.sleep(3)
         if self.conf_ico:
-            self.main_sicon, self.main_hicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.conf_ico)
+            self.main_sicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.conf_ico)
         else:
-            self.main_sicon, self.main_hicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.name+"-0.ico")
+            self.main_sicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.name+"-0.ico")
         if not path_ico or "default_default" in path_ico:
-            self.main_sicon, self.main_hicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.name+".ico")
+            self.main_sicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.name+".ico")
 
         #Set ico to Tray
         self.tray.setIcon(self.main_sicon)
@@ -235,7 +241,7 @@ class giftray(object):
         d_path_ico = _icon.GetIcon(
                             _icon.ValidateIconPath(path = "", color   = self.conf_colormainicon, project = self.name),
                             self,
-                            ico=self.name+"-0.ico")[2]
+                            ico=self.name+"-0.ico")[1]
         if False:
             print(path_ico)
             print(d_path_ico)
@@ -282,10 +288,15 @@ class giftray(object):
 
 
         #Find other conf files
-        subconfs=glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf'))
+        subconfs      = ['0000000000']
+        files         = glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf'))
+        subconfs     += natsort.os_sorted(files)
+        if self.conf_example:
+            files     = glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf.example'))
+            subconfs += natsort.os_sorted(files)
         #Load actions config to variables
-        for subconf in ['0000000000']+natsort.os_sorted(subconfs):
-            if subconf == self.conf:
+        for subconf in files:
+            if   subconf == self.conf:
                 continue
             elif subconf != '0000000000':
                 try:
@@ -364,7 +375,7 @@ class giftray(object):
                 menu_not.addAction(act)
         # loop on modules in error
         menu_err = PyQt6.QtWidgets.QMenu('In error',self.tray_menu)
-        sicon_err, _, _ = _icon.GetIcon(self.iconPath, self, ico='default_empty.ico')
+        sicon_err, _ = _icon.GetIcon(self.iconPath, self, ico='default_empty.ico')
         for i in self.error:
             act=PyQt6.QtGui.QAction(sicon_err,i,menu_err)
             act.triggered.connect(functools.partial(self._ConnectorError, i, self.error[i]))
@@ -381,7 +392,7 @@ class giftray(object):
             self.tray_menu.addMenu(menu_err)
         if self.main_error:
             act = PyQt6.QtGui.QAction(self.showname + " Error",self.tray_menu)
-            act.triggered.connect(functools.partial(self._error, self.showname, self.main_error))
+            act.triggered.connect(functools.partial(self._ConnectorError, self.showname, ""))
             self.tray_menu.addAction(act)
         self.tray_menu.addSeparator()
         # Define menu default actions
@@ -389,7 +400,7 @@ class giftray(object):
         #ToDo conf Gui
         #ToDo about Gui
         #ToDo update link
-        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_generator.ico')
+        sicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_generator.ico')
         act=PyQt6.QtGui.QAction('Generate HotKey',self.tray_menu)
         if picon:
             act.setIcon(sicon)
@@ -397,27 +408,27 @@ class giftray(object):
         #act.setStatusTip('not developed')
         #act.setShortcut('Ctrl+R')
         self.tray_menu.addAction(act)
-        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_showconf.ico')
+        sicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_showconf.ico')
         act=PyQt6.QtGui.QAction('Show current configuration',self.tray_menu)
         if picon:
             act.setIcon(sicon)
         act.setDisabled(True)
         self.tray_menu.addAction(act)
-        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_about.ico')
+        sicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_about.ico')
         act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
         if picon:
             act.setIcon(sicon)
         act.triggered.connect(self._ConnectorAbout)
         act.setDisabled(True)
         self.tray_menu.addAction(act)
-        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_reload.ico')
+        sicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_reload.ico')
         act=PyQt6.QtGui.QAction('Reload '+self.showname,self.tray_menu)
         if picon:
             act.setIcon(sicon)
         act.triggered.connect(self._Restart)
         self.tray_menu.addAction(act)
         self.tray_menu.addSeparator()
-        sicon, hicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_exit.ico')
+        sicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_exit.ico')
         act=PyQt6.QtGui.QAction('Exit '+self.showname,self.tray_menu)
         if picon:
             act.setIcon(sicon)
@@ -433,7 +444,8 @@ class giftray(object):
         config = configparser.ConfigParser()
         config["GENERAL"] = { "ColorMainIcon" : self.conf_colormainicon,  #default "blue"
                               "ColorIcons"    : self.conf_coloricons   ,  #default "blue"
-                              "LogLevel"      : self.conf_loglevel     }  #default "WARNING"
+                              "LogLevel"      : self.conf_loglevel     ,  #default "WARNING"
+                              "Examples"      : self.conf_example      } #default False
         for i in self.install:
             config[i]={ "function" : self.install[i].module+ "." + self.install[i].name}
             #mandatory options

@@ -89,7 +89,6 @@ def _ValidateIconPath_sub(path="",color="black",project=""):
     return ""
 
 def GetIcon(path,giftray,ico="default_default.ico"):
-    hicon = None
     if not ico:
         ico="default_default.ico"
     last_try=False
@@ -105,7 +104,7 @@ def GetIcon(path,giftray,ico="default_default.ico"):
             standardIcon = PyQt6.QtGui.QIcon(iconPathName)
             #hicon = win32gui.LoadImage(0, iconPathName, win32con.IMAGE_ICON, 0, 0, icon_flags)
             if standardIcon.availableSizes() != []:
-                return standardIcon, hicon, iconPathName
+                return standardIcon, iconPathName
         except:
             pass
     if not last_try:
@@ -114,4 +113,4 @@ def GetIcon(path,giftray,ico="default_default.ico"):
     standardIcon = PyQt6.QtWidgets.QWidget().style().standardIcon(
                         #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
                         PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
-    return standardIcon, hicon, ""
+    return standardIcon, ""

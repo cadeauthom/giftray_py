@@ -68,7 +68,7 @@ class WindowsHandler():
 def Str2Class(module,feat):
     return getattr(sys.modules[module], feat)
 
-def PopUp(hicon, title, msg):
+def PopUp(title, msg):
     def callback (hwnd, hwnds):
         _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
         if found_pid == pid:
@@ -84,7 +84,7 @@ def PopUp(hicon, title, msg):
     hwnd = hwnds[0]
     win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY,
                                 (hwnd, 0, win32gui.NIF_INFO, win32con.WM_USER + 20,
-                                  hicon, "Balloon Tooltip", msg, 200, title, win32gui.NIIF_NOSOUND))
+                                  None, "Balloon Tooltip", msg, 200, title, win32gui.NIIF_NOSOUND))
     #(hwnd, id, win32gui.NIF_*, CallbackMessage, hicon, Tooltip text (opt), Balloon tooltip text (opt), Timeout (ms), title (opt),  win32gui.NIIF_*)
     return
 
