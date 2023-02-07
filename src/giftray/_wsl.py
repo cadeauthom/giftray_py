@@ -7,10 +7,67 @@ import subprocess
 from . import _feature
 from . import _general
 
-wsl_path = _general.WindowsHandler().GetRealPath('wsl.exe')
+class general(_feature.general):
+    def _Init(self):
+        tmp = _general.WindowsHandler().GetRealPath( "wsl.exe" )
+        if not tmp:
+            self.AddError("'wsl.exe' not found")
+        else:
+            self.conf["wsl_path"] = tmp
+        return
 
-class default_wsl(_feature.main):
-    def _Path_Win2Lin(pathW):
+    def _Parse(self,others):
+        for i in others:
+            if i == "vcxsrv".casefold():
+                tmp = _general.WindowsHandler().GetRealPath( others[i])
+                if not tmp:
+                    self.AddError("'vcxsrv' ("+others[i]+") does not exist")
+                else:
+                    self.giftray.logger.info("'vcxsrv' set to "+tmp)
+                    self.conf["vcxsrv"] = tmp
+            elif i == "vcxsrv_timeout".casefold():
+                try:
+                    self.conf["vcxsrv_timeout"] = int(others[i])
+                except ValueError:
+                    self.AddError("'vcxsrv_timeout' not an intger")
+                if self.conf["vcxsrv_timeout"] < 0 :
+                    self.AddError("'vcxsrv_timeout' not positive")
+                elif self.conf["vcxsrv_timeout"] > 10:
+                    self.AddError("'vcxsrv_timeout' to big")
+            else:
+                self.AddError("'"+i+"' not defined")
+        return
+
+class cmd(_feature.main):
+    def _StartX(self):
+        x_running   = False
+        x_nb        = 0
+        all_nb      = []
+        vcxsrv = self.vcxsrv
+        for proc in psutil.process_iter(['exe','cmdline','status']):
+            if vcxsrv != proc.info['exe']:
+                continue
+            for arg in proc.info['cmdline']:
+                if arg.startswith(':'):
+                    last_nb = int(arg[1:])
+            if proc.info['status'] == 'running':
+                x_nb = last_nb
+                x_running = True
+                break
+            all_nb.append(last_nb)
+            while x_nb in all_nb :
+                x_nb += 1
+        x_nb = ":"+str(x_nb)
+        if not x_running:
+            x_cmd = [vcxsrv, x_nb, "-ac","-terminate","-lesspointer","-multiwindow","-clipboard","-wgl","-dpi","auto"]
+            x = subprocess.Popen( x_cmd, shell=True)
+            time.sleep(2)# ToDo self.vcxsrv_timeout)
+            if x.poll() != None:
+                self.giftray.logger.error("Fail to start vcxsrv in '" +self.show+"' ("+' '.join(x_cmd)+")")
+                return
+        return x_nb
+
+    def _Path_Win2Lin(self,pathW):
         driveL = ""
         driveW = ""
         pathL = "~"
@@ -40,52 +97,39 @@ class default_wsl(_feature.main):
             pathL = (driveL + "/".join(a[1].split('\\'))).replace(" ","\\ ").lower()
         return pathL,driveW,driveL
 
-class proxy(default_wsl):
-    def _Init(self,others):
-        self.host = ""
-        self.port = 8080
-        for i in others:
-            k = i.casefold()
-            if k == "host".casefold():
-                self.host = others[i]
-            elif k == "port".casefold():
-                try:
-                    self.port = int(others[i])
-                except ValueError:
-                    self.AddError("'port' not an intger")
-                if self.vcxsrv_timeout < 0 :
-                    self.AddError("'port' not positive")
-            else:
-                self.AddError("'"+i+"' not defined")
-        if not self.host:
-            self.AddError("host not set in '" +self.show+"'")
-        if not wsl_path:
-            self.AddError("WSL not found")
-        return
-
-    def _GetOpt(self):
-        return ["host","port"]
-
-    def _Run(self):
-        cmd = 'ssh -C2qTnNf ' + self.host +' -D ' + str(self.port)
-        wsl_cmd = [wsl_path, 'bash', '-c', 'ps aux | grep "'+cmd+'" |grep -v grep || '+cmd]
-        exit_code = subprocess.Popen(wsl_cmd, shell=True)
-        return 'Start Proxy '+self.host+' on port '+ str(self.port)
-
-#TODO: move terminator to generic gui
-class terminator(default_wsl):
-    def _Init(self,others):
-        self.confvcxsrv = ""
-        self.vcxsrv = ""
-        # self.wsl = ""
+    def _Init(self,others,others_general):
+        self.allopt         += ["cmd","uniq","gui","out"]
+        self.cmd            = ""
+        self.uniq           = False
+        self.out            = ""
+        self.gui            = False
+        self.vcxsrv         = ""
         self.vcxsrv_timeout = 2
+        confvcxsrv_timeout = 0
+        confvcxsrv     = ""
         for i in others:
             k = i.casefold()
-            if k == "vcxsrv".casefold():
-                self.confvcxsrv = others[i]
+            if k == "cmd".casefold():
+                self.cmd = others[i]
+                self.setopt.append(k)
+            elif k == "gui".casefold():
+                self.gui = (others[i].lower().capitalize() == "True")
+                self.setopt.append(k)
+            elif k == "uniq".casefold():
+                self.uniq = (others[i].lower().capitalize() == "True")
+                self.setopt.append(k)
+            elif k == "out".casefold():
+                self.out = others[i]
+                self.setopt.append(k)
+            elif k == "vcxsrv".casefold():
+                confvcxsrv = others[i]
+                self.setopt.append(k)
+                self.allopt.append(k)
             elif k == "vcxsrv_timeout".casefold():
                 try:
-                    self.vcxsrv_timeout = int(others[i])
+                    confvcxsrv_timeout = int(others[i])
+                    self.setopt.append(k)
+                    self.allopt.append(k)
                 except ValueError:
                     self.AddError("'vcxsrv_timeout' not an intger")
                 if self.vcxsrv_timeout < 0 :
@@ -94,72 +138,63 @@ class terminator(default_wsl):
                     self.AddError("'vcxsrv_timeout' to big")
             else:
                 self.AddError("'"+i+"' not defined")
-        if not self.confvcxsrv:
-            self.AddError("'vcxsrv' path not defined")
-        else:
-            tmp = _general.WindowsHandler().GetRealPath(self.confvcxsrv)
+        if confvcxsrv_timeout:
+            self.vcxsrv_timeout = confvcxsrv_timeout
+        elif "vcxsrv_timeout" in others_general:
+            self.vcxsrv_timeout = others_general["vcxsrv_timeout"]
+        if confvcxsrv:
+            self.setopt.append("vcxsrv")
+            self.allopt.append("vcxsrv")
+            tmp = _general.WindowsHandler().GetRealPath( confvcxsrv )
             if not tmp:
-                self.AddError("'vcxsrv' ("+self.confvcxsrv+") does not exist")
+                self.AddError("'vcxsrv' ("+confvcxsrv+") does not exist")
             else:
                 self.giftray.logger.info("'vcxsrv' set to "+tmp)
                 self.vcxsrv = tmp
-        #not putting C:\Windows\System32\ in case windows upgrade changes the path
-        #tmp = _general.WindowsHandler().GetRealPath("wsl.exe")
-        if not wsl_path:
-            self.AddError("WSL not found")
-        # else:
-            # self.giftray.logger.info("'wsl' set to "+tmp)
-            # self.wsl = tmp
+        elif "vcxsrv" in others_general:
+            self.vcxsrv = others_general["vcxsrv"]
+        else:
+            self.AddError("'vcxsrv' path not defined")
+        if "wsl_path" in others_general:
+            self.wsl_path = others_general["wsl_path"]
+        if not self.cmd:
+            self.AddError("cmd not set in '" +self.show+"'")
+        if self.gui:
+            self.uniq = False
         return
 
-    def _GetOpt(self):
-        return ["vcxsrv","vcxsrv_timeout"]
-
     def _Run(self):
-        x_running   = False
-        x_nb        = 0
-        all_nb      = []
-        for proc in psutil.process_iter(['exe','cmdline','status']):
-            if self.vcxsrv != proc.info['exe']:
-                continue
-            for arg in proc.info['cmdline']:
-                if arg.startswith(':'):
-                    last_nb = int(arg[1:])
-            if proc.info['status'] == 'running':
-                x_nb = last_nb
-                x_running = True
-                break
-            all_nb.append(last_nb)
-            while x_nb in all_nb :
-                x_nb += 1
-        x_nb = ":"+str(x_nb)
-        if not x_running:
-            x_cmd = [self.vcxsrv, x_nb, "-ac","-terminate","-lesspointer","-multiwindow","-clipboard","-wgl","-dpi","auto"]
-            x = subprocess.Popen( x_cmd, shell=True)
-            time.sleep(self.vcxsrv_timeout)
-            if x.poll() != None:
-                self.giftray.logger.error("Fail to start vcxsrv in '" +self.show+"' ("+' '.join(x_cmd)+")")
-                return "Fail to start vcxsrv : "+' '.join(x_cmd)
-        pathW = _general.WindowsHandler().GetCurrentPath()
-        pathL,driveW,driveL = default_wsl._Path_Win2Lin(pathW)
-        if driveW != "":
-            file = '~/.bash_mount_msg.sh'
-            cmd = "mount | grep \'" + driveW + "\' >/dev/null"
-            cmd +=  " || ( ("
-            cmd +=          "grep '" + file + "' ~/.bashrc "
-            cmd +=          "|| echo -e '\\nif [ -f " + file + " ]; then\\n\\t. " + file + "\\n\\trm " + file + "\\nfi\\n' >>  ~/.bashrc "
-            cmd +=      ")"
-            cmd +=      " && echo 'sudo -- sh <<EOF' > " + file
-            cmd +=      " && echo 'mkdir -p " + driveL + "' >> " + file
-            cmd +=      " && echo 'mount -t drvfs \"" + driveW + "\\\" " + driveL + " -o rw,noatime,uid=1000,gid=1000,case=off' >> " + file
-            # or -o metadata
-            cmd +=      " && echo 'EOF' >> " + file
-            cmd +=      " && echo 'cd " + pathL + "' >> " + file
-            cmd +=  ") >> /dev/null"
-            wsl_cmd = [wsl_path, 'bash', '-c', cmd]
-            x = subprocess.Popen( wsl_cmd, shell=True)
-            x.wait()
-        cmd = 'DISPLAY=localhost' + x_nb + ' terminator --working-directory ' + pathL
-        wsl_cmd = [wsl_path, 'bash', '-c', cmd]
+        main_cmd = self.cmd
+        if '$folder' in self.cmd:
+            pathW = _general.WindowsHandler().GetCurrentPath()
+            pathL,driveW,driveL = self._Path_Win2Lin(pathW)
+            if driveW != "":
+                file = '~/.bash_mount_msg.sh'
+                cmd = "mount | grep \'" + driveW + "\' >/dev/null"
+                cmd +=  " || ( ("
+                cmd +=          "grep '" + file + "' ~/.bashrc "
+                cmd +=          "|| echo -e '\\nif [ -f " + file + " ]; then\\n\\t. " + file + "\\n\\trm " + file + "\\nfi\\n' >>  ~/.bashrc "
+                cmd +=      ")"
+                cmd +=      " && echo 'sudo -- sh <<EOF' > " + file
+                cmd +=      " && echo 'mkdir -p " + driveL + "' >> " + file
+                cmd +=      " && echo 'mount -t drvfs \"" + driveW + "\\\" " + driveL + " -o rw,noatime,uid=1000,gid=1000,case=off' >> " + file
+                # or -o metadata
+                cmd +=      " && echo 'EOF' >> " + file
+                cmd +=      " && echo 'cd " + pathL + "' >> " + file
+                cmd +=  ") >> /dev/null"
+                wsl_cmd = [self.wsl_path, 'bash', '-c', cmd]
+                x = subprocess.Popen( wsl_cmd, shell=True)
+                x.wait()
+            main_cmd = main_cmd.replace('$folder',pathL)
+        if self.uniq:
+            main_cmd = 'ps aux | grep "'+main_cmd+'" |grep -v grep >/dev/null|| '+main_cmd
+        if self.out:
+            main_cmd += ' > ' + self.out
+        if self.gui:
+            x_nb = self._StartX()
+            if not x_nb:
+                return "Fail to start vcxsrv"
+            main_cmd = 'DISPLAY=localhost' + x_nb + ' ' + main_cmd
+        wsl_cmd = [self.wsl_path, 'bash', '-c', main_cmd]
         exit_code = subprocess.Popen(wsl_cmd, shell=True)
-        return "Start Terminator"
+        return 'Run : '+ self.cmd

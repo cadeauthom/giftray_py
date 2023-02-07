@@ -51,3 +51,6 @@ tail -f giftray.log
 #android
 #   = connect (nmap, scrcpy)
 TODO: get_opt => get_help
+
+Known limitation:
+    wsl.cmd does not support output redirection (>)

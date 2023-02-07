@@ -5,13 +5,18 @@
 from . import _feature
 from . import _general
 
+class general(_feature.general):
+    pass
+
 class template(_feature.main):
-    def _Init(self,others):
+    def _Init(self,others,others_general):
+        self.allopt.append("localopt")
         self.localopt = "value"
         for i in others:
             k = i.casefold()
             if k == "localopt".casefold():
-                self.confvcxsrv = others[i]
+                self.localopt = others[i]
+                self.setopt.append(k)
             else:
                 self.AddError("'"+i+"' not defined")
         #initialisation of path and other variable
@@ -19,10 +24,6 @@ class template(_feature.main):
         #log useful info
         self.giftray.logger.info("template:set localvar to " + ' '.join(self.localvar))
         return
-
-    def _GetOpt(self):
-        #return options for config
-        return ["localopt"]
 
     def _Run(self):
         #run feature

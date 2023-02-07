@@ -1,0 +1,11 @@
+[Connect Android]
+	function = android.connect
+	ico = C:\Program Files\giftray\icons\blue\android_connect.ico
+	print = Connect phone
+	ahk =
+	menu = true
+	ip = 192.168.1.28
+	network = all
+	nmap = C:\Program Files (x86)\Nmap\nmap.exe
+	port = 5555
+	scrcpy = C:\Users\thomas\Documents\git\scrcpy\scrcpy-noconsole.exe

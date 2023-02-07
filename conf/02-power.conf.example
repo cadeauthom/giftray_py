@@ -1,0 +1,6 @@
+#[windows_addHibernate]
+#	function = windows_addHibernate
+#	ico = C:\Program Files\giftray\icons\blue\windows_addHibernate.ico
+#	print = Allow hibernation
+#	ahk =
+#	menu = true

@@ -12,8 +12,12 @@ import psutil
 from . import _feature
 from . import _general
 
+# class general(_feature.general):
+    # pass
+
 class script(_feature.main):
-    def _Init(self,others):
+    def _Init(self,others,others_general):
+        self.allopt += ["cmd","args","admin"]
         self.cmd = ""
         self.args = ""
         self.admin = False
@@ -21,10 +25,13 @@ class script(_feature.main):
             k = i.casefold()
             if k == "cmd".casefold():
                 self.cmd = others[i]
+                self.setopt.append(k)
             elif k == "args".casefold():
                 self.args = others[i]
+                self.setopt.append(k)
             elif k == "admin".casefold():
                 self.admin = (others[i].lower().capitalize() == "True")
+                self.setopt.append(k)
             else:
                 self.AddError("'"+i+"' not defined")
         if not self.cmd:
@@ -36,9 +43,6 @@ class script(_feature.main):
             else:
                 self.cmd = cmd
         return
-
-    def _GetOpt(self):
-        return ["cmd","args","admin"]
 
     def _Run(self):
         out = self.cmd
@@ -64,7 +68,8 @@ class alwaysontop(_feature.main):
                     0,0,0,0,
                     win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
 
-    def _Init(self,others):
+    def _Init(self,others,others_general):
+        self.allopt += []
         self.top_hwnd = set()
         self.menu = False
         for i in others:
@@ -74,9 +79,6 @@ class alwaysontop(_feature.main):
             else:
                 self.AddError("'"+i+"' not defined")
         return
-
-    def _GetOpt(self):
-        return []
 
     def _Run(self):
         hwnd = win32gui.GetForegroundWindow()

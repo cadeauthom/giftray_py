@@ -116,6 +116,8 @@ class ahk():
 
     def hhk2ahk(self,hhk):
         ahk = ""
+        if (not hhk["mod"]) or (not hhk["key"]):
+            return ahk
         if hhk["mod"] & self.ahk_mods["MOD_CONTROL"]:
             ahk += "Ctrl + "
         if hhk["mod"] & self.ahk_mods["MOD_WIN"]:
@@ -125,9 +127,12 @@ class ahk():
         if hhk["mod"] & self.ahk_mods["MOD_ALT"]:
             ahk += "Alt + "
         if hhk["key"] in self.ahk_keys:
+            #remove "VK_"
             ahk += self.ahk_keys[hhk["key"]][3:]
         else:
-            ahk += chr(hhk["key"]).lower()
+            #TODO: find how to import MAPVK_VK_TO_CHAR
+            MAPVK_VK_TO_CHAR=2
+            ahk += chr(win32api.MapVirtualKey(hhk["key"],MAPVK_VK_TO_CHAR)).lower()
         return ahk
 
     def ahk2hhk(self,ahk):

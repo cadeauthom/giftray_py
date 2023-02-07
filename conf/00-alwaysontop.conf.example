@@ -1,0 +1,5 @@
+[AlwaysOnTop]
+	function = windows.alwaysontop
+	ico = C:\Program Files\giftray\icons\blue\windows_WinAlwaysontop.ico
+	ahk = Win + *
+	menu = false

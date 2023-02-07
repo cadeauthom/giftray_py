@@ -57,7 +57,7 @@ def GetTrayIcon(color="black",project=""):
     return PyQt6.QtWidgets.QWidget().style().standardIcon( PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion)
 
 def ValidateIconPath(path="",color="black",project=""):
-    return _ValidateIconPath_sub(path,color,project).replace('/','\\')
+    return _ValidateIconPath_sub(path,color,project).replace('\\','/')
 
 def _Test_Path(path):
     if not os.path.isdir(path):

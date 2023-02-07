@@ -1,0 +1,7 @@
+#[windows_ReloadMic]
+#	function = windows_ReloadMic
+#	ico = C:\Program Files\giftray\icons\blue\windows_ReloadMic.ico
+#	print = Reload Microphone
+#	ahk = Ctrl + Win + m
+#	menu = true
+#	mode = regedit/wmic

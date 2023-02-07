@@ -1,43 +1,92 @@
 from . import _icon
 from . import _general
 
-'''
-def __init__(self,show,val,giftray):
-    obviously called
-def _custom_init(self,others):
-    by __init__
-def get_opt(self):
-def _custom_get_opt(self):
-    by giftray _print_conf
-def run(self):
-def _custom_run(self):
-    by giftray when click/ahk
-def print_error(self, sep='\n', prefix='\t- '):
-    by giftray _read_conf
-def is_ok(self):
-    by giftray _read_conf
-#def is_defined(self):
-def is_in_menu(self):
-    by giftray _read_conf
-def get_hk(self):
-    by giftray _read_conf
-def print(self):
-    by giftray _read_conf
-'''
+class general:
+    def __init__(self,giftray,show):
+        self.giftray= giftray
+        self.show   = show
+        self.Clean()
+        self._Init()
+        return
+
+    def _Init(self):
+        return
+
+    def Parse(self,val):
+        if self.set :
+            self.AddError("General configuration set several times for "+self.show)
+            return
+        if self.used :
+            self.AddError("General configuration set after being used for "+self.show)
+            return
+        self.set = True
+        others = dict()
+        for i in val:
+            k = i.casefold()
+            if k == "color".casefold():
+                if val[i] != self.giftray.conf_coloricons:
+                    self.conf["color"] = val[i]
+                    self.subconf["color"] = val[i]
+            elif k == "ico".casefold():
+                self.conf["ico"] = val[i]
+                self.subconf["ico"] = val[i]
+            else:
+                others[i]=val[i]
+        self._Parse(others)
+        return
+
+    def _Parse(self,others):
+        for i in others:
+            self.AddError("'"+i+"' not defined")
+        return
+
+    def Clean(self):
+        self.error  = []
+        self.conf   = dict()
+        self.subconf= dict()
+        self.set    = False
+        self.used   = False
+        return
+
+    def GetConf(self,partial=False):
+        self.used = True
+        if partial: return self.subconf
+        return self.conf
+
+    def GetError(self):
+        return self.error
+
+    def AddError(self,error):
+        self.giftray.logger.error(error + " in '" +self.show+"'")
+        self.error.append(error)
+        return
+
 class main:
     def __init__(self,show,val,giftray):
+        self.allopt    = []
+        self.setopt    = []
+        others_general = dict()
         others       = dict()
         self.giftray = giftray
         self.show    = show
-        self.module  = type(self).__module__
+        self.module  = type(self).__module__[(len(self.giftray.name)+2):]
         self.name    = type(self).__name__
-        self.ico     = self.module[(len(self.giftray.name)+2):]+"_"+self.name+".ico"
+        self.ico     = self.module+"_"+self.name+".ico"
         self.used_ico= ""
         self.ahk     = ""
         self.menu    = False
-        self.error   = []
+        self.error   = self.giftray.avail_modules[self.module].GetError()
         self.hhk     = []
         self.color   = ""
+        general_conf = self.giftray.avail_modules[self.module].GetConf()
+        for i in general_conf:
+            k = i.casefold()
+            if k == "color".casefold():
+                self.color = general_conf[i]
+            elif k == "ico".casefold():
+                self.ico   = general_conf[i]
+            else:
+                others_general[i]=general_conf[i]
         for i in val:
             k = i.casefold()
             if k == "function".casefold():
@@ -56,9 +105,9 @@ class main:
             else:
                 others[i]=val[i]
 
-        self._Init(others)
+        self._Init(others,others_general)
         iconPath = ""
-        if (self.color and self.color!=self.giftray.coloricons):
+        if (self.color and self.color!=self.giftray.conf_coloricons):
             iconPath = _icon.ValidateIconPath( path    = self.giftray.iconPath,\
                                               color   = self.color, \
                                               project = self.giftray.name)
@@ -75,20 +124,20 @@ class main:
 
         return
 
-    def _Init(self,others):
+    def _Init(self,others,others_general):
         for i in others:
             self.AddError("'"+i+"' not defined")
         return
 
-    def GetOpt(self):
-        return self._GetOpt()
-
-    def _custom_get_opt(self):
-        return []
+    def GetOpt(self,sub=False):
+        if sub:
+            return self.setopt
+        return self.allopt
 
     def AddError(self,error):
         self.giftray.logger.error(error + " in '" +self.show+"'")
         self.error.append(error)
+        return
 
     def Run(self):
         if self.error:

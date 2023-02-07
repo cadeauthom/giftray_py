@@ -25,7 +25,7 @@ import natsort
 
 from . import _general
 from . import _icon
-#from . import feature
+from . import _feature
 #from . import _template
 from . import _wsl
 from . import _windows
@@ -42,6 +42,7 @@ class giftray(object):
         #self.modules           = ['template'] # to debug with empty application
         logging.basicConfig     ( filename=self.name+".log",
                                   level=0,
+                                  encoding='utf-8',
                                   format='%(asctime)s - %(levelname)s - %(message)s',
                                   datefmt='%d-%b-%y %H:%M:%S')
         self.logger             = logging.getLogger(__name__)
@@ -58,6 +59,7 @@ class giftray(object):
         self.tray.show          ()
         self.tray.activated.connect( self._ConnectorTray )
         self.avail              = []
+        self.avail_modules      = dict()
         for m in self.modules:
             mod=self.name+'._'+m
             if not mod in sys.modules:
@@ -67,6 +69,9 @@ class giftray(object):
             for fct, obj in inspect.getmembers(tmp):
                 if not (inspect.isclass(obj) and fct != 'main'):
                     continue
+                if (fct == "general" ):
+                    self.avail_modules[m] = _general.Str2Class(mod,fct)(self,m)
+                    continue
                 full = m+"."+fct
                 if mod != obj.__module__:
                     self.logger.error("Issue while loading '" +full+ "': mismatch modules name: '"+m+"'!='"+obj.__module__+"'")
@@ -74,9 +79,12 @@ class giftray(object):
                 if fct != obj.__name__:
                     self.logger.error("Issue while loading '" +full+ "': mismatch feature name: '"+fct+"'!='"+obj.__name__+"'")
                     continue
-                if not "_custom_run" in (dir(obj)):
+                if not "_Run" in (dir(obj)):
                     self.logger.error("Feature '" +full+ "' does not have '_custom_run' defined")
+                    continue
                 self.avail.append(full)
+            if not m in self.avail_modules:
+                self.avail_modules[m] = _feature.general(self,m)
         self._Restart            ()
         self.logger.info        ("Entering wait state")
         th = _general.KThread(target=self._Thread4Flush)
@@ -184,6 +192,7 @@ class giftray(object):
             self.main_error += "Fail to find configuration"
             self.logger.error(self.main_error)
         else:
+            self.logger.info('Configuration found : '+self.conf)
             try:
                 config.read(self.conf)
             except Exception as e:
@@ -299,15 +308,17 @@ class giftray(object):
             if   subconf == self.conf:
                 continue
             elif subconf != '0000000000':
+                lsubconf = subconf
+                subconf  = os.path.basename(lsubconf)
                 try:
-                    config.read(subconf)
+                    config.read(lsubconf)
                 except Exception as e:
                     print_error = "Fail to read configuration (" + subconf + "): " + str(e)
                     if self.main_error : self.main_error += ', '
                     self.main_error += print_error
                     self.logger.error(print_error)
             else:
-                subconf = self.conf
+                subconf = os.path.basename(self.conf)
             for section in config.sections():
                 if section.casefold() != 'GENERAL'.casefold():
                     for i in config[section]:
@@ -318,6 +329,9 @@ class giftray(object):
                     if section in self.error: continue
                     if "function" in config[section]:
                         fct = config[section]["function"].casefold()
+                    elif section.casefold() in self.modules :
+                        self.avail_modules[section.casefold()].Parse(config[section])
+                        continue
                     else:
                         self.logger.error("'function' not defined in '"+section+"' ("+subconf+")")
                         continue
@@ -437,6 +451,7 @@ class giftray(object):
         self.tray.setContextMenu(self.tray_menu)
 
         self.ahk_thread.start()
+        #print(self._PrintConf())
         return
 
     def _PrintConf(self):
@@ -445,7 +460,13 @@ class giftray(object):
         config["GENERAL"] = { "ColorMainIcon" : self.conf_colormainicon,  #default "blue"
                               "ColorIcons"    : self.conf_coloricons   ,  #default "blue"
                               "LogLevel"      : self.conf_loglevel     ,  #default "WARNING"
-                              "Examples"      : self.conf_example      } #default False
+                              "Examples"      : self.conf_example      }  #default False
+        for i in self.avail_modules:
+            m = i.upper()
+            config[m]={}
+            arr = self.avail_modules[i].GetConf(partial=True)
+            for opt in arr:
+                config[m][opt] = arr[opt]
         for i in self.install:
             config[i]={ "function" : self.install[i].module+ "." + self.install[i].name}
             #mandatory options
@@ -463,11 +484,17 @@ class giftray(object):
                 if (main_path_ico != path_ico):
                     config[i]["ico"] = self.install[i].used_ico
                 else:
-                    if (col_ico != main_col_ico):
+                    if "color" in config[self.install[i].module.upper()]:
+                        if col_ico != config[self.install[i].module.upper()]["color"]:
+                            config[i]["color"] = col_ico
+                    elif (col_ico != main_col_ico):
                         config[i]["color"] = col_ico
-                    if (name_ico != self.install[i].module+ "_" + self.install[i].name + ".ico"):
+                    if "ico" in config[self.install[i].module.upper()]:
+                        if name_ico != config[self.install[i].module.upper()]["ico"]:
+                            config[i]["ico"] = name_ico
+                    elif (name_ico != self.install[i].module+ "_" + self.install[i].name + ".ico"):
                         config[i]["ico"] = name_ico
-            for opt in self.install[i].get_opt():
+            for opt in self.install[i].GetOpt():
                 config[i][opt]=str(getattr(self.install[i], opt))
         f = io.StringIO()
         config.write(f)
@@ -502,7 +529,7 @@ class giftray(object):
         for ahk in self.ahk:
             if (ctypes.windll.user32.RegisterHotKey(None, self.nb_hotkey+1, self.install[self.ahk[ahk]].hhk["mod"] , self.install[self.ahk[ahk]].hhk["key"])):
                 self.nb_hotkey += 1
-                self.logger.debug("register "+str(ahk))
+                self.logger.debug("register "+ahk)
             else:
                 self.install[self.ahk[ahk]].AddError("Fail to register Hotkey ("+ahk+")")
                 self.error[self.ahk[ahk]]=""
@@ -572,16 +599,3 @@ class giftray(object):
         box.setIconPixmap(p)
         box.exec()
         return
-
-if __name__ == '__main__':
-    a=MainClass()
-
-    '''
-    import threading
-    main_thread = threading.current_thread()
-    for t in threading.enumerate():
-        if t is main_thread:
-           pass
-        else:
-            ctypes.windll.user32.PostThreadMessageW(t.native_id, win32con.WM_QUIT, 0, 0)
-    '''

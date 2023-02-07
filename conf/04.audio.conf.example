@@ -1,0 +1,16 @@
+#[windows_MuteUnmute]
+#	function = windows_MuteUnmute
+#	ico = C:\Program Files\giftray\icons\blue\windows_MuteUnmute.ico
+#	print = Mute/Unmute
+#	ahk = Win + <
+#	menu = true
+#	device = Capture/Playback
+#
+#[windows_Volume]
+#	function = windows_Volume
+#	ico = C:\Program Files\giftray\icons\blue\windows_Volume.ico
+#	print = Volume Change
+#	ahk = Alt + NumpadSub
+#	menu = false
+#	device = Capture/Playback
+#	direction = Up/Down
