@@ -5,11 +5,7 @@ export path_python=/mnt/c/Users/tcadeau/AppData/Local/Programs/Python/Python310
 #or 7 for bpy
 alias wpython='$path_python/python.exe'
 
-wpython -m pip install --upgrade pip
-wpython -m pip install --upgrade wheel setuptools future_fstrings
-wpython -m pip install --upgrade pyinstaller pywin32 psutil
-wpython -m pip install --upgrade PyQt6 notify-py
-wpython -m pip install --upgrade cx_Freeze
+wpython -m pip install --upgrade pip wheel setuptools future_fstrings pyinstaller pywin32 psutil PyQt6 notify-py cx_Freeze
 #wpython -m pip install numpy
 #wpython -m pip install Pyside2
 #wpython -m pip install keyboard
@@ -27,11 +23,6 @@ unzip MSIX-*64.zip
 curl -s https://api.github.com/repos/wixtoolset/wix3/releases/latest | grep "browser_download_url.*64.zip" |head -1| cut -d '"' -f 4  |wget -qi -
 mkdir wix; cd wix; unzip ../wix*.zip
 
-# Build
-
-wpython -m PyInstaller --onefile test.py
-wpython -m PyInstaller --noconfirm --upx-dir="$UPX-PATH" --icon virtualBox_KillVMs.ico test.spec
-#--log-level TRACE
 
 # Debug run/kill/logs
 wpython src/giftray.py

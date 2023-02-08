@@ -99,8 +99,8 @@ class giftray(object):
         return
 
     def __del__(self):
-        self.app.quit()
         self._ResetVar()
+        self.app.quit()
         self.logger.info("Exiting")
 
     def _ResetVar(self):

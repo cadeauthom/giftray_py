@@ -39,7 +39,8 @@ ICO		= $(PATH_ICO)/$(PROJECT).ico
 SVG		= $(wildcard $(PATH_SVG)/*.svg)
 PY		= $(wildcard src/*.py)
 CFG		= src/setup.cfg
-CONF		= $(PATH_CONF)/giftray.conf
+CONF    = $(PATH_CONF)/giftray.conf
+CONFS   = $(wildcard conf/*.conf) $(wildcard conf/*.conf.example)
 SVG_PNG = $(wildcard $(PATH_SVG)/$(PROJECT)-*.svg)
 ICOS_BLUE   	= $(patsubst $(PATH_SVG)/%.svg, $(PATH_ICO)/blue/%.ico, $(SVG))
 ICOS_BLACK  	= $(patsubst $(PATH_SVG)/%.svg, $(PATH_ICO)/black/%.ico,$(SVG))
@@ -68,7 +69,7 @@ ico: $(ICOS_BLUE) $(ICOS_BLACK) $(ICOS_RED) $(ICOS_GREEN) $(ICO)
 $(ICO):
 	cp $(PATH_ICO)/blue/$(PROJECT)-0.ico $@
 	
-$(CONF):
+$(CONF): $(CONFS)
 	mkdir -p $(@D)
 	cp conf/* $(@D)/
 
