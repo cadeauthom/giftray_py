@@ -41,10 +41,11 @@ class giftray(object):
         self.name               = "giftray"
         self.modules            = ['wsl','windows']
         #self.modules           = ['template'] # to debug with empty application
-        userdir = posixpath.join(os.getenv('USERPROFILE'), self.showname)
-        filelog = posixpath.join(userdir, self.name+".log")
+        self.userdir            = posixpath.join(os.getenv('USERPROFILE'), self.showname)
+        filelog                 = posixpath.join(self.userdir, self.name+".log")
         if "\\python" in sys.executable:
-            filelog = self.name+".log"
+            filelog             = self.name+".log"
+            self.userdir        = posixpath.join(os.path.dirname(sys.executable),"conf")
         else:
             # executable not python; test if user dir exists
             if not os.path.exists(userdir):
@@ -115,10 +116,14 @@ class giftray(object):
         self.logger.info("Exiting")
 
     def _ResetVar(self):
+        if hasattr(self, "avail_modules"):
+            for i in self.avail_modules:
+                self.avail_modules[i].Clean()
         if hasattr(self, "tray_menu"):
              self.tray_menu.clear()
         else:
             self.tray_menu = PyQt6.QtWidgets.QMenu()
+            self.tray_menu.setToolTipsVisible(True)
         if hasattr(self, "ahk_thread"):
             if self.ahk_thread.is_alive():
                 #self.ahk_thread.kill()
@@ -128,7 +133,12 @@ class giftray(object):
             if self.lock.locked():
                 self.lock.release()
         else:
-            self.lock               = _general.Lock()
+            self.lock = _general.Lock()
+        if hasattr(self, "ahklock"):
+            if self.ahklock.locked():
+                self.ahklock.release()
+        else:
+            self.ahklock = _general.Lock()
         if hasattr(self, "ahk_translator"):
             pass
         else:
@@ -165,7 +175,7 @@ class giftray(object):
         if hasattr(self, "nb_hotkey"):
             for i in range(self.nb_hotkey):
                 ctypes.windll.user32.UnregisterHotKey(None, i)
-        self.conf               = os.path.abspath(posixpath.join( os.getenv('USERPROFILE'), self.name, self.name+".conf"))
+        self.conf               = os.path.abspath(posixpath.join( self.userdir, self.name+".conf"))
         self.conf_colormainicon = ""
         self.conf_coloricons    = ""
         self.conf_loglevel      = "WARNING"
@@ -199,17 +209,15 @@ class giftray(object):
                     exist_conf = True
                     break
         if not exist_conf:
-            if self.main_error : self.main_error += ', '
-            self.main_error += "Fail to find configuration"
-            self.logger.error(self.main_error)
+            self.main_error.append("Fail to find configuration")
+            self.logger.error("Fail to find configuration")
         else:
             self.logger.info('Configuration found : '+self.conf)
             try:
                 config.read(self.conf)
             except Exception as e:
                 print_error = "Fail to read configuration (" + self.conf + "): " + str(e)
-                if self.main_error : self.main_error += ', '
-                self.main_error += print_error
+                self.main_error.append(print_error)
                 self.logger.error(print_error)
         #Load GENERAL config to variables
         for section in config.sections():
@@ -237,32 +245,40 @@ class giftray(object):
                         self.logger.error(section+"->"+k+"not supported")
 
         #Get ico for Tray
+        #Get ico path
+        if self.conf_coloricons:
+            self.iconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
+                                                 color   = self.conf_coloricons,
+                                                 project = self.name)
+        else:
+            self.iconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
+                                                 project = self.name)
         if self.conf_colormainicon:
-            self.iconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
-                                                color   = self.conf_colormainicon,
-                                                project = self.name)
+            self.mainiconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
+                                                     color   = self.conf_colormainicon,
+                                                     project = self.name)
         else:
-            self.iconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
-                                                project = self.name)
-        sicon = _icon.GetTrayIcon(color="blue",project=self.name)
-        self.tray.setIcon(sicon)
-        #time.sleep(3)
+            self.mainiconPath = self.iconPath
+
         if self.conf_ico:
-            self.main_sicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.conf_ico)
+            self.main_sicon, path_ico = _icon.GetIcon(self.mainiconPath, self, ico=self.conf_ico)
         else:
-            self.main_sicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.name+"-0.ico")
+            self.main_sicon, path_ico = _icon.GetIcon(self.mainiconPath, self, ico=self.name+"-0.ico")
         if not path_ico or "default_default" in path_ico:
-            self.main_sicon, path_ico = _icon.GetIcon(self.iconPath, self, ico=self.name+".ico")
+            self.main_sicon, path_ico = _icon.GetIcon(self.mainiconPath, self, ico=self.name+".ico")
 
         #Set ico to Tray
+        #sicon = _icon.GetTrayIcon(color="blue",project=self.name)
+        #self.tray.setIcon(sicon)
+        #time.sleep(3)
         self.tray.setIcon(self.main_sicon)
 
-        #Save info of ico for conf
-        d_path_ico = _icon.GetIcon(
-                            _icon.ValidateIconPath(path = "", color   = self.conf_colormainicon, project = self.name),
-                            self,
-                            ico=self.name+"-0.ico")[1]
         if False:
+            #Save info of ico for conf
+            d_path_ico = _icon.GetIcon(
+                                _icon.ValidateIconPath(path = "", color   = self.conf_colormainicon, project = self.name),
+                                self,
+                                ico=self.name+"-0.ico")[1]
             print(path_ico)
             print(d_path_ico)
             if not path_ico:
@@ -301,12 +317,6 @@ class giftray(object):
             print("conf_icoPath         = "+self.conf_icoPath)
             print("conf_ico             = "+self.conf_ico)
 
-        #Get ico path
-        self.iconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
-                                            color   = self.conf_coloricons,
-                                            project = self.name)
-
-
         #Find other conf files
         subconfs      = ['0000000000']
         files         = glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf'))
@@ -325,8 +335,7 @@ class giftray(object):
                     config.read(lsubconf)
                 except Exception as e:
                     print_error = "Fail to read configuration (" + subconf + "): " + str(e)
-                    if self.main_error : self.main_error += ', '
-                    self.main_error += print_error
+                    self.main_error.append(print_error)
                     self.logger.error(print_error)
             else:
                 subconf = os.path.basename(self.conf)
@@ -383,49 +392,67 @@ class giftray(object):
                             self.menu.append(new_class.show)
             config.clear()
 
-        # Define menu configured actions
-        # loop on modules for main menu and for Not Clickable
-        menu_not = PyQt6.QtWidgets.QMenu('Not clickable',self.tray_menu)
-        for i in self.install:
-            if i in self.error:
-                # not filling here since not defined action are in error but not in install
-                pass
-            elif i in self.menu:
-                act = PyQt6.QtGui.QAction(self.install[i].sicon,i,self.tray_menu)
-                act.triggered.connect(functools.partial(self._ConnectorAction, i))
-                self.tray_menu.addAction(act)
-            else:
-                act = PyQt6.QtGui.QAction(self.install[i].sicon,i,menu_not)
+        # Start ahk_thread and wait for initialisation
+        self.ahklock.acquire()
+        self.ahk_thread.start()
+        if self.ahklock.acquire(timeout=10):
+            self.ahklock.release()
+            # Define menu configured actions
+            # loop on modules for main menu and for Not Clickable
+            menu_not = PyQt6.QtWidgets.QMenu('Not clickable',self.tray_menu)
+            for i in self.install:
+                if i in self.error:
+                    # not filling here since not defined action are in error but not in install
+                    pass
+                elif i in self.menu:
+                    act = PyQt6.QtGui.QAction(self.install[i].sicon,i,self.tray_menu)
+                    ahk = self.install[i].GetHK()[0]
+                    if ahk:
+                        act.setToolTip(ahk)
+                    #act.hovered.connect(lambda: PyQt6.QtWidgets.QToolTip.showText(PyQt6.QtGui.QCursor.pos(), "plop", None))
+                    act.triggered.connect(functools.partial(self._ConnectorAction, i))
+                    self.tray_menu.addAction(act)
+                else:
+                    act = PyQt6.QtGui.QAction(self.install[i].sicon,i,menu_not)
+                    act.setDisabled(True)
+                    menu_not.addAction(act)
+            # loop on modules in error
+            menu_err = PyQt6.QtWidgets.QMenu('Errors',self.tray_menu)
+            menu_err.setToolTipsVisible(True)
+            sicon_err, _ = _icon.GetIcon(self.mainiconPath, self, ico='default_empty.ico')
+            act=PyQt6.QtGui.QAction(self.main_sicon,self.showname,menu_err)
+            info,line = self._buildError(self.showname, "")
+            act.setToolTip(info)
+            act.triggered.connect(functools.partial(self._ConnectorError, self.showname, info+line))
+            if len(self.error) == 0 and len(self.main_error) == 0 :
                 act.setDisabled(True)
-                menu_not.addAction(act)
-        # loop on modules in error
-        menu_err = PyQt6.QtWidgets.QMenu('In error',self.tray_menu)
-        sicon_err, _ = _icon.GetIcon(self.iconPath, self, ico='default_empty.ico')
-        for i in self.error:
-            act=PyQt6.QtGui.QAction(sicon_err,i,menu_err)
-            act.triggered.connect(functools.partial(self._ConnectorError, i, self.error[i]))
             menu_err.addAction(act)
+            sicon_err, _ = _icon.GetIcon(self.iconPath, self, ico='default_empty.ico')
+            for i in self.error:
+                act=PyQt6.QtGui.QAction(sicon_err,i,menu_err)
+                info,line = self._buildError(i, self.error[i])
+                act.setToolTip(info)
+                act.triggered.connect(functools.partial(self._ConnectorError, i, info+line))
+                menu_err.addAction(act)
+
+            self.tray_menu.addSeparator()
+            menu_ina = PyQt6.QtWidgets.QMenu('Inactive',self.tray_menu)
+            #TODO find not use modules
+            if not menu_ina.isEmpty():
+                self.tray_menu.addMenu(menu_ina)
+            if not menu_not.isEmpty():
+                self.tray_menu.addMenu(menu_not)
+            if not menu_err.isEmpty():
+                self.tray_menu.addMenu(menu_err)
 
         self.tray_menu.addSeparator()
-        menu_ina = PyQt6.QtWidgets.QMenu('Inactive',self.tray_menu)
-        #TODO find not use modules
-        if not menu_ina.isEmpty():
-            self.tray_menu.addMenu(menu_ina)
-        if not menu_not.isEmpty():
-            self.tray_menu.addMenu(menu_not)
-        if not menu_err.isEmpty():
-            self.tray_menu.addMenu(menu_err)
-        if self.main_error:
-            act = PyQt6.QtGui.QAction(self.showname + " Error",self.tray_menu)
-            act.triggered.connect(functools.partial(self._ConnectorError, self.showname, ""))
-            self.tray_menu.addAction(act)
-        self.tray_menu.addSeparator()
+
         # Define menu default actions
         #ToDo generator Gui
         #ToDo conf Gui
         #ToDo about Gui
         #ToDo update link
-        sicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_generator.ico')
+        sicon, picon = _icon.GetIcon(self.mainiconPath, self, ico='default_generator.ico')
         act=PyQt6.QtGui.QAction('Generate HotKey',self.tray_menu)
         if picon:
             act.setIcon(sicon)
@@ -433,27 +460,27 @@ class giftray(object):
         #act.setStatusTip('not developed')
         #act.setShortcut('Ctrl+R')
         self.tray_menu.addAction(act)
-        sicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_showconf.ico')
+        sicon, picon = _icon.GetIcon(self.mainiconPath, self, ico='default_showconf.ico')
         act=PyQt6.QtGui.QAction('Show current configuration',self.tray_menu)
         if picon:
             act.setIcon(sicon)
         act.setDisabled(True)
         self.tray_menu.addAction(act)
-        sicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_about.ico')
+        sicon, picon = _icon.GetIcon(self.mainiconPath, self, ico='default_about.ico')
         act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
         if picon:
             act.setIcon(sicon)
         act.triggered.connect(self._ConnectorAbout)
         act.setDisabled(True)
         self.tray_menu.addAction(act)
-        sicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_reload.ico')
+        sicon, picon = _icon.GetIcon(self.mainiconPath, self, ico='default_reload.ico')
         act=PyQt6.QtGui.QAction('Reload '+self.showname,self.tray_menu)
         if picon:
             act.setIcon(sicon)
         act.triggered.connect(self._Restart)
         self.tray_menu.addAction(act)
         self.tray_menu.addSeparator()
-        sicon, picon = _icon.GetIcon(self.iconPath, self, ico='default_exit.ico')
+        sicon, picon = _icon.GetIcon(self.mainiconPath, self, ico='default_exit.ico')
         act=PyQt6.QtGui.QAction('Exit '+self.showname,self.tray_menu)
         if picon:
             act.setIcon(sicon)
@@ -461,8 +488,8 @@ class giftray(object):
         self.tray_menu.addAction(act)
         self.tray.setContextMenu(self.tray_menu)
 
-        self.ahk_thread.start()
         #print(self._PrintConf())
+        self.cp=0
         return
 
     def _PrintConf(self):
@@ -537,13 +564,20 @@ class giftray(object):
 
     def _Thread4ahk(self):
         self.logger.info("Starting ahk thread")
+        # Initialisation
+        if not self.ahklock.locked():
+            self.logger.critical("Fail to get lock to initial ahk thread")
+            self.main_error.append("Fail to get lock to initial ahk thread")
         for ahk in self.ahk:
             if (ctypes.windll.user32.RegisterHotKey(None, self.nb_hotkey+1, self.install[self.ahk[ahk]].hhk["mod"] , self.install[self.ahk[ahk]].hhk["key"])):
                 self.nb_hotkey += 1
                 self.logger.debug("register "+ahk)
             else:
-                self.install[self.ahk[ahk]].AddError("Fail to register Hotkey ("+ahk+")")
+                self.install[self.ahk[ahk]].AddError(self.ahk[ahk] +": Fail to register Hotkey ("+ahk+")")
                 self.error[self.ahk[ahk]]=""
+        if self.ahklock.locked():
+            self.ahklock.release()
+        # Waiting
         msg = ctypes.wintypes.MSG()
         while ctypes.windll.user32.GetMessageA(ctypes.byref(msg), None, 0, 0) != 0:
             if msg.message == win32con.WM_HOTKEY:
@@ -585,23 +619,35 @@ class giftray(object):
     def _ConnectorAbout(self):
         return
 
-    def _ConnectorError(self,name,error):
-        text = '<h3>'+name+'</h3>'
-        info = '<ul>'
+    def _buildError(self,name,error):
+        info = '<ul>\n'
         l=0
+        arr=[]
         if error:
             arr=[error]
-        else:
+        elif name == self.showname:
+            arr = self.main_error
+            for n in self.error:
+                if self.error[n]:
+                    arr+=[self.error[n]]
+                else:
+                    arr+=self.install[n].GetError()
+        elif name in self.install:
             arr=self.install[name].GetError()
         for e in arr:
             l = max(l,len(e))
-            info += '<li>' + e + '</li>'
-        info += '</ul>'
-        l = 45+min(l,80)
-        info += '<p>'
-        for i in range(l): info += '&nbsp;'
-        info += '</p>'
+            info += '\t<li>' + e + '</li>\n'
+        info += '</ul>\n'
+        l = 60+min(l,80)
+        line = '<p>'
+        for i in range(l): line += '&nbsp;'
+        line += '</p>'
+        return [info, line]
+
+    def _ConnectorError(self,name,info):
+        text = '<h3>'+name+' errors</h3>'
         box = PyQt6.QtWidgets.QMessageBox()
+        #box.setTextFormat(PyQt6.QtCore.Qt.RichText)
         box.setWindowTitle(self.showname)
         box.setText(text)
         box.setInformativeText(info)

@@ -1,13 +1,13 @@
 [WSL]
     vcxsrv  = C:\Program Files\VcXsrv\vcxsrv.exe
-    color   = green
-    ico     = wsl_proxy.ico
+    #color   = green
 
 [Proxy]
     function= wsl.cmd
-    color   = red
+    ico     = wsl_proxy.ico
+    #color   = red
     cmd     = ssh -C2qTnNf annuminas -D 8080
-    out     =
+    #out     =
     ahk     = Ctrl + Win + Maj + P
     menu    = True
     uniq    = True

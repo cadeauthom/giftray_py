@@ -1,6 +1,18 @@
-#[windows_addHibernate]
-#	function = windows_addHibernate
-#	ico = C:\Program Files\giftray\icons\blue\windows_addHibernate.ico
-#	print = Allow hibernation
-#	ahk =
-#	menu = true
+[Hibernate]
+    function= windows.script
+    ico     = default_exit.ico
+    ahk     = Control + Win + F4
+    cmd     = shutdown.exe
+    args    = /h
+    menu    = True
+    admin   = False
+    #location = active
+
+[Add Hibernate]
+    function= windows.script
+    ico     = windows_addHibernate.ico
+    cmd     = powercfg.exe
+    args    = /hibernate on
+    menu    = True
+    admin   = True
+    #location = active

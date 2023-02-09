@@ -1,12 +1,12 @@
-[Icon folder]
-	function = windows.script
-	cmd = C:\Program Files\giftray\icons\
-	args =
-	menu = true
+#[Folder]
+#	function = windows.script
+#	cmd = C:\Program Files\
+#	args =
+#	menu = true
 
-[Powershell admin]
-	function = windows.script
-	cmd = cmd.exe
-	args = /C Powershell
-	menu = true
-	admin = true
+#[Powershell admin]
+#	function = windows.script
+#	cmd = cmd.exe
+#	args = /C Powershell
+#	menu = true
+#	admin = true

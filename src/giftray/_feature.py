@@ -1,5 +1,6 @@
 from . import _icon
 from . import _general
+import copy
 
 class general:
     def __init__(self,giftray,show):
@@ -50,11 +51,11 @@ class general:
 
     def GetConf(self,partial=False):
         self.used = True
-        if partial: return self.subconf
-        return self.conf
+        if partial: return copy.copy(self.subconf)
+        return copy.copy(self.conf)
 
     def GetError(self):
-        return self.error
+        return copy.copy(self.error)
 
     def AddError(self,error):
         self.giftray.logger.error(error + " in '" +self.show+"'")
@@ -131,8 +132,8 @@ class main:
 
     def GetOpt(self,sub=False):
         if sub:
-            return self.setopt
-        return self.allopt
+            return copy.copy(self.setopt)
+        return copy.copy(self.allopt)
 
     def AddError(self,error):
         self.giftray.logger.error(error + " in '" +self.show+"'")
@@ -141,13 +142,12 @@ class main:
 
     def Run(self):
         if self.error:
-            out = self.error
+            out = '\n'.join(self.error)
         else:
             try:
                 out = self._Run()
             except Exception as e:
                 e_str = str(e)
-                print("Action '" +self.show+ "' failed: "+e_str)
                 self.giftray.logger.error("Action '" +self.show+ "' failed: "+e_str)
                 out = "Action '" +self.show+ "' failed: "+e_str
         #return out
@@ -159,7 +159,7 @@ class main:
         return
 
     def GetError(self):
-        return self.error
+        return copy.copy(self.error)
 
     def IsOK(self):
         if self.error:
