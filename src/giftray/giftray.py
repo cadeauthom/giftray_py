@@ -7,6 +7,7 @@ import inspect
 import time
 import datetime
 import glob
+import shutil
 #import win32api         # package pywin32
 import win32con
 import configparser
@@ -40,7 +41,17 @@ class giftray(object):
         self.name               = "giftray"
         self.modules            = ['wsl','windows']
         #self.modules           = ['template'] # to debug with empty application
-        logging.basicConfig     ( filename=self.name+".log",
+        userdir = posixpath.join(os.getenv('USERPROFILE'), self.showname)
+        filelog = posixpath.join(userdir, self.name+".log")
+        if "\\python" in sys.executable:
+            filelog = self.name+".log"
+        else:
+            # executable not python; test if user dir exists
+            if not os.path.exists(userdir):
+                #os.mkdir(userdir)
+                src = posixpath.join(os.path.dirname(sys.executable),"conf")
+                shutil.copytree(src,userdir)
+        logging.basicConfig     ( filename=filelog,
                                   level=0,
                                   encoding='utf-8',
                                   format='%(asctime)s - %(levelname)s - %(message)s',

@@ -3,7 +3,6 @@ import posixpath
 import sys
 #import win32api         # package pywin32
 import win32con
-import win32ui
 try:
     import winxpgui as win32gui
 except ImportError:
