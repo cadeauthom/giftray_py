@@ -1,4 +1,4 @@
 [AlwaysOnTop]
 	function= windows.alwaysontop
-	ico                                                                     = windows_WinAlwaysontop.ico
+	ico     = False
 	ahk     = Win + *

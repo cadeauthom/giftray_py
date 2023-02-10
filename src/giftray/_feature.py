@@ -8,7 +8,6 @@ class general:
         self.giftray= giftray
         self.show   = show
         self.Clean()
-        self._Init()
         return
 
     def _Init(self):
@@ -45,6 +44,7 @@ class general:
         self.subconf= dict()
         self.set    = False
         self.used   = False
+        self._Init()
         return
 
     def GetConf(self,partial=False):

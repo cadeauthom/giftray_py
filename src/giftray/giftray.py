@@ -48,10 +48,10 @@ class giftray(object):
             self.userdir        = posixpath.join(os.path.dirname(sys.executable),"conf")
         else:
             # executable not python; test if user dir exists
-            if not os.path.exists(userdir):
-                #os.mkdir(userdir)
+            if not os.path.exists(self.userdir):
+                #os.mkdir(self.userdir)
                 src = posixpath.join(os.path.dirname(sys.executable),"conf")
-                shutil.copytree(src,userdir)
+                shutil.copytree(src,self.userdir)
         logging.basicConfig     ( filename=filelog,
                                   level=0,
                                   encoding='utf-8',
