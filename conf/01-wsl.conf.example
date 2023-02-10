@@ -9,7 +9,6 @@
     cmd     = ssh -C2qTnNf annuminas -D 8080
     #out     =
     ahk     = Ctrl + Win + Maj + P
-    menu    = True
     uniq    = True
 
 [Terminator]
@@ -18,5 +17,4 @@
     cmd     = terminator --working-directory $folder
     gui     = True
     ahk     = Ctrl + Win + Maj + T
-    menu    = True
     uniq    = False

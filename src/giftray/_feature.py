@@ -1,6 +1,7 @@
 from . import _icon
 from . import _general
 import copy
+import re
 
 class general:
     def __init__(self,giftray,show):
@@ -28,9 +29,6 @@ class general:
                 if val[i] != self.giftray.conf_coloricons:
                     self.conf["color"] = val[i]
                     self.subconf["color"] = val[i]
-            elif k == "ico".casefold():
-                self.conf["ico"] = val[i]
-                self.subconf["ico"] = val[i]
             else:
                 others[i]=val[i]
         self._Parse(others)
@@ -59,57 +57,62 @@ class general:
 
     def AddError(self,error):
         self.giftray.logger.error(error + " in '" +self.show+"'")
-        self.error.append(error)
+        self.error.append(self.show+': '+error)
         return
 
-class main:
+class object:
     def __init__(self,show,val,giftray):
-        self.allopt    = []
-        self.setopt    = []
-        others_general = dict()
-        others       = dict()
+        self.allopt  = ["ahk","ico","color"]
+        self.setopt  = []
         self.giftray = giftray
         self.show    = show
+        self.ahk     = ""
+        self.ico     = ""
+        self.color   = ""
+        self.menu    = False
+        self.hhk     = []
+        self.error   = []
         self.module  = type(self).__module__[(len(self.giftray.name)+2):]
         self.name    = type(self).__name__
-        self.ico     = self.module+"_"+self.name+".ico"
         self.used_ico= ""
-        self.ahk     = ""
-        self.menu    = False
-        self.error   = self.giftray.avail_modules[self.module].GetError()
-        self.hhk     = []
-        self.color   = ""
-        general_conf = self.giftray.avail_modules[self.module].GetConf()
-        for i in general_conf:
-            k = i.casefold()
-            if k == "color".casefold():
-                self.color = general_conf[i]
-            elif k == "ico".casefold():
-                self.ico   = general_conf[i]
-            else:
-                others_general[i]=general_conf[i]
+
+        others_general = dict()
+        if self.module in self.giftray.avail_modules:
+            self.error = self.giftray.avail_modules[self.module].GetError()
+            general_conf = self.giftray.avail_modules[self.module].GetConf()
+            for i in general_conf:
+                k = i.casefold()
+                if k == "color".casefold():
+                    self.color = general_conf[i]
+                else:
+                    others_general[i]=general_conf[i]
+        others = dict()
         for i in val:
             k = i.casefold()
             if k == "function".casefold():
-                #self.function = val[i]
                 pass
             elif k == "ico".casefold():
-                self.ico = val[i]
+                self.setopt.append(k)
+                if val[i].lower().capitalize() == "True":
+                    self.ico = self.module+"_"+self.name+".ico"
+                    self.menu=True
+                elif val[i].lower().capitalize() == "False":
+                    self.menu=False
+                else:
+                    self.ico = val[i]
+                    self.menu=True
             elif k == "ahk".casefold():
+                self.setopt.append(k)
                 self.ahk = val[i]
             elif k == "color".casefold():
+                self.setopt.append(k)
                 self.color = val[i]
-            #elif k == "show".casefold():
-            #    self.show = val[i]
-            elif k == "menu".casefold():
-                self.menu = (val[i].lower().capitalize() == "True")
             else:
                 others[i]=val[i]
 
-        self._Init(others,others_general)
         iconPath = ""
         if (self.color and self.color!=self.giftray.conf_coloricons):
-            iconPath = _icon.ValidateIconPath( path    = self.giftray.iconPath,\
+            iconPath = _icon.ValidateIconPath(path    = self.giftray.iconPath,\
                                               color   = self.color, \
                                               project = self.giftray.name)
         if not iconPath:
@@ -120,24 +123,95 @@ class main:
             if len(err):
                 self.AddError(err)
 
-        if not self.hhk and not self.menu:
-            self.AddError("Nor in menu or shortcut")
+        others = self._PreInit(others)
+        self._Init(others,others_general)
+        self._AddLastInitErrors()
 
+    def _AddLastInitErrors(self):
+        self.AddError("Class should not be used as is")
         return
+
+    def _PreInit(self,others):
+        return others
 
     def _Init(self,others,others_general):
         for i in others:
             self.AddError("'"+i+"' not defined")
         return
 
+    def AddError(self,error):
+        self.giftray.logger.error(error + " in '" +self.show+"'")
+        self.error.append(self.show+': '+error)   
+        return
+
+    def IsInMenu(self):
+        return self.menu
+
+    def IsOK(self):
+        if self.error:
+            return False
+        return True
+
+    def GetHK(self):
+        return self.ahk, self.hhk
+
+    def GetError(self):
+        return copy.copy(self.error)
+        
     def GetOpt(self,sub=False):
         if sub:
             return copy.copy(self.setopt)
-        return copy.copy(self.allopt)
+        return copy.copy(self.allopt) 
 
-    def AddError(self,error):
-        self.giftray.logger.error(error + " in '" +self.show+"'")
-        self.error.append(error)
+class menu(object):
+    def _AddLastInitErrors(self):
+        if len(self.contain) == 0:
+            self.AddError("No contain set")
+        if not self.hhk and not self.menu :
+            self.AddError("Nor in menu or shortcut")
+        return
+
+    def _PreInit(self,others):
+        self.contain = []
+        self.allopt += 'contain'
+        ret_others = dict()
+        for k in others:
+            if k == "contain".casefold():
+                self.contain = re.split('\s*[,;]\s*',others[k])
+            else:
+                ret_others[k] = others[k]
+        return ret_others
+
+    def GetContain(self):
+        return copy.copy(self.contain)
+
+    def CheckContain(self):
+        for c in self.contain:
+            if not c in self.giftray.install:
+                self.AddError(c+" not installed")
+                continue
+            self.giftray.install[c].AddParent(self.show)
+            if not self.giftray.install[c].IsOK():
+                self.AddError(c+" not OK")
+                continue
+        return
+
+class main(object):
+    def _PreInit(self,others):
+        self.parents = []
+        # for p in self.giftray.submenus:
+            # if show in giftray.submenus[p].GetContain():
+                # self.parents.append(p)
+        return others
+
+    def _AddLastInitErrors(self):
+        if not self.hhk and not self.menu and not self.IsChild:
+            self.AddError("Nor in menu or shortcut")
+        return
+
+    def AddParent(self,p):
+        if not p in self.parents:
+            self.parents.append(p)
         return
 
     def Run(self):
@@ -158,16 +232,6 @@ class main:
     def _Run(self):
         return
 
-    def GetError(self):
-        return copy.copy(self.error)
+    def IsChild(self):
+        return len(self.parents)>0
 
-    def IsOK(self):
-        if self.error:
-            return False
-        return True
-
-    def IsInMenu(self):
-        return self.menu
-
-    def GetHK(self):
-        return self.ahk, self.hhk

@@ -1,5 +1,4 @@
 [AlwaysOnTop]
-	function = windows.alwaysontop
-	ico = windows_WinAlwaysontop.ico
-	ahk = Win + *
-	menu = false
+	function= windows.alwaysontop
+	ico                                                                     = windows_WinAlwaysontop.ico
+	ahk     = Win + *

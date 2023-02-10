@@ -4,7 +4,6 @@
     ahk     = Control + Win + F4
     cmd     = shutdown.exe
     args    = /h
-    menu    = True
     admin   = False
     #location = active
 
@@ -13,6 +12,5 @@
     ico     = windows_addHibernate.ico
     cmd     = powercfg.exe
     args    = /hibernate on
-    menu    = True
     admin   = True
     #location = active

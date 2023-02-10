@@ -155,6 +155,10 @@ class giftray(object):
             self.menu.clear()
         else:
             self.menu = []
+        if hasattr(self, "submenus"):
+            self.submenus.clear()
+        else:
+            self.submenus = dict()
         if hasattr(self, "ahk"):
             self.ahk.clear()
         else:
@@ -184,13 +188,12 @@ class giftray(object):
         self.conf_ico           = ""
         self.conf_icoPath       = ""
         self.iconPath           = ""
-        self.conf_example       = False
         self.nb_hotkey          = 0
 
     def _Restart(self):
         self._ResetVar()
         #Find and read config file
-        config = configparser.ConfigParser()
+        config = configparser.ConfigParser(strict=False)
         exist_conf = False
         if os.path.isfile(self.conf) :
             exist_conf = True
@@ -213,15 +216,21 @@ class giftray(object):
             self.logger.error("Fail to find configuration")
         else:
             self.logger.info('Configuration found : '+self.conf)
+            confs = [self.conf]
+            #Find other conf files
+            confs += natsort.os_sorted(glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf')))
+            if "\\python" in sys.executable:
+                confs += natsort.os_sorted(glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf.example')))
             try:
-                config.read(self.conf)
+                config.read(confs)
             except Exception as e:
-                print_error = "Fail to read configuration (" + self.conf + "): " + str(e)
+                print_error = "Fail to read configuration (" + os.path.dirname(self.conf) + "): " + str(e)
                 self.main_error.append(print_error)
                 self.logger.error(print_error)
+
         #Load GENERAL config to variables
         for section in config.sections():
-            if section.casefold() == 'GENERAL'.casefold():
+            if section.casefold().strip() == 'GENERAL'.casefold():
                 for k in config[section]:
                     if k.casefold() == 'ColorMainIcon'.casefold():
                         self.conf_colormainicon = str(config[section][k])
@@ -239,10 +248,9 @@ class giftray(object):
                         self.conf_ico = str(config[section][k])
                     elif k.casefold() == 'IcoPath'.casefold():
                         self.conf_icoPath = str(config[section][k])
-                    elif k.casefold() == 'Examples'.casefold():
-                        self.conf_example = (config[section][k].lower().capitalize() == "True")
                     else :
-                        self.logger.error(section+"->"+k+"not supported")
+                        self.logger.error(section+" : "+k+" is not an existing option")
+                continue
 
         #Get ico for Tray
         #Get ico path
@@ -317,80 +325,100 @@ class giftray(object):
             print("conf_icoPath         = "+self.conf_icoPath)
             print("conf_ico             = "+self.conf_ico)
 
-        #Find other conf files
-        subconfs      = ['0000000000']
-        files         = glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf'))
-        subconfs     += natsort.os_sorted(files)
-        if self.conf_example:
-            files     = glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf.example'))
-            subconfs += natsort.os_sorted(files)
-        #Load actions config to variables
-        for subconf in files:
-            if   subconf == self.conf:
+        #Split in general/menu/action
+        m_conf=[]
+        a_conf=[]
+        for section in config.sections():
+            if section.casefold().strip() == 'GENERAL'.casefold():
+                continue      
+            for i in config[section]:
+                if "\n" in config[section][i]:
+                    self.error[section.strip()] = "Indentation issue in '" + section +"'"
+                    self.logger.error("Indentation issue in '" + section +"'")
+                    continue
+            if section in self.error:
                 continue
-            elif subconf != '0000000000':
-                lsubconf = subconf
-                subconf  = os.path.basename(lsubconf)
-                try:
-                    config.read(lsubconf)
-                except Exception as e:
-                    print_error = "Fail to read configuration (" + subconf + "): " + str(e)
-                    self.main_error.append(print_error)
-                    self.logger.error(print_error)
-            else:
-                subconf = os.path.basename(self.conf)
-            for section in config.sections():
-                if section.casefold() != 'GENERAL'.casefold():
-                    for i in config[section]:
-                        if "\n" in config[section][i]:
-                            self.error[section] = "Indentation issue in '" + section +"' ("+subconf+")"
-                            self.logger.error("Indentation issue in '" + section +"' ("+subconf+")")
-                            continue
-                    if section in self.error: continue
-                    if "function" in config[section]:
-                        fct = config[section]["function"].casefold()
-                    elif section.casefold() in self.modules :
-                        self.avail_modules[section.casefold()].Parse(config[section])
-                        continue
+            if "function" in config[section]:
+                a_conf.append(section)
+                continue
+            if "contain" in config[section]:
+                m_conf.append(section)
+                continue
+            if section.casefold() in self.modules :
+                self.avail_modules[section.casefold().strip()].Parse(config[section])
+                continue
+            error = "'"+section+"' is not recognised as action, general configuration or menu"
+            self.logger.error(error)
+            self.main_error.append(error)
+
+        for section in m_conf:
+            orig_section=section
+            section=section.strip()
+            if section in self.error:
+                continue
+            i=0
+            while section in self.install or section in self.submenus:
+                i+=1
+                section = orig_section+' [Duplicate n°'+str(i)+']'
+            new_class = _feature.menu(section,config[orig_section],self)
+            if not orig_section.strip()==section:
+                new_class.AddError(orig_section+" already set")
+            if new_class.IsOK():
+                ahk, hhk = new_class.GetHK()
+                if len(ahk)>2 and "key" in hhk:
+                    if ahk in self.ahk:
+                        new_class.AddError("Duplicated ahk " + self.ahk[ahk])
                     else:
-                        self.logger.error("'function' not defined in '"+section+"' ("+subconf+")")
-                        continue
-                    if fct.count('.') != 1:
-                        self.logger.error("'"+fct+"' does not contain exactly 1 '.' in '"+section+"' ("+subconf+")")
-                        continue
-                    split_section = fct.split(".")
-                    module = split_section[0]
-                    mod = self.name+'._'+module
-                    feat = split_section[1]
-                    if not mod in sys.modules.keys():
-                        self.error[section] = "Module '"+module+"' not loaded ("+subconf+")"
-                        self.logger.error("Module '"+module+"' not loaded for '"+section+"' ("+subconf+")")
-                        continue
-                    if not fct in self.avail:
-                        self.error[section] = "'"+feat+"' not defined in module '" +module + "' ("+subconf+")"
-                        self.logger.error("'"+feat+"' not defined in module '" +module+"' from '"+section+"' ("+subconf+")")
-                        continue
-                    orig_section=section
-                    i=0
-                    while section in self.install:
-                        i+=1
-                        section = orig_section+' [Duplicate n°'+str(i)+']'
-                    new_class = _general.Str2Class(mod,feat)(section,config[orig_section],self)
-                    if not orig_section==section:
-                        new_class.AddError(orig_section+" already set ("+subconf+")")
-                    if new_class.IsOK():
-                        ahk, hhk = new_class.GetHK()
-                        if len(ahk)>2 and "key" in hhk:
-                            if ahk in self.ahk:
-                                new_class.AddError("Duplicated ahk " + self.ahk[ahk])
-                            else:
-                                self.ahk[ahk] = new_class.show
-                    if not new_class.IsOK():
-                        self.error[new_class.show] = ""
-                    self.install[new_class.show]=new_class
-                    if new_class.IsOK() and new_class.IsInMenu():
-                            self.menu.append(new_class.show)
-            config.clear()
+                        self.ahk[ahk] = new_class.show
+            if not new_class.IsOK():
+                self.error[new_class.show] = ""
+            self.submenus[new_class.show]=new_class
+
+        for section in a_conf:
+            orig_section=section
+            section=section.strip()
+            if section in self.error:
+                continue
+            fct = config[section]["function"].casefold()
+            if fct.count('.') != 1:
+                self.logger.error("'"+fct+"' does not contain exactly 1 '.' in '"+section+"'")
+                continue
+            module, feat = fct.split(".")
+            mod = self.name+'._'+module
+            if not mod in sys.modules.keys():
+                self.error[section] = "Module '"+module+"' not loaded"
+                self.logger.error("Module '"+module+"' not loaded for '"+section+"'")
+                continue
+            if not fct in self.avail:
+                self.error[section] = "'"+feat+"' not defined in module '" +module + "'"
+                self.logger.error("'"+feat+"' not defined in module '" +module+"' from '"+section+"')")
+                continue
+            i=0
+            while section in self.install or section in self.submenus:
+                i+=1
+                section = orig_section+' [Duplicate n°'+str(i)+']'
+            new_class = _general.Str2Class(mod,feat)(section,config[orig_section],self)
+            if not orig_section.strip()==section:
+                new_class.AddError(orig_section+" already set")
+            if new_class.IsOK():
+                ahk, hhk = new_class.GetHK()
+                if len(ahk)>2 and "key" in hhk:
+                    if ahk in self.ahk:
+                        new_class.AddError("Duplicated ahk " + self.ahk[ahk])
+                    else:
+                        self.ahk[ahk] = new_class.show
+            if not new_class.IsOK():
+                self.error[new_class.show] = ""
+            self.install[new_class.show]=new_class
+            if new_class.IsOK() and new_class.IsInMenu() and not new_class.IsChild() :
+                    self.menu.append(new_class.show)
+
+        for section in self.submenus:
+            self.submenus[section].CheckContain() 
+            if self.submenus[section].IsOK() and self.submenus[section].IsInMenu() :
+                    self.menu.append(self.submenus[section].show)
+
+        config.clear()
 
         # Start ahk_thread and wait for initialisation
         self.ahklock.acquire()
@@ -403,19 +431,43 @@ class giftray(object):
             for i in self.install:
                 if i in self.error:
                     # not filling here since not defined action are in error but not in install
-                    pass
-                elif i in self.menu:
+                    continue
+                if i in self.menu:
                     act = PyQt6.QtGui.QAction(self.install[i].sicon,i,self.tray_menu)
                     ahk = self.install[i].GetHK()[0]
                     if ahk:
                         act.setToolTip(ahk)
-                    #act.hovered.connect(lambda: PyQt6.QtWidgets.QToolTip.showText(PyQt6.QtGui.QCursor.pos(), "plop", None))
                     act.triggered.connect(functools.partial(self._ConnectorAction, i))
                     self.tray_menu.addAction(act)
-                else:
-                    act = PyQt6.QtGui.QAction(self.install[i].sicon,i,menu_not)
-                    act.setDisabled(True)
-                    menu_not.addAction(act)
+                    continue
+                if i in self.menu and  i in self.submenus:
+                    continue
+                act = PyQt6.QtGui.QAction(self.install[i].sicon,i,menu_not)
+                act.setDisabled(True)
+                menu_not.addAction(act)
+
+            self.tray_menu.addSeparator()
+
+            for i in self.submenus:
+                submenu = PyQt6.QtWidgets.QMenu(i,self.tray_menu)
+                submenu.setToolTipsVisible(True)
+                if i in self.menu:
+                    act = PyQt6.QtGui.QAction(self.submenus[i].sicon,i,submenu)
+                    ahk = self.submenus[i].GetHK()[0]
+                    if ahk:
+                        act.setToolTip(ahk)
+                    act.triggered.connect(functools.partial(self._ConnectorAction, i))
+                    submenu.addAction(act)
+                    submenu.addSeparator()
+                for c in self.submenus[i].GetContain():  
+                    act = PyQt6.QtGui.QAction(self.install[c].sicon,c,submenu)
+                    ahk = self.install[c].GetHK()[0]
+                    if ahk:
+                        act.setToolTip(ahk)
+                    act.triggered.connect(functools.partial(self._ConnectorAction, c))
+                    submenu.addAction(act)
+                self.tray_menu.addMenu(submenu)
+
             # loop on modules in error
             menu_err = PyQt6.QtWidgets.QMenu('Errors',self.tray_menu)
             menu_err.setToolTipsVisible(True)
@@ -427,6 +479,7 @@ class giftray(object):
             if len(self.error) == 0 and len(self.main_error) == 0 :
                 act.setDisabled(True)
             menu_err.addAction(act)
+            menu_err.addSeparator()
             sicon_err, _ = _icon.GetIcon(self.iconPath, self, ico='default_empty.ico')
             for i in self.error:
                 act=PyQt6.QtGui.QAction(sicon_err,i,menu_err)
@@ -497,8 +550,7 @@ class giftray(object):
         config = configparser.ConfigParser()
         config["GENERAL"] = { "ColorMainIcon" : self.conf_colormainicon,  #default "blue"
                               "ColorIcons"    : self.conf_coloricons   ,  #default "blue"
-                              "LogLevel"      : self.conf_loglevel     ,  #default "WARNING"
-                              "Examples"      : self.conf_example      }  #default False
+                              "LogLevel"      : self.conf_loglevel     }  #default "WARNING"
         for i in self.avail_modules:
             m = i.upper()
             config[m]={}
@@ -541,7 +593,12 @@ class giftray(object):
         return out
 
     def _Thread4Run(self,args):
-        if self.lock.acquire(timeout=1):
+        if args in self.submenus:
+            print(self.submenus[args].GetContain())
+            return
+        if not args in self.install:
+            return
+        if self.lock.acquire(timeout=1):   
             action=self.install[args]
             start_time = datetime.datetime.now()
             show = action.show+start_time.strftime(" [%H%M%S]")
@@ -573,7 +630,7 @@ class giftray(object):
                 self.nb_hotkey += 1
                 self.logger.debug("register "+ahk)
             else:
-                self.install[self.ahk[ahk]].AddError(self.ahk[ahk] +": Fail to register Hotkey ("+ahk+")")
+                self.install[self.ahk[ahk]].AddError("Fail to register Hotkey ("+ahk+")")
                 self.error[self.ahk[ahk]]=""
         if self.ahklock.locked():
             self.ahklock.release()
@@ -610,7 +667,12 @@ class giftray(object):
 
     def _ConnectorAction(self,feature):
         if self.lock.locked():
-            self.logger.debug('Lock locked for ' + self.install[feature].show)
+            if feature in self.install:
+                self.logger.debug('Lock locked for ' + self.install[feature].show)
+            elif feature in self.submenus:
+                self.logger.debug('Lock locked for ' + self.submenus[feature].show)
+            else:
+                self.logger.critical('Lock locked for undefined feature' + feature)
             return
         a=_general.KThread(target=self._Thread4Run,args=[feature])
         a.start()
@@ -630,8 +692,12 @@ class giftray(object):
             for n in self.error:
                 if self.error[n]:
                     arr+=[self.error[n]]
-                else:
+                elif n in self.submenus:
+                    arr+=self.submenus[n].GetError()
+                elif n in self.install:
                     arr+=self.install[n].GetError()
+        elif name in self.submenus:
+            arr=self.submenus[name].GetError()
         elif name in self.install:
             arr=self.install[name].GetError()
         for e in arr:

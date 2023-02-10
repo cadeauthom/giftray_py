@@ -1,0 +1,32 @@
+[Directories ]
+    contain = Program Files, Users, Program Files (x86), Windows
+	ico     = True
+
+[Program Files]
+	function= windows.script
+	cmd     = C:\Program Files\
+	ico     = True
+
+[Program Files (x86)]
+	function= windows.script
+	cmd     = C:\Program Files (x86)\
+	ico     = False
+
+[Users]
+	function= windows.script
+	cmd     = C:\Users\
+	ico     = True
+	ahk     = Ctrl + Win + Maj + F1
+
+[Windows]
+	function= windows.script
+	cmd     = C:\Windows\
+	ico     = False
+	ahk     = Ctrl + Win + Maj + F2
+
+
+[AlwaysOnTop]
+	function = windows.alwaysontop
+	ico = windows_WinAlwaysontop.ico
+	ahk = Win + F8
+	ico = false

@@ -2,4 +2,3 @@
     function= template.template
     ico     = default_empty.ico
     #ahk     = Ctrl + Win + Maj + y
-    menu = true
