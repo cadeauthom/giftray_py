@@ -186,17 +186,17 @@ class KThread(threading.Thread):
         A subclass of threading.Thread, with a kill()method."""
     def __init__(self, *args, **keywords):
         threading.Thread.__init__(self, *args, **keywords)
+        self._return = ""
         self.killed = False
-    def start(self):
-        """Start the thread."""
-        self.__run_backup = self.run
-        self.run = self.__run
-        threading.Thread.start(self)
-    def __run(self):
-        """Hacked run function, which installs thetrace."""
+    def run(self):
         sys.settrace(self.globaltrace)
-        self.__run_backup()
-        self.run = self.__run_backup
+        try:
+            if self._target is not None:
+                self._return = self._target(*self._args, **self._kwargs)
+        finally:
+            # Avoid a refcycle if the thread is running a function with
+            # an argument that has a member that points to the thread.
+            del self._target, self._args, self._kwargs
     def globaltrace(self, frame, why, arg):
         if why == 'call':
             return self.localtrace
@@ -208,3 +208,5 @@ class KThread(threading.Thread):
         return self.localtrace
     def kill(self):
         self.killed = True
+    def getout(self):
+        return self._return

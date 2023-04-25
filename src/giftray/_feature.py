@@ -67,13 +67,13 @@ class object:
         self.giftray = giftray
         self.show    = show
         self.ahk     = ""
-        self.ico     = ""
         self.color   = ""
         self.menu    = False
         self.hhk     = []
         self.error   = []
         self.module  = type(self).__module__[(len(self.giftray.name)+2):]
         self.name    = type(self).__name__
+        self.ico     = self.module+"_"+self.name+".ico"
         self.used_ico= ""
 
         others_general = dict()
@@ -93,13 +93,14 @@ class object:
                 pass
             elif k == "ico".casefold():
                 self.setopt.append(k)
+                self.ico = val[i]
+            elif k == "click".casefold():
+                self.setopt.append(k)
                 if val[i].lower().capitalize() == "True":
-                    self.ico = self.module+"_"+self.name+".ico"
                     self.menu=True
                 elif val[i].lower().capitalize() == "False":
                     self.menu=False
                 else:
-                    self.ico = val[i]
                     self.menu=True
             elif k == "ahk".casefold():
                 self.setopt.append(k)
@@ -167,8 +168,6 @@ class menu(object):
     def _AddLastInitErrors(self):
         if len(self.contain) == 0:
             self.AddError("No contain set")
-        if not self.hhk and not self.menu :
-            self.AddError("Nor in menu or shortcut")
         return
 
     def _PreInit(self,others):
@@ -188,11 +187,11 @@ class menu(object):
     def CheckContain(self):
         for c in self.contain:
             if not c in self.giftray.install:
-                self.AddError(c+" not installed")
+                self.AddError(c+" subaction not installed")
                 continue
             self.giftray.install[c].AddParent(self.show)
             if not self.giftray.install[c].IsOK():
-                self.AddError(c+" not OK")
+                self.AddError(c+" subaction not OK")
                 continue
         return
 
@@ -224,10 +223,9 @@ class main(object):
                 e_str = str(e)
                 self.giftray.logger.error("Action '" +self.show+ "' failed: "+e_str)
                 out = "Action '" +self.show+ "' failed: "+e_str
-        #return out
-        if out:
-            _general.PopUp(self.show, out)
-        return
+        #if out and not silent:
+        #    _general.PopUp(self.show, out)
+        return out
 
     def _Run(self):
         return

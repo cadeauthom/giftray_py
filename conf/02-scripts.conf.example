@@ -2,11 +2,11 @@
 #	function = windows.script
 #	cmd = C:\Program Files\
 #	args =
-#	ico = true
+#	click = true
 
 #[Powershell admin]
 #	function = windows.script
 #	cmd = cmd.exe
 #	args = /C Powershell
-#	ico = true
+#	click = true
 #	admin = true

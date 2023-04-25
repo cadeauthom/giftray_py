@@ -280,6 +280,7 @@ class giftray(object):
         #self.tray.setIcon(sicon)
         #time.sleep(3)
         self.tray.setIcon(self.main_sicon)
+        self.app.setWindowIcon(self.main_sicon)
 
         if False:
             #Save info of ico for conf
@@ -416,7 +417,9 @@ class giftray(object):
         for section in self.submenus:
             self.submenus[section].CheckContain() 
             if self.submenus[section].IsOK() and self.submenus[section].IsInMenu() :
-                    self.menu.append(self.submenus[section].show)
+                self.menu.append(self.submenus[section].show)
+            else:
+                self.error[self.submenus[section].show] = ""
 
         config.clear()
 
@@ -433,6 +436,7 @@ class giftray(object):
                     # not filling here since not defined action are in error but not in install
                     continue
                 if i in self.menu:
+                    # Main menu
                     act = PyQt6.QtGui.QAction(self.install[i].sicon,i,self.tray_menu)
                     ahk = self.install[i].GetHK()[0]
                     if ahk:
@@ -440,18 +444,18 @@ class giftray(object):
                     act.triggered.connect(functools.partial(self._ConnectorAction, i))
                     self.tray_menu.addAction(act)
                     continue
-                if i in self.menu and  i in self.submenus:
-                    continue
+                # Not clickable
                 act = PyQt6.QtGui.QAction(self.install[i].sicon,i,menu_not)
                 act.setDisabled(True)
                 menu_not.addAction(act)
 
+            # Sub menus
             self.tray_menu.addSeparator()
-
             for i in self.submenus:
                 submenu = PyQt6.QtWidgets.QMenu(i,self.tray_menu)
                 submenu.setToolTipsVisible(True)
                 if i in self.menu:
+                    # All submenu action
                     act = PyQt6.QtGui.QAction(self.submenus[i].sicon,i,submenu)
                     ahk = self.submenus[i].GetHK()[0]
                     if ahk:
@@ -498,8 +502,6 @@ class giftray(object):
             if not menu_err.isEmpty():
                 self.tray_menu.addMenu(menu_err)
 
-        self.tray_menu.addSeparator()
-
         # Define menu default actions
         #ToDo generator Gui
         #ToDo conf Gui
@@ -541,7 +543,7 @@ class giftray(object):
         self.tray_menu.addAction(act)
         self.tray.setContextMenu(self.tray_menu)
 
-        #print(self._PrintConf())
+        # print(self._PrintConf())
         self.cp=0
         return
 
@@ -561,7 +563,7 @@ class giftray(object):
             config[i]={ "function" : self.install[i].module+ "." + self.install[i].name}
             #mandatory options
             config[i]["ahk"]=self.install[i].ahk
-            config[i]["menu"]=str(self.install[i].menu)
+            config[i]["click"]=str(self.install[i].menu)
             #optional options
             path_ico     = self.install[i].used_ico
             if path_ico:
@@ -592,12 +594,15 @@ class giftray(object):
         f.close()
         return out
 
-    def _Thread4Run(self,args):
+    def _Thread4Run(self,args,silent=False):
         if args in self.submenus:
-            print(self.submenus[args].GetContain())
-            return
+            outs=[]
+            for a in self.submenus[args].GetContain():
+                outs.append(a+": "+self._Thread4Run(a,silent=True))
+            _general.PopUp(args, "\n".join(outs))
+            return ""
         if not args in self.install:
-            return
+            return ""
         if self.lock.acquire(timeout=1):   
             action=self.install[args]
             start_time = datetime.datetime.now()
@@ -606,6 +611,9 @@ class giftray(object):
             th = _general.KThread(target=action.Run)
             th.start()
             th.join(10)
+            out = th.getout()
+            if not silent:
+                _general.PopUp(args, out)
             duration = datetime.datetime.now() - start_time
             if th.is_alive():
                 self.logger.debug('Kill '+show +' after '+str(duration.seconds)+' sec')
@@ -614,10 +622,11 @@ class giftray(object):
                 self.logger.debug(show+ ' ran in '+str(duration.seconds)+' sec')
             #few seconds before releasing lock
             #TODO: releasing lock time in configuration
-            time.sleep(3)
+            if not silent:
+                time.sleep(3)
             self.logger.debug('Release lock')
             if self.lock.locked(): self.lock.release()
-        return
+        return out
 
     def _Thread4ahk(self):
         self.logger.info("Starting ahk thread")
@@ -719,6 +728,7 @@ class giftray(object):
         box.setInformativeText(info)
         #box.setStandardButtons(PyQt6.QtWidgets.Ok)
         p = self.main_sicon.pixmap(20)
-        box.setIconPixmap(p)
+        #box.setIconPixmap(p)
+        box.setWindowIcon(self.main_sicon)
         box.exec()
         return

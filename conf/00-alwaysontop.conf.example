@@ -1,4 +1,4 @@
 [AlwaysOnTop]
 	function= windows.alwaysontop
-	ico     = False
+	click   = False
 	ahk     = Win + *
