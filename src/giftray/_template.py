@@ -15,7 +15,7 @@ class template(_feature.action):
         for i in others:
             k = i.casefold()
             if k == "localopt".casefold():
-                self.localopt = others[i]
+                self.localopt = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
             else:
                 self.AddError("'"+i+"' not defined")

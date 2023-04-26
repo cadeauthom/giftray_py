@@ -9,6 +9,70 @@ try:
     import win32gui
 except ImportError:
     import winxpgui as win32gui
+import enum
+
+class type(enum.Enum):
+    UINT        = 1
+    INT         = 2
+    BOOL        = 3
+    STRING      = 4
+    LOWSTRING   = 5
+    UPSTRING    = 6
+    LISTSTRING  = 7
+    PATH        = 8
+
+def GetOpt(val,t):
+    ret = None
+    if t == type.UINT:
+        try:
+            ret = abs(int(val))
+        except:
+            ret = 0
+    elif t == type.INT:
+        try:
+            ret = int(val)
+        except:
+            ret = 0
+    elif t == type.BOOL:
+        try:
+            if not val:
+                ret = True
+            else:
+                ret = (str(val).casefold() in ['true','on','1'])
+        except:
+            ret = False
+    elif t == type.STRING:
+        try:
+            if not val:
+                ret = ''
+            else:
+                ret = str(val)
+        except:
+            ret = ''
+    elif t == type.LOWSTRING:
+        try:
+            if val == None:
+                ret = ''
+            else:
+                ret = str(val).casefold()
+        except:
+            ret = ''
+    elif t == type.UPSTRING:
+        try:
+            if val == None:
+                ret = ''
+            else:
+                ret = str(val).upper()
+        except:
+            ret = ''
+    elif t == type.LISTSTRING:
+        try:
+            ret = re.split('\s*[,;]\s*',val)
+        except:
+            ret = []
+    elif t == type.PATH: #no subpath management, no icon path
+        ret = WindowsHandler().GetRealPath(str(val))
+    return ret
 
 class WindowsHandler():
     def __init__(self):

@@ -1,7 +1,6 @@
 from . import _icon
 from . import _general
 import copy
-import re
 
 class general:
     def __init__(self,giftray,show):
@@ -25,9 +24,10 @@ class general:
         for i in val:
             k = i.casefold()
             if k == "color".casefold():
-                if val[i] != self.giftray.conf_coloricons:
-                    self.conf["color"] = val[i]
-                    self.subconf["color"] = val[i]
+                col = _general.GetOpt(general_conf[i],_general.type.STRING)
+                if col != self.giftray.conf_coloricons:
+                    self.conf["color"] = col
+                    self.subconf["color"] = col
             else:
                 others[i]=val[i]
         self._Parse(others)
@@ -87,7 +87,7 @@ class object:
             for i in general_conf:
                 k = i.casefold()
                 if k == "color".casefold():
-                    self.color = general_conf[i]
+                    self.color = _general.GetOpt(general_conf[i],_general.type.STRING)
                 else:
                     others_general[i]=general_conf[i]
         others = dict()
@@ -97,16 +97,16 @@ class object:
                 pass
             elif k == "ico".casefold():
                 self.setopt.append(k)
-                self.ico = val[i]
+                self.ico = _general.GetOpt(val[i],_general.type.STRING)
             elif k == "click".casefold():
                 self.setopt.append(k)
-                self.menu = (val[i].casefold() in ['true','on','1'])
+                self.menu = _general.GetOpt(val[i],_general.type.BOOL)
             elif k == "ahk".casefold():
                 self.setopt.append(k)
-                self.ahk = val[i]
+                self.ahk = _general.GetOpt(val[i],_general.type.STRING)
             elif k == "color".casefold():
                 self.setopt.append(k)
-                self.color = val[i]
+                self.color = _general.GetOpt(val[i],_general.type.STRING)
             else:
                 others[i]=val[i]
 
@@ -189,9 +189,10 @@ class menu(object):
         self.contain = []
         self.allopt += 'contain'
         ret_others = dict()
-        for k in others:
+        for i in others:
+            k = i.casefold()
             if k == "contain".casefold():
-                self.contain = re.split('\s*[,;]\s*',others[k])
+                self.contain = _general.GetOpt(others[i],_general.type.LISTSTRING)
             else:
                 ret_others[k] = others[k]
         return ret_others
@@ -239,6 +240,7 @@ class action(object):
 
 class service(object):
     def __del__(self):
+        import ctypes, win32con
         if self.thread.is_alive():
             self.thread.kill()
         object.__del__(self)
@@ -247,14 +249,11 @@ class service(object):
         self.thread = _general.KThread(target=self._Run)
         self.active = False
         self.enabled = False
-        self.frequency = 60
-        self.allopt += ['enabled','frequency']
+        self.allopt += ['enabled']
         ret_others = dict()
         for k in others:
             if k == "enabled".casefold():
-                self.enabled = (others[k].casefold() in ['true','on','1'])
-            elif k == "frequency".casefold():
-                self.frequency = int(others[k])
+                self.enabled = _general.GetOpt(others[k],_general.type.BOOL)
             else:
                 ret_others[k] = others[k]
         return ret_others

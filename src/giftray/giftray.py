@@ -111,8 +111,6 @@ class giftray(object):
         return
 
     def __del__(self):
-        for i in self.install:
-            self.install[i].__del__()
         self._ResetVar()
         self.app.quit()
         self.logger.info("Exiting")
@@ -150,6 +148,8 @@ class giftray(object):
         else:
             self.error = dict()
         if hasattr(self, "install"):
+            for i in self.install:
+                self.install[i].__del__()
             self.install.clear()
         else:
             self.install = dict()
@@ -237,23 +237,23 @@ class giftray(object):
             if section.casefold().strip() == 'GENERAL'.casefold():
                 for k in config[section]:
                     if k.casefold() == 'ColorMainIcon'.casefold():
-                        self.conf_colormainicon = str(config[section][k])
+                        self.conf_colormainicon = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif k.casefold() == 'ColorIcons'.casefold():
-                        self.conf_coloricons = str(config[section][k])
+                        self.conf_coloricons = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif k.casefold() == 'LogLevel'.casefold():
                         LevelNamesMapping=logging.getLevelNamesMapping()
-                        levelname=str(config[section][k]).upper()
+                        levelname=_general.GetOpt(str(config[section][k]),_general.type.UPSTRING)
                         if levelname in LevelNamesMapping:
                             self.conf_loglevel = levelname.casefold()
                             self.logger.setLevel(level=LevelNamesMapping[levelname])
                         else:
                             self.logger.error('LogLevel->'+k+"not supported")
                     elif k.casefold() == 'Ico'.casefold():
-                        self.conf_ico = str(config[section][k])
+                        self.conf_ico = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif k.casefold() == 'IcoPath'.casefold():
-                        self.conf_icoPath = str(config[section][k])
+                        self.conf_icoPath = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif k.casefold() == 'Silent'.casefold():
-                        self.silent = (str(config[section][k]).casefold() in ['true','on','1'])
+                        self.silent = _general.GetOpt(str(config[section][k]),_general.type.BOOL)
                     else :
                         self.logger.error(section+" : "+k+" is not an existing option")
                 continue
@@ -569,7 +569,7 @@ class giftray(object):
         self.tray.setContextMenu(self.tray_menu)
 
         self.started = True
-        print(self._PrintConf())
+        #print(self._PrintConf())
         return
 
     def _PrintConf(self):

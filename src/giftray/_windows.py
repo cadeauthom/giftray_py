@@ -25,13 +25,13 @@ class script(_feature.action):
         for i in others:
             k = i.casefold()
             if k == "cmd".casefold():
-                self.cmd = others[i]
+                self.cmd = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
             elif k == "args".casefold():
-                self.args = others[i]
+                self.args = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
             elif k == "admin".casefold():
-                self.admin = (others[i].casefold() in ['true','on','1'])
+                self.admin = _general.GetOpt(others[i],_general.type.BOOL)
                 self.setopt.append(k)
             else:
                 self.AddError("'"+i+"' not defined")
@@ -59,13 +59,24 @@ class script(_feature.action):
         return out
 
 class stayactive(_feature.service):
+    def _Init(self,others,others_general):
+        self.allopt += ["frequency"]
+        self.frequency = 60
+        for i in others:
+            k = i.casefold()
+            if k == "frequency".casefold():
+                a = _general.GetOpt(others[k],_general.type.UINT)
+                if a:
+                    self.frequency = a
+            else:
+                self.AddError("'"+i+"' not defined")
+
     def _Run(self):
         import clicknium
         a,b = clicknium.mouse.position()
-        while 1:
-            time.sleep(2)
+        while True:
+            for i in range(self.frequency): time.sleep(1)
             x,y = clicknium.mouse.position()
-            print(x,y)
             if x==a and y==b:
               clicknium.mouse.move(a,b)
             a,b = clicknium.mouse.position()
