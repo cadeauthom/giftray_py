@@ -8,6 +8,7 @@ try:
 except ImportError:
     import win32gui
 import psutil
+import time
 
 from . import _feature
 from . import _general
@@ -15,7 +16,7 @@ from . import _general
 # class general(_feature.general):
     # pass
 
-class script(_feature.main):
+class script(_feature.action):
     def _Init(self,others,others_general):
         self.allopt += ["cmd","args","admin"]
         self.cmd = ""
@@ -30,7 +31,7 @@ class script(_feature.main):
                 self.args = others[i]
                 self.setopt.append(k)
             elif k == "admin".casefold():
-                self.admin = (others[i].lower().capitalize() == "True")
+                self.admin = (others[i].casefold() in ['true','on','1'])
                 self.setopt.append(k)
             else:
                 self.AddError("'"+i+"' not defined")
@@ -57,8 +58,20 @@ class script(_feature.main):
         prog = subprocess.Popen(['Powershell ', '-Command', cmd])
         return out
 
+class stayactive(_feature.service):
+    def _Run(self):
+        import clicknium
+        a,b = clicknium.mouse.position()
+        while 1:
+            time.sleep(2)
+            x,y = clicknium.mouse.position()
+            print(x,y)
+            if x==a and y==b:
+              clicknium.mouse.move(a,b)
+            a,b = clicknium.mouse.position()
+        return
 
-class alwaysontop(_feature.main):
+class alwaysontop(_feature.action):
     def __del__(self):
         currentOnTop = _general.WindowsHandler().GetAllOnTopWindowsName()
         for hwnd in self.top_hwnd:
@@ -67,6 +80,7 @@ class alwaysontop(_feature.main):
                     win32con.HWND_NOTOPMOST,
                     0,0,0,0,
                     win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+        _feature.action.__del__(self)
 
     def _Init(self,others,others_general):
         self.allopt += []

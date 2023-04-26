@@ -38,7 +38,7 @@ class general(_feature.general):
                 self.AddError("'"+i+"' not defined")
         return
 
-class cmd(_feature.main):
+class cmd(_feature.action):
     def _StartX(self):
         x_running   = False
         x_nb        = 0

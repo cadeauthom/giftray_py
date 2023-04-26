@@ -111,6 +111,8 @@ class giftray(object):
         return
 
     def __del__(self):
+        for i in self.install:
+            self.install[i].__del__()
         self._ResetVar()
         self.app.quit()
         self.logger.info("Exiting")
@@ -189,6 +191,8 @@ class giftray(object):
         self.conf_icoPath       = ""
         self.iconPath           = ""
         self.nb_hotkey          = 0
+        self.started            = False
+        self.silent             = False
 
     def _Restart(self):
         self._ResetVar()
@@ -248,6 +252,8 @@ class giftray(object):
                         self.conf_ico = str(config[section][k])
                     elif k.casefold() == 'IcoPath'.casefold():
                         self.conf_icoPath = str(config[section][k])
+                    elif k.casefold() == 'Silent'.casefold():
+                        self.silent = (str(config[section][k]).casefold() in ['true','on','1'])
                     else :
                         self.logger.error(section+" : "+k+" is not an existing option")
                 continue
@@ -431,29 +437,44 @@ class giftray(object):
             # Define menu configured actions
             # loop on modules for main menu and for Not Clickable
             menu_not = PyQt6.QtWidgets.QMenu('Not clickable',self.tray_menu)
+            menu_not.setToolTipsVisible(True)
             for i in self.install:
                 if i in self.error:
                     # not filling here since not defined action are in error but not in install
                     continue
+                if self.install[i].IsChild():
+                    continue
                 if i in self.menu:
                     # Main menu
                     act = PyQt6.QtGui.QAction(self.install[i].sicon,i,self.tray_menu)
+                    act.triggered.connect(functools.partial(self._ConnectorAction, i))
                     ahk = self.install[i].GetHK()[0]
                     if ahk:
                         act.setToolTip(ahk)
-                    act.triggered.connect(functools.partial(self._ConnectorAction, i))
+                    if self.install[i].IsService():
+                        act.setCheckable(True)
+                        if self.install[i].enabled:
+                            #act.setChecked(True)
+                            act.activate(PyQt6.QtGui.QAction.ActionEvent.Trigger)
                     self.tray_menu.addAction(act)
                     continue
                 # Not clickable
-                act = PyQt6.QtGui.QAction(self.install[i].sicon,i,menu_not)
-                act.setDisabled(True)
-                menu_not.addAction(act)
+                ahk = self.install[i].GetHK()[0]
+                if ahk:
+                    act = PyQt6.QtGui.QAction(self.install[i].sicon,i,menu_not)
+                    act.setToolTip(ahk)
+                    act.setDisabled(True)
+                    #act.triggered.connect(functools.partial(self._ConnectorNothing, i))
+                    menu_not.addAction(act)
 
             # Sub menus
             self.tray_menu.addSeparator()
             for i in self.submenus:
+                if i in self.error:
+                    continue
                 submenu = PyQt6.QtWidgets.QMenu(i,self.tray_menu)
                 submenu.setToolTipsVisible(True)
+                submenu.setIcon(self.submenus[i].sicon)
                 if i in self.menu:
                     # All submenu action
                     act = PyQt6.QtGui.QAction(self.submenus[i].sicon,i,submenu)
@@ -468,7 +489,10 @@ class giftray(object):
                     ahk = self.install[c].GetHK()[0]
                     if ahk:
                         act.setToolTip(ahk)
-                    act.triggered.connect(functools.partial(self._ConnectorAction, c))
+                    if c in self.menu:
+                        act.triggered.connect(functools.partial(self._ConnectorAction, c))
+                    else:
+                        act.setDisabled(True)
                     submenu.addAction(act)
                 self.tray_menu.addMenu(submenu)
 
@@ -502,6 +526,7 @@ class giftray(object):
             if not menu_err.isEmpty():
                 self.tray_menu.addMenu(menu_err)
 
+        self.tray_menu.addSeparator()
         # Define menu default actions
         #ToDo generator Gui
         #ToDo conf Gui
@@ -543,8 +568,8 @@ class giftray(object):
         self.tray_menu.addAction(act)
         self.tray.setContextMenu(self.tray_menu)
 
-        # print(self._PrintConf())
-        self.cp=0
+        self.started = True
+        print(self._PrintConf())
         return
 
     def _PrintConf(self):
@@ -595,6 +620,10 @@ class giftray(object):
         return out
 
     def _Thread4Run(self,args,silent=False):
+        if not silent and not self.started:
+            silent = True
+        if self.silent:
+            silent = True
         if args in self.submenus:
             outs=[]
             for a in self.submenus[args].GetContain():

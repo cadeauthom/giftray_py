@@ -61,6 +61,9 @@ class general:
         return
 
 class object:
+    def __del__(self):
+        return
+
     def __init__(self,show,val,giftray):
         self.allopt  = ["ahk","ico","color"]
         self.setopt  = []
@@ -75,6 +78,7 @@ class object:
         self.name    = type(self).__name__
         self.ico     = self.module+"_"+self.name+".ico"
         self.used_ico= ""
+        self.parents = []
 
         others_general = dict()
         if self.module in self.giftray.avail_modules:
@@ -96,12 +100,7 @@ class object:
                 self.ico = val[i]
             elif k == "click".casefold():
                 self.setopt.append(k)
-                if val[i].lower().capitalize() == "True":
-                    self.menu=True
-                elif val[i].lower().capitalize() == "False":
-                    self.menu=False
-                else:
-                    self.menu=True
+                self.menu = (val[i].casefold() in ['true','on','1'])
             elif k == "ahk".casefold():
                 self.setopt.append(k)
                 self.ahk = val[i]
@@ -153,6 +152,19 @@ class object:
             return False
         return True
 
+    def IsService(self):
+        return 'enabled' in dir(self)
+
+    def IsChild(self):
+        return len(self.parents)>0
+
+    def AddParent(self,p):
+        if self.IsService():
+           return False 
+        if not p in self.parents:
+            self.parents.append(p)
+        return p in self.parents
+
     def GetHK(self):
         return self.ahk, self.hhk
 
@@ -162,9 +174,12 @@ class object:
     def GetOpt(self,sub=False):
         if sub:
             return copy.copy(self.setopt)
-        return copy.copy(self.allopt) 
+        return copy.copy(self.allopt)
 
 class menu(object):
+    def __del__(self):
+        object.__del__(self)
+
     def _AddLastInitErrors(self):
         if len(self.contain) == 0:
             self.AddError("No contain set")
@@ -189,28 +204,20 @@ class menu(object):
             if not c in self.giftray.install:
                 self.AddError(c+" subaction not installed")
                 continue
-            self.giftray.install[c].AddParent(self.show)
+            if not self.giftray.install[c].AddParent(self.show):
+                self.AddError(c+" action cannot be a subaction")
             if not self.giftray.install[c].IsOK():
                 self.AddError(c+" subaction not OK")
                 continue
         return
 
-class main(object):
-    def _PreInit(self,others):
-        self.parents = []
-        # for p in self.giftray.submenus:
-            # if show in giftray.submenus[p].GetContain():
-                # self.parents.append(p)
-        return others
+class action(object):
+    def __del__(self):
+        object.__del__(self)
 
     def _AddLastInitErrors(self):
-        if not self.hhk and not self.menu and not self.IsChild:
+        if not self.hhk and not self.menu and not self.IsChild():
             self.AddError("Nor in menu or shortcut")
-        return
-
-    def AddParent(self,p):
-        if not p in self.parents:
-            self.parents.append(p)
         return
 
     def Run(self):
@@ -230,6 +237,52 @@ class main(object):
     def _Run(self):
         return
 
-    def IsChild(self):
-        return len(self.parents)>0
+class service(object):
+    def __del__(self):
+        if self.thread.is_alive():
+            self.thread.kill()
+        object.__del__(self)
 
+    def _PreInit(self,others):
+        self.thread = _general.KThread(target=self._Run)
+        self.active = False
+        self.enabled = False
+        self.frequency = 60
+        self.allopt += ['enabled','frequency']
+        ret_others = dict()
+        for k in others:
+            if k == "enabled".casefold():
+                self.enabled = (others[k].casefold() in ['true','on','1'])
+            elif k == "frequency".casefold():
+                self.frequency = int(others[k])
+            else:
+                ret_others[k] = others[k]
+        return ret_others
+
+    def _AddLastInitErrors(self):
+        if not self.hhk and not self.menu:
+            self.AddError("Nor in menu or shortcut")
+        return
+
+    def Run(self):
+        if self.active:
+            if self.thread.is_alive():
+                self.thread.kill()
+                self.thread = _general.KThread(target=self._Run)
+                out = 'stopped'
+            else:
+                out = 'already stopped'
+            self.active = False
+        else:
+            if self.thread.is_alive():
+                self.thread.kill()
+                self.thread = _general.KThread(target=self._Run)
+                out = 'restarted'
+            else:
+                out = 'started'
+            self.thread.start()
+            self.active = True
+        return out
+
+    def _Run(self):
+        return

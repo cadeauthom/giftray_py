@@ -23,10 +23,3 @@
 	cmd     = C:\Windows\
 	click   = False
 	ahk     = Ctrl + Win + Maj + F2
-
-
-[AlwaysOnTop]
-	function = windows.alwaysontop
-	ico   = windows_WinAlwaysontop.ico
-	ahk   = Win + F8
-	click = false

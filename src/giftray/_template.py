@@ -8,7 +8,7 @@ from . import _general
 class general(_feature.general):
     pass
 
-class template(_feature.main):
+class template(_feature.action):
     def _Init(self,others,others_general):
         self.allopt.append("localopt")
         self.localopt = "value"
