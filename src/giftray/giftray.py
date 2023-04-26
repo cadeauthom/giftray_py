@@ -123,6 +123,14 @@ class giftray(object):
              self.tray_menu.clear()
         else:
             self.tray_menu = PyQt6.QtWidgets.QMenu()
+            #palette = self.tray_menu.palette()
+            #palette.setColor(PyQt6.QtGui.QPalette.ColorRole.Window, PyQt6.QtGui.QColor("window"))
+            #palette.setBrush(PyQt6.QtGui.QPalette.Background, PyQt6.QtGui.QBrush(QColor("window")))
+            #self.tray_menu.setPalette(palette)
+            f = open("V:\git\perso\py.git\conf\style3.qss","r")
+            lines = '\n'.join(f.readlines())
+            f.close()
+            self.tray_menu.setStyleSheet(lines);
             self.tray_menu.setToolTipsVisible(True)
         if hasattr(self, "ahk_thread"):
             if self.ahk_thread.is_alive():
