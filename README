@@ -29,15 +29,23 @@ wpython src/giftray.py
 kill $(ps aux | grep python | grep init | sed -e 's-^\w\+\s\+\([0-9]\+\)\s\+.\+$-\1-g')
 tail -f giftray.log
 
+#installation: startup
+# or better in first startup - create a file with build date
+# propose startup and import examples
+#set/unset startup
+#get conf examples
+
+#ico => menu, but still menu opt
 
 #Windows
-#	= script (command, admin) + env var
-#		- C:\Windows\System32\powercfg.exe /hibernate on
-#		- hibernate
-#	    - kill process/service (several)
-#       - VM start/stop VMs
+#    = script
+#       + env var
+#       + folder
+#       - kill process/service (several)
+#       - VM stop VMs
 #       - mount Vera
-#	= Reload Driver (reload mic - regedit)
+#    = Reload Driver (reload mic - regedit)
+#    = Move windows
 #Sound (mute mic/sound, volume)
 #android
 #   = connect (nmap, scrcpy)
