@@ -8,6 +8,7 @@ try:
 except ImportError:
     import win32gui
 import psutil
+import time
 
 from . import _feature
 from . import _general
@@ -15,7 +16,7 @@ from . import _general
 # class general(_feature.general):
     # pass
 
-class script(_feature.main):
+class script(_feature.action):
     def _Init(self,others,others_general):
         self.allopt += ["cmd","args","admin"]
         self.cmd = ""
@@ -24,13 +25,13 @@ class script(_feature.main):
         for i in others:
             k = i.casefold()
             if k == "cmd".casefold():
-                self.cmd = others[i]
+                self.cmd = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
             elif k == "args".casefold():
-                self.args = others[i]
+                self.args = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
             elif k == "admin".casefold():
-                self.admin = (others[i].lower().capitalize() == "True")
+                self.admin = _general.GetOpt(others[i],_general.type.BOOL)
                 self.setopt.append(k)
             else:
                 self.AddError("'"+i+"' not defined")
@@ -57,8 +58,31 @@ class script(_feature.main):
         prog = subprocess.Popen(['Powershell ', '-Command', cmd])
         return out
 
+class stayactive(_feature.service):
+    def _Init(self,others,others_general):
+        self.allopt += ["frequency"]
+        self.frequency = 60
+        for i in others:
+            k = i.casefold()
+            if k == "frequency".casefold():
+                a = _general.GetOpt(others[k],_general.type.UINT)
+                if a:
+                    self.frequency = a
+            else:
+                self.AddError("'"+i+"' not defined")
 
-class alwaysontop(_feature.main):
+    def _Run(self):
+        import clicknium
+        a,b = clicknium.mouse.position()
+        while True:
+            for i in range(self.frequency): time.sleep(1)
+            x,y = clicknium.mouse.position()
+            if x==a and y==b:
+              clicknium.mouse.move(a,b)
+            a,b = clicknium.mouse.position()
+        return
+
+class alwaysontop(_feature.action):
     def __del__(self):
         currentOnTop = _general.WindowsHandler().GetAllOnTopWindowsName()
         for hwnd in self.top_hwnd:
@@ -67,6 +91,7 @@ class alwaysontop(_feature.main):
                     win32con.HWND_NOTOPMOST,
                     0,0,0,0,
                     win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+        _feature.action.__del__(self)
 
     def _Init(self,others,others_general):
         self.allopt += []

@@ -1,7 +1,6 @@
 from . import _icon
 from . import _general
 import copy
-import re
 
 class general:
     def __init__(self,giftray,show):
@@ -25,9 +24,10 @@ class general:
         for i in val:
             k = i.casefold()
             if k == "color".casefold():
-                if val[i] != self.giftray.conf_coloricons:
-                    self.conf["color"] = val[i]
-                    self.subconf["color"] = val[i]
+                col = _general.GetOpt(general_conf[i],_general.type.STRING)
+                if col != self.giftray.conf_coloricons:
+                    self.conf["color"] = col
+                    self.subconf["color"] = col
             else:
                 others[i]=val[i]
         self._Parse(others)
@@ -61,20 +61,24 @@ class general:
         return
 
 class object:
+    def __del__(self):
+        return
+
     def __init__(self,show,val,giftray):
         self.allopt  = ["ahk","ico","color"]
         self.setopt  = []
         self.giftray = giftray
         self.show    = show
         self.ahk     = ""
-        self.ico     = ""
         self.color   = ""
         self.menu    = False
         self.hhk     = []
         self.error   = []
         self.module  = type(self).__module__[(len(self.giftray.name)+2):]
         self.name    = type(self).__name__
+        self.ico     = self.module+"_"+self.name+".ico"
         self.used_ico= ""
+        self.parents = []
 
         others_general = dict()
         if self.module in self.giftray.avail_modules:
@@ -83,7 +87,7 @@ class object:
             for i in general_conf:
                 k = i.casefold()
                 if k == "color".casefold():
-                    self.color = general_conf[i]
+                    self.color = _general.GetOpt(general_conf[i],_general.type.STRING)
                 else:
                     others_general[i]=general_conf[i]
         others = dict()
@@ -93,20 +97,16 @@ class object:
                 pass
             elif k == "ico".casefold():
                 self.setopt.append(k)
-                if val[i].lower().capitalize() == "True":
-                    self.ico = self.module+"_"+self.name+".ico"
-                    self.menu=True
-                elif val[i].lower().capitalize() == "False":
-                    self.menu=False
-                else:
-                    self.ico = val[i]
-                    self.menu=True
+                self.ico = _general.GetOpt(val[i],_general.type.STRING)
+            elif k == "click".casefold():
+                self.setopt.append(k)
+                self.menu = _general.GetOpt(val[i],_general.type.BOOL)
             elif k == "ahk".casefold():
                 self.setopt.append(k)
-                self.ahk = val[i]
+                self.ahk = _general.GetOpt(val[i],_general.type.STRING)
             elif k == "color".casefold():
                 self.setopt.append(k)
-                self.color = val[i]
+                self.color = _general.GetOpt(val[i],_general.type.STRING)
             else:
                 others[i]=val[i]
 
@@ -152,6 +152,19 @@ class object:
             return False
         return True
 
+    def IsService(self):
+        return 'enabled' in dir(self)
+
+    def IsChild(self):
+        return len(self.parents)>0
+
+    def AddParent(self,p):
+        if self.IsService():
+           return False 
+        if not p in self.parents:
+            self.parents.append(p)
+        return p in self.parents
+
     def GetHK(self):
         return self.ahk, self.hhk
 
@@ -161,23 +174,25 @@ class object:
     def GetOpt(self,sub=False):
         if sub:
             return copy.copy(self.setopt)
-        return copy.copy(self.allopt) 
+        return copy.copy(self.allopt)
 
 class menu(object):
+    def __del__(self):
+        object.__del__(self)
+
     def _AddLastInitErrors(self):
         if len(self.contain) == 0:
             self.AddError("No contain set")
-        if not self.hhk and not self.menu :
-            self.AddError("Nor in menu or shortcut")
         return
 
     def _PreInit(self,others):
         self.contain = []
         self.allopt += 'contain'
         ret_others = dict()
-        for k in others:
+        for i in others:
+            k = i.casefold()
             if k == "contain".casefold():
-                self.contain = re.split('\s*[,;]\s*',others[k])
+                self.contain = _general.GetOpt(others[i],_general.type.LISTSTRING)
             else:
                 ret_others[k] = others[k]
         return ret_others
@@ -188,30 +203,22 @@ class menu(object):
     def CheckContain(self):
         for c in self.contain:
             if not c in self.giftray.install:
-                self.AddError(c+" not installed")
+                self.AddError(c+" subaction not installed")
                 continue
-            self.giftray.install[c].AddParent(self.show)
+            if not self.giftray.install[c].AddParent(self.show):
+                self.AddError(c+" action cannot be a subaction")
             if not self.giftray.install[c].IsOK():
-                self.AddError(c+" not OK")
+                self.AddError(c+" subaction not OK")
                 continue
         return
 
-class main(object):
-    def _PreInit(self,others):
-        self.parents = []
-        # for p in self.giftray.submenus:
-            # if show in giftray.submenus[p].GetContain():
-                # self.parents.append(p)
-        return others
+class action(object):
+    def __del__(self):
+        object.__del__(self)
 
     def _AddLastInitErrors(self):
-        if not self.hhk and not self.menu and not self.IsChild:
+        if not self.hhk and not self.menu and not self.IsChild():
             self.AddError("Nor in menu or shortcut")
-        return
-
-    def AddParent(self,p):
-        if not p in self.parents:
-            self.parents.append(p)
         return
 
     def Run(self):
@@ -224,14 +231,57 @@ class main(object):
                 e_str = str(e)
                 self.giftray.logger.error("Action '" +self.show+ "' failed: "+e_str)
                 out = "Action '" +self.show+ "' failed: "+e_str
-        #return out
-        if out:
-            _general.PopUp(self.show, out)
-        return
+        #if out and not silent:
+        #    _general.PopUp(self.show, out)
+        return out
 
     def _Run(self):
         return
 
-    def IsChild(self):
-        return len(self.parents)>0
+class service(object):
+    def __del__(self):
+        import ctypes, win32con
+        if self.thread.is_alive():
+            self.thread.kill()
+        object.__del__(self)
 
+    def _PreInit(self,others):
+        self.thread = _general.KThread(target=self._Run)
+        self.active = False
+        self.enabled = False
+        self.allopt += ['enabled']
+        ret_others = dict()
+        for k in others:
+            if k == "enabled".casefold():
+                self.enabled = _general.GetOpt(others[k],_general.type.BOOL)
+            else:
+                ret_others[k] = others[k]
+        return ret_others
+
+    def _AddLastInitErrors(self):
+        if not self.hhk and not self.menu:
+            self.AddError("Nor in menu or shortcut")
+        return
+
+    def Run(self):
+        if self.active:
+            if self.thread.is_alive():
+                self.thread.kill()
+                self.thread = _general.KThread(target=self._Run)
+                out = 'stopped'
+            else:
+                out = 'already stopped'
+            self.active = False
+        else:
+            if self.thread.is_alive():
+                self.thread.kill()
+                self.thread = _general.KThread(target=self._Run)
+                out = 'restarted'
+            else:
+                out = 'started'
+            self.thread.start()
+            self.active = True
+        return out
+
+    def _Run(self):
+        return

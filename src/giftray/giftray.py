@@ -123,6 +123,14 @@ class giftray(object):
              self.tray_menu.clear()
         else:
             self.tray_menu = PyQt6.QtWidgets.QMenu()
+            #palette = self.tray_menu.palette()
+            #palette.setColor(PyQt6.QtGui.QPalette.ColorRole.Window, PyQt6.QtGui.QColor("window"))
+            #palette.setBrush(PyQt6.QtGui.QPalette.Background, PyQt6.QtGui.QBrush(QColor("window")))
+            #self.tray_menu.setPalette(palette)
+            f = open("V:\git\perso\py.git\conf\style3.qss","r")
+            lines = '\n'.join(f.readlines())
+            f.close()
+            self.tray_menu.setStyleSheet(lines);
             self.tray_menu.setToolTipsVisible(True)
         if hasattr(self, "ahk_thread"):
             if self.ahk_thread.is_alive():
@@ -148,6 +156,8 @@ class giftray(object):
         else:
             self.error = dict()
         if hasattr(self, "install"):
+            for i in self.install:
+                self.install[i].__del__()
             self.install.clear()
         else:
             self.install = dict()
@@ -189,6 +199,8 @@ class giftray(object):
         self.conf_icoPath       = ""
         self.iconPath           = ""
         self.nb_hotkey          = 0
+        self.started            = False
+        self.silent             = False
 
     def _Restart(self):
         self._ResetVar()
@@ -233,21 +245,23 @@ class giftray(object):
             if section.casefold().strip() == 'GENERAL'.casefold():
                 for k in config[section]:
                     if k.casefold() == 'ColorMainIcon'.casefold():
-                        self.conf_colormainicon = str(config[section][k])
+                        self.conf_colormainicon = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif k.casefold() == 'ColorIcons'.casefold():
-                        self.conf_coloricons = str(config[section][k])
+                        self.conf_coloricons = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif k.casefold() == 'LogLevel'.casefold():
                         LevelNamesMapping=logging.getLevelNamesMapping()
-                        levelname=str(config[section][k]).upper()
+                        levelname=_general.GetOpt(str(config[section][k]),_general.type.UPSTRING)
                         if levelname in LevelNamesMapping:
                             self.conf_loglevel = levelname.casefold()
                             self.logger.setLevel(level=LevelNamesMapping[levelname])
                         else:
                             self.logger.error('LogLevel->'+k+"not supported")
                     elif k.casefold() == 'Ico'.casefold():
-                        self.conf_ico = str(config[section][k])
+                        self.conf_ico = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif k.casefold() == 'IcoPath'.casefold():
-                        self.conf_icoPath = str(config[section][k])
+                        self.conf_icoPath = _general.GetOpt(str(config[section][k]),_general.type.STRING)
+                    elif k.casefold() == 'Silent'.casefold():
+                        self.silent = _general.GetOpt(str(config[section][k]),_general.type.BOOL)
                     else :
                         self.logger.error(section+" : "+k+" is not an existing option")
                 continue
@@ -280,6 +294,7 @@ class giftray(object):
         #self.tray.setIcon(sicon)
         #time.sleep(3)
         self.tray.setIcon(self.main_sicon)
+        self.app.setWindowIcon(self.main_sicon)
 
         if False:
             #Save info of ico for conf
@@ -416,7 +431,9 @@ class giftray(object):
         for section in self.submenus:
             self.submenus[section].CheckContain() 
             if self.submenus[section].IsOK() and self.submenus[section].IsInMenu() :
-                    self.menu.append(self.submenus[section].show)
+                self.menu.append(self.submenus[section].show)
+            else:
+                self.error[self.submenus[section].show] = ""
 
         config.clear()
 
@@ -428,30 +445,46 @@ class giftray(object):
             # Define menu configured actions
             # loop on modules for main menu and for Not Clickable
             menu_not = PyQt6.QtWidgets.QMenu('Not clickable',self.tray_menu)
+            menu_not.setToolTipsVisible(True)
             for i in self.install:
                 if i in self.error:
                     # not filling here since not defined action are in error but not in install
                     continue
+                if self.install[i].IsChild():
+                    continue
                 if i in self.menu:
+                    # Main menu
                     act = PyQt6.QtGui.QAction(self.install[i].sicon,i,self.tray_menu)
+                    act.triggered.connect(functools.partial(self._ConnectorAction, i))
                     ahk = self.install[i].GetHK()[0]
                     if ahk:
                         act.setToolTip(ahk)
-                    act.triggered.connect(functools.partial(self._ConnectorAction, i))
+                    if self.install[i].IsService():
+                        act.setCheckable(True)
+                        if self.install[i].enabled:
+                            #act.setChecked(True)
+                            act.activate(PyQt6.QtGui.QAction.ActionEvent.Trigger)
                     self.tray_menu.addAction(act)
                     continue
-                if i in self.menu and  i in self.submenus:
-                    continue
-                act = PyQt6.QtGui.QAction(self.install[i].sicon,i,menu_not)
-                act.setDisabled(True)
-                menu_not.addAction(act)
+                # Not clickable
+                ahk = self.install[i].GetHK()[0]
+                if ahk:
+                    act = PyQt6.QtGui.QAction(self.install[i].sicon,i,menu_not)
+                    act.setToolTip(ahk)
+                    act.setDisabled(True)
+                    #act.triggered.connect(functools.partial(self._ConnectorNothing, i))
+                    menu_not.addAction(act)
 
+            # Sub menus
             self.tray_menu.addSeparator()
-
             for i in self.submenus:
+                if i in self.error:
+                    continue
                 submenu = PyQt6.QtWidgets.QMenu(i,self.tray_menu)
                 submenu.setToolTipsVisible(True)
+                submenu.setIcon(self.submenus[i].sicon)
                 if i in self.menu:
+                    # All submenu action
                     act = PyQt6.QtGui.QAction(self.submenus[i].sicon,i,submenu)
                     ahk = self.submenus[i].GetHK()[0]
                     if ahk:
@@ -464,7 +497,10 @@ class giftray(object):
                     ahk = self.install[c].GetHK()[0]
                     if ahk:
                         act.setToolTip(ahk)
-                    act.triggered.connect(functools.partial(self._ConnectorAction, c))
+                    if c in self.menu:
+                        act.triggered.connect(functools.partial(self._ConnectorAction, c))
+                    else:
+                        act.setDisabled(True)
                     submenu.addAction(act)
                 self.tray_menu.addMenu(submenu)
 
@@ -499,7 +535,6 @@ class giftray(object):
                 self.tray_menu.addMenu(menu_err)
 
         self.tray_menu.addSeparator()
-
         # Define menu default actions
         #ToDo generator Gui
         #ToDo conf Gui
@@ -541,8 +576,8 @@ class giftray(object):
         self.tray_menu.addAction(act)
         self.tray.setContextMenu(self.tray_menu)
 
+        self.started = True
         #print(self._PrintConf())
-        self.cp=0
         return
 
     def _PrintConf(self):
@@ -561,7 +596,7 @@ class giftray(object):
             config[i]={ "function" : self.install[i].module+ "." + self.install[i].name}
             #mandatory options
             config[i]["ahk"]=self.install[i].ahk
-            config[i]["menu"]=str(self.install[i].menu)
+            config[i]["click"]=str(self.install[i].menu)
             #optional options
             path_ico     = self.install[i].used_ico
             if path_ico:
@@ -592,12 +627,19 @@ class giftray(object):
         f.close()
         return out
 
-    def _Thread4Run(self,args):
+    def _Thread4Run(self,args,silent=False):
+        if not silent and not self.started:
+            silent = True
+        if self.silent:
+            silent = True
         if args in self.submenus:
-            print(self.submenus[args].GetContain())
-            return
+            outs=[]
+            for a in self.submenus[args].GetContain():
+                outs.append(a+": "+self._Thread4Run(a,silent=True))
+            _general.PopUp(args, "\n".join(outs))
+            return ""
         if not args in self.install:
-            return
+            return ""
         if self.lock.acquire(timeout=1):   
             action=self.install[args]
             start_time = datetime.datetime.now()
@@ -606,6 +648,9 @@ class giftray(object):
             th = _general.KThread(target=action.Run)
             th.start()
             th.join(10)
+            out = th.getout()
+            if not silent:
+                _general.PopUp(args, out)
             duration = datetime.datetime.now() - start_time
             if th.is_alive():
                 self.logger.debug('Kill '+show +' after '+str(duration.seconds)+' sec')
@@ -614,10 +659,11 @@ class giftray(object):
                 self.logger.debug(show+ ' ran in '+str(duration.seconds)+' sec')
             #few seconds before releasing lock
             #TODO: releasing lock time in configuration
-            time.sleep(3)
+            if not silent:
+                time.sleep(3)
             self.logger.debug('Release lock')
             if self.lock.locked(): self.lock.release()
-        return
+        return out
 
     def _Thread4ahk(self):
         self.logger.info("Starting ahk thread")
@@ -719,6 +765,7 @@ class giftray(object):
         box.setInformativeText(info)
         #box.setStandardButtons(PyQt6.QtWidgets.Ok)
         p = self.main_sicon.pixmap(20)
-        box.setIconPixmap(p)
+        #box.setIconPixmap(p)
+        box.setWindowIcon(self.main_sicon)
         box.exec()
         return

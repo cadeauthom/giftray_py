@@ -8,14 +8,14 @@ from . import _general
 class general(_feature.general):
     pass
 
-class template(_feature.main):
+class template(_feature.action):
     def _Init(self,others,others_general):
         self.allopt.append("localopt")
         self.localopt = "value"
         for i in others:
             k = i.casefold()
             if k == "localopt".casefold():
-                self.localopt = others[i]
+                self.localopt = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
             else:
                 self.AddError("'"+i+"' not defined")

@@ -3,12 +3,13 @@
 #	ico = windows_MuteUnmute.ico
 #	print = Mute/Unmute
 #	ahk = Win + <
+#	click = true
 #	device = Capture/Playback
 #
 #[windows_Volume]
 #	function = windows_Volume
 #	print = Volume Change
 #	ahk = Alt + NumpadSub
-#	ico = false
+#	click = false
 #	device = Capture/Playback
 #	direction = Up/Down

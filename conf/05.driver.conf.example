@@ -1,6 +1,7 @@
 #[windows_ReloadMic]
 #	function = windows_ReloadMic
-#	ico = windows_ReloadMic.ico
+#	ico   = windows_ReloadMic.ico
+#	click = True
 #	print = Reload Microphone
-#	ahk = Ctrl + Win + m
-#	mode = regedit/wmic
+#	ahk   = Ctrl + Win + m
+#	mode  = regedit/wmic

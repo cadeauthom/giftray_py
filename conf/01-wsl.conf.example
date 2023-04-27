@@ -5,6 +5,7 @@
 [Proxy]
     function= wsl.cmd
     ico     = wsl_proxy.ico
+    click   = true
     #color   = red
     cmd     = ssh -C2qTnNf annuminas -D 8080
     #out     =
@@ -14,6 +15,7 @@
 [Terminator]
     function= wsl.cmd
     ico     = wsl_terminator.ico
+    click   = true
     cmd     = terminator --working-directory $folder
     gui     = True
     ahk     = Ctrl + Win + Maj + T

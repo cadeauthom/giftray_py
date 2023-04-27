@@ -1,6 +1,7 @@
 [Connect Android]
 	function = android.connect
 	ico = android_connect.ico
+	click = true
 	print = Connect phone
 	ahk =
 	ip = 192.168.1.28
