@@ -1,0 +1,4 @@
+[Split]
+	function= windows.screen
+	ico     = True
+	ahk     = Ctrl + Win + Maj + F6
