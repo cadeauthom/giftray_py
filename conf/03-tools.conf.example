@@ -1,0 +1,20 @@
+[Vera]
+    contain = Mount, Unmount
+	click   = False
+
+[Mount]
+    function= windows.script
+    cmd     = C:\Program Files\VeraCrypt\veracrypt.exe
+    args    = /v C:\Volumes\SSD\data.vc /l v /q /securedesktop
+    click   = true
+    admin   = false
+    ico     = pro_mountV.ico
+    ahk     = Ctrl + Win + J
+
+[Unmount]
+    function= windows.script
+    cmd     = C:\Program Files\VeraCrypt\veracrypt.exe
+    args    = /q /d
+    click   = true
+    admin   = false
+    ico     = pro_umountAll.ico

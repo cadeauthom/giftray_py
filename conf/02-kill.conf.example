@@ -5,6 +5,17 @@
 [Kill Skype]
 	function = windows.script
 	cmd = taskkill.exe
-	args = /f /im skype.exe
+	args = /f /im /T skype.exe
+	click = false
+	admin = false
+
+[Reduce Network]
+    contain = Kill DropBox
+	click   = True
+
+[Kill DropBox]
+	function = windows.script
+	cmd = taskkill.exe
+	args = /f /im /T dropbox.exe
 	click = false
 	admin = false
