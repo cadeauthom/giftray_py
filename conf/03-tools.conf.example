@@ -9,7 +9,7 @@
     click   = true
     admin   = false
     ico     = pro_mountV.ico
-    ahk     = Ctrl + Win + J
+    ahk     = Win + ²
 
 [Unmount]
     function= windows.script
@@ -18,3 +18,4 @@
     click   = true
     admin   = false
     ico     = pro_umountAll.ico
+    ahk     = Ctrl + Win + ²

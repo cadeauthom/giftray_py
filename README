@@ -51,4 +51,3 @@ TODO: get_opt => get_help
 
 Known limitation:
     wsl.cmd does not support output redirection (>)
-    ² not found in key list

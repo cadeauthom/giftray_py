@@ -227,7 +227,7 @@ class giftray(object):
             if "\\python" in sys.executable:
                 confs += natsort.os_sorted(glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf.example')))
             try:
-                config.read(confs)
+                config.read(confs, encoding="utf8")
             except Exception as e:
                 print_error = "Fail to read configuration (" + os.path.dirname(self.conf) + "): " + str(e)
                 self.main_error.append(print_error)
@@ -426,18 +426,6 @@ class giftray(object):
             if new_class.IsOK() and new_class.IsInMenu() and not new_class.IsChild() :
                     self.menu.append(new_class.show)
 
-        # Finalise menu and associated errors
-        for section in self.submenus:
-            self.submenus[section].Check()
-            if not self.submenus[section].IsOK():
-                self.error[self.submenus[section].show] = ""
-            elif self.submenus[section].IsInMenu():
-                self.menu.append(self.submenus[section].show)
-        for section in self.install:
-            self.install[section].Check()
-            if not self.install[section].IsOK():
-                self.error[self.install[section].show] = ""
-
         config.clear()
 
         # Start ahk_thread and wait for initialisation
@@ -445,6 +433,17 @@ class giftray(object):
         self.ahk_thread.start()
         if self.ahklock.acquire(timeout=10):
             self.ahklock.release()
+            # Finalise menu and associated errors
+            for section in self.submenus:
+                self.submenus[section].Check()
+                if not self.submenus[section].IsOK():
+                    self.error[self.submenus[section].show] = ""
+                elif self.submenus[section].IsInMenu():
+                    self.menu.append(self.submenus[section].show)
+            for section in self.install:
+                self.install[section].Check()
+                if not self.install[section].IsOK():
+                    self.error[self.install[section].show] = ""
             # Define menu configured actions
             # loop on modules for main menu and for Not Clickable
             menu_not = PyQt6.QtWidgets.QMenu('Not clickable',self.tray_menu)

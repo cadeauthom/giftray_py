@@ -40,7 +40,7 @@ class script(_feature.action):
         else:
             cmd = _general.WindowsHandler().GetRealPath(self.cmd)
             if not cmd:
-                self.AddError(cmd + "not found in '" +self.show+"'")
+                self.AddError(self.cmd + " not found in '" +self.show+"'")
             else:
                 self.cmd = cmd
         return
