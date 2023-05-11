@@ -426,12 +426,18 @@ class giftray(object):
             if new_class.IsOK() and new_class.IsInMenu() and not new_class.IsChild() :
                     self.menu.append(new_class.show)
 
+        # Finalise menu and associated errors
         for section in self.submenus:
-            self.submenus[section].CheckContain() 
-            if self.submenus[section].IsOK() and self.submenus[section].IsInMenu() :
+            self.submenus[section].Check()
+            if self.submenus[section].IsOK():
+                #if self.submenus[section].IsOK() and self.submenus[section].IsInMenu() :
                 self.menu.append(self.submenus[section].show)
             else:
                 self.error[self.submenus[section].show] = ""
+        for section in self.install:
+            self.install[section].Check()
+            if not self.install[section].IsOK():
+                self.error[self.install[section].show] = ""
 
         config.clear()
 

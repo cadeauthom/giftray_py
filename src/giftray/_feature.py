@@ -125,11 +125,6 @@ class object:
 
         others = self._PreInit(others)
         self._Init(others,others_general)
-        self._AddLastInitErrors()
-
-    def _AddLastInitErrors(self):
-        self.AddError("Class should not be used as is")
-        return
 
     def _PreInit(self,others):
         return others
@@ -151,6 +146,10 @@ class object:
         if self.error:
             return False
         return True
+
+    def Check(self):
+        self.AddError("Class should not be used as is")
+        return
 
     def IsService(self):
         return 'enabled' in dir(self)
@@ -180,11 +179,6 @@ class menu(object):
     def __del__(self):
         object.__del__(self)
 
-    def _AddLastInitErrors(self):
-        if len(self.contain) == 0:
-            self.AddError("No contain set")
-        return
-
     def _PreInit(self,others):
         self.contain = []
         self.allopt += 'contain'
@@ -200,7 +194,9 @@ class menu(object):
     def GetContain(self):
         return copy.copy(self.contain)
 
-    def CheckContain(self):
+    def Check(self):
+        if len(self.contain) == 0:
+            self.AddError("Empty menu")
         for c in self.contain:
             if not c in self.giftray.install:
                 self.AddError(c+" subaction not installed")
@@ -210,15 +206,18 @@ class menu(object):
             if not self.giftray.install[c].IsOK():
                 self.AddError(c+" subaction not OK")
                 continue
+        if not self.menu:
+            self.AddError("Not in menu")
         return
 
 class action(object):
     def __del__(self):
         object.__del__(self)
 
-    def _AddLastInitErrors(self):
-        if not self.hhk and not self.menu and not self.IsChild():
-            self.AddError("Nor in menu or shortcut")
+    def Check(self):
+        if self.IsOK():
+            if not self.hhk and not self.menu and not self.IsChild():
+                self.AddError("Nor in (sub)menu or shortcut")
         return
 
     def Run(self):
@@ -258,10 +257,10 @@ class service(object):
                 ret_others[k] = others[k]
         return ret_others
 
-    def _AddLastInitErrors(self):
+    def Check(self):
         if not self.hhk and not self.menu:
             self.AddError("Nor in menu or shortcut")
-        return
+        return 
 
     def Run(self):
         if self.active:

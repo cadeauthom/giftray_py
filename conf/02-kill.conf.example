@@ -6,5 +6,5 @@
 	function = windows.script
 	cmd = taskkill.exe
 	args = /f /im skype.exe
-	click = true
+	click = false
 	admin = false

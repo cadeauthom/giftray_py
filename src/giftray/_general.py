@@ -10,6 +10,7 @@ try:
 except ImportError:
     import winxpgui as win32gui
 import enum
+import re
 
 class type(enum.Enum):
     UINT        = 1
