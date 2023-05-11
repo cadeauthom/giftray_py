@@ -207,7 +207,9 @@ class menu(object):
                 self.AddError(c+" subaction not OK")
                 continue
         if not self.menu:
-            self.AddError("Not in menu")
+            for c in self.contain:
+                if not self.giftray.install[c].IsInMenu():
+                    self.AddError(c+" is not in usable in menu")
         return
 
 class action(object):

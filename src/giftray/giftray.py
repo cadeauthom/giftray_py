@@ -429,11 +429,10 @@ class giftray(object):
         # Finalise menu and associated errors
         for section in self.submenus:
             self.submenus[section].Check()
-            if self.submenus[section].IsOK():
-                #if self.submenus[section].IsOK() and self.submenus[section].IsInMenu() :
-                self.menu.append(self.submenus[section].show)
-            else:
+            if not self.submenus[section].IsOK():
                 self.error[self.submenus[section].show] = ""
+            elif self.submenus[section].IsInMenu():
+                self.menu.append(self.submenus[section].show)
         for section in self.install:
             self.install[section].Check()
             if not self.install[section].IsOK():
