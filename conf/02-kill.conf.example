@@ -1,0 +1,10 @@
+[Stop Communication]
+    contain = Kill Skype
+	click   = True
+
+[Kill Skype]
+	function = windows.script
+	cmd = taskkill.exe
+	args = /f /im skype.exe
+	click = true
+	admin = false

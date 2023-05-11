@@ -60,6 +60,7 @@ class giftray(object):
         self.logger             = logging.getLogger(__name__)
         # Define app
         self.app  = PyQt6.QtWidgets.QApplication([])
+        self.app.setStyle('Fusion')
         self.app.setQuitOnLastWindowClosed ( False )
         #self.win_handler        = PyQt6.QtWidgets.QWidget()
         # Define tray
@@ -123,14 +124,6 @@ class giftray(object):
              self.tray_menu.clear()
         else:
             self.tray_menu = PyQt6.QtWidgets.QMenu()
-            #palette = self.tray_menu.palette()
-            #palette.setColor(PyQt6.QtGui.QPalette.ColorRole.Window, PyQt6.QtGui.QColor("window"))
-            #palette.setBrush(PyQt6.QtGui.QPalette.Background, PyQt6.QtGui.QBrush(QColor("window")))
-            #self.tray_menu.setPalette(palette)
-            f = open("V:\git\perso\py.git\conf\style3.qss","r")
-            lines = '\n'.join(f.readlines())
-            f.close()
-            self.tray_menu.setStyleSheet(lines);
             self.tray_menu.setToolTipsVisible(True)
         if hasattr(self, "ahk_thread"):
             if self.ahk_thread.is_alive():
@@ -219,7 +212,7 @@ class giftray(object):
                 for k in endpath:
                     path = posixpath.join( path, k)
                 path = os.path.abspath(posixpath.join( path, self.name+".conf"))
-                if os.path.isfile(path) :
+                if os.path.exists(path) and os.path.isfile(path) :
                     self.conf = path
                     exist_conf = True
                     break
@@ -239,7 +232,12 @@ class giftray(object):
                 print_error = "Fail to read configuration (" + os.path.dirname(self.conf) + "): " + str(e)
                 self.main_error.append(print_error)
                 self.logger.error(print_error)
-
+            qss = os.path.abspath(posixpath.join( os.path.dirname(self.conf), self.name+".qss"))
+            if os.path.exists(qss) and os.path.isfile(qss):
+                f = open(qss,"r")
+                lines = '\n'.join(f.readlines())
+                f.close()
+                self.tray_menu.setStyleSheet(lines);
         #Load GENERAL config to variables
         for section in config.sections():
             if section.casefold().strip() == 'GENERAL'.casefold():
