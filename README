@@ -41,9 +41,7 @@ tail -f giftray.log
 #    = script
 #       + env var
 #       + folder
-#       - kill process/service (several)
-#       - VM stop VMs
-#       - mount Vera
+#       + confirmation box
 #    = Reload Driver (reload mic - regedit)
 #    = Move windows
 #Sound (mute mic/sound, volume)
@@ -53,3 +51,4 @@ TODO: get_opt => get_help
 
 Known limitation:
     wsl.cmd does not support output redirection (>)
+    ² not found in key list
