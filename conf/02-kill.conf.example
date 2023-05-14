@@ -1,11 +1,18 @@
 [Stop Communication]
-    contain = Kill Skype
+    contain = Kill Skype, Kill Discord
 	click   = True
 
 [Kill Skype]
 	function = windows.script
 	cmd = taskkill.exe
-	args = /f /im /T skype.exe
+	args = /f /T /im skype.exe
+	click = false
+	admin = false
+
+[Kill Discord]
+	function = windows.script
+	cmd = taskkill.exe
+	args = /f /T /im Discord.exe
 	click = false
 	admin = false
 
@@ -16,6 +23,6 @@
 [Kill DropBox]
 	function = windows.script
 	cmd = taskkill.exe
-	args = /f /im /T dropbox.exe
+	args = /f /T /im dropbox.exe
 	click = false
 	admin = false
