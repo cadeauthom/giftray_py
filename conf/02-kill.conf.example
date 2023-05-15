@@ -17,7 +17,7 @@
 	admin = false
 
 [Reduce Network]
-    contain = Kill DropBox
+    contain = Kill DropBox, Kill TeamViewer
 	click   = True
 
 [Kill DropBox]
@@ -26,3 +26,10 @@
 	args = /f /T /im dropbox.exe
 	click = false
 	admin = false
+
+[Kill TeamViewer]
+	function = windows.script
+	cmd = net.exe
+	args = stop TeamViewer /y
+	click = false
+	admin = true
