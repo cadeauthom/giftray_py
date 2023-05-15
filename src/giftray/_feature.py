@@ -75,7 +75,7 @@ class object:
         return
 
     def __init__(self,show,val,giftray):
-        self.allopt  = ["ahk","ico","color"]
+        self.allopt  = []
         self.setopt  = []
         self.giftray = giftray
         self.show    = show
@@ -88,8 +88,7 @@ class object:
         self.error   = []
         self.module  = type(self).__module__[(len(self.giftray.name)+2):]
         self.name    = type(self).__name__
-        self.ico     = self.module+"_"+self.name+".ico"
-        self.used_ico= ""
+        self.ico     = ""
         self.parents = []
 
         others_general = dict()
@@ -112,22 +111,16 @@ class object:
             if k == "function".casefold():
                 pass
             elif k == "ico".casefold():
-                self.setopt.append(k)
                 self.ico = _general.GetOpt(val[i],_general.type.STRING)
             elif k == "click".casefold():
-                self.setopt.append(k)
                 self.menu = _general.GetOpt(val[i],_general.type.BOOL)
             elif k == "ahk".casefold():
-                self.setopt.append(k)
                 self.ahk = _general.GetOpt(val[i],_general.type.STRING)
             elif k == "color".casefold():
-                self.setopt.append(k)
                 self.color = _general.GetOpt(val[i],_general.type.STRING)
             elif k == "dark".casefold():
-                self.setopt.append(k)
                 self.dark = _general.GetOpt(val[i],_general.type.STRING)
             elif k == "light".casefold():
-                self.setopt.append(k)
                 self.light = _general.GetOpt(val[i],_general.type.STRING)
             else:
                 others[i]=val[i]
@@ -135,23 +128,15 @@ class object:
         if not self.color:
             self.color = 'custom'
         if self.dark or self.light:
-            colorname = self.color+''.join(random.choices(string.digits, k=10))
+            colorname = self.color+'/'+''.join(random.choices(string.digits, k=10))
             self.giftray.colors.copy(self.color, colorname)
             self.color = colorname
             self.giftray.colors.set(self.color,self.dark,self.light)
         if self.ico:
-            self.sicon, self.used_ico = _icon.SVG2Icon(self.giftray,self.ico,self.color)
+            self.iconid = self.giftray.images.create(self.ico,self.color)
         else:
-            self.sicon, self.used_ico = _icon.SVG2Icon(self.giftray,self.show[0],self.color)
-        
-        # iconPath = ""
-        # if (self.color and self.color!=self.giftray.conf_coloricons):
-            # iconPath = _icon.ValidateIconPath(path    = self.giftray.iconPath,\
-                                              # color   = self.color, \
-                                              # project = self.giftray.name)
-        # if not iconPath:
-            # iconPath = self.giftray.iconPath
-        # self.sicon, self.used_ico = _icon.GetIcon(iconPath, giftray, self.ico)
+            self.iconid = self.giftray.images.create(self.show[0],self.color)
+
         if self.ahk:
             self.hhk, self.ahk, err = giftray.ahk_translator.ahk2hhk(self.ahk)
             if len(err):
@@ -289,6 +274,7 @@ class service(object):
         for k in others:
             if k == "enabled".casefold():
                 self.enabled = _general.GetOpt(others[k],_general.type.BOOL)
+                self.setopt.append('enabled')
             else:
                 ret_others[k] = others[k]
         return ret_others

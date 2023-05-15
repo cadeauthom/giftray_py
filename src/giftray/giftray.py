@@ -193,11 +193,6 @@ class giftray(object):
         self.conf_colormainicon = ""
         self.conf_coloricons    = ""
         self.conf_loglevel      = "WARNING"
-        self.conf_ico_default   = "default_default"
-        self.conf_ico_empty     = "default_empty"
-        self.conf_ico           = ""
-        self.conf_icoPath       = ""
-        self.iconPath           = ""
         self.nb_hotkey          = 0
         self.started            = False
         self.silent             = False
@@ -266,10 +261,6 @@ class giftray(object):
                             self.logger.setLevel(level=LevelNamesMapping[levelname])
                         else:
                             self.logger.error('LogLevel->'+k+"not supported")
-                    elif k.casefold() == 'Ico'.casefold():
-                        self.conf_ico = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif k.casefold() == 'IcoPath'.casefold():
-                        self.conf_icoPath = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif k.casefold() == 'Silent'.casefold():
                         self.silent = _general.GetOpt(str(config[section][k]),_general.type.BOOL)
                     elif k.casefold() == 'MainDark'.casefold():
@@ -290,82 +281,13 @@ class giftray(object):
         self.colors.copy(self.conf_colormainicon,'maincustom')
         self.colors.set('maincustom',self.mdark,self.mlight)
         #Get ico for Tray
-        #Get ico path
-        if self.conf_coloricons:
-            self.iconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
-                                                 color   = self.conf_coloricons,
-                                                 project = self.name)
-        else:
-            self.iconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
-                                                 project = self.name)
-        if self.conf_colormainicon:
-            self.mainiconPath=_icon.ValidateIconPath(path    = self.conf_icoPath,
-                                                     color   = self.conf_colormainicon,
-                                                     project = self.name)
-        else:
-            self.mainiconPath = self.iconPath
-
-        if self.conf_ico:
-            self.main_sicon, path_ico = _icon.GetIcon(self.mainiconPath, self, ico=self.conf_ico)
-        else:
-            self.main_sicon, path_ico = _icon.GetIcon(self.mainiconPath, self, ico=self.name+"-0.ico")
-        if not path_ico or "default_default" in path_ico:
-            self.main_sicon, path_ico = _icon.GetIcon(self.mainiconPath, self, ico=self.name+".ico")
-
-        self.main_sicon, path_ico = _icon.SVG2Icon(self,self.name+'-0.svg','maincustom')
-        if not path_ico in path_ico:
-            self.main_sicon, path_ico = _icon.SVG2Icon(self,self.name+'.svg','maincustom')
+        self.iconid = self.images.create(self.name+'-0.svg','maincustom')
+        if not self.images.getPath(self.iconid):
+            self.iconid = _icon.SVG2Icon(self.name+'.svg','maincustom')
 
         #Set ico to Tray
-        #sicon = _icon.GetTrayIcon(color="blue",project=self.name)
-        #self.tray.setIcon(sicon)
-        #time.sleep(3)
-        self.tray.setIcon(self.main_sicon)
-        self.app.setWindowIcon(self.main_sicon)
-
-        if False:
-            #Save info of ico for conf
-            d_path_ico = _icon.GetIcon(
-                                _icon.ValidateIconPath(path = "", color   = self.conf_colormainicon, project = self.name),
-                                self,
-                                ico=self.name+"-0.ico")[1]
-            print(path_ico)
-            print(d_path_ico)
-            if not path_ico:
-                self.conf_icoPath       = ""
-                self.conf_ico           = ""
-                self.conf_colormainicon = ""
-            else:
-                name_ico     = os.path.basename(path_ico)
-                path_ico     = os.path.dirname(path_ico)
-                col_ico      = os.path.basename(path_ico)
-                path_ico     = os.path.dirname(path_ico)
-                if not d_path_ico:
-                    if self.conf_colormainicon:
-                        self.conf_icoPath = path_ico
-                        self.conf_colormainicon = col_ico
-                    else:
-                        self.conf_icoPath = posixpath.join(path_ico,col_ico)
-                    self.conf_ico = name_ico
-                else:
-                    d_name_ico  = os.path.basename(d_path_ico)
-                    d_path_ico  = os.path.dirname(d_path_ico)
-                    d_col_ico   = os.path.basename(d_path_ico)
-                    d_path_ico  = os.path.dirname(d_path_ico)
-                    if (d_name_ico != name_ico):
-                        self.conf_ico = name_ico
-                    if (d_path_ico != path_ico):
-                        if self.conf_colormainicon:
-                            self.conf_icoPath = path_ico
-                            self.conf_colormainicon = col_ico
-                        else:
-                            self.conf_icoPath = posixpath.join(path_ico,col_ico)
-                    else:
-                        self.conf_colormainicon = col_ico
-            print("conf_colormainicon   = "+self.conf_colormainicon)
-            print("conf_coloricons      = "+self.conf_coloricons)
-            print("conf_icoPath         = "+self.conf_icoPath)
-            print("conf_ico             = "+self.conf_ico)
+        self.tray.setIcon(self.images.getIcon(self.iconid))
+        self.app.setWindowIcon(self.images.getIcon(self.iconid))
 
         #Split in general/menu/action
         m_conf=[]
@@ -477,8 +399,8 @@ class giftray(object):
             # loop on modules for main menu and for Not Clickable
             menu_not = PyQt6.QtWidgets.QMenu('Not clickable',self.tray_menu)
             menu_not.setToolTipsVisible(True)
-            sicon, picon = _icon.SVG2Icon(self,'empty','maincustom')
-            menu_not.setIcon(sicon)
+            id = self.images.create('empty','custom')
+            menu_not.setIcon(self.images.getIcon(id))
             for i in self.install:
                 if i in self.error:
                     # not filling here since not defined action are in error but not in install
@@ -487,7 +409,7 @@ class giftray(object):
                     continue
                 if i in self.menu:
                     # Main menu
-                    act = PyQt6.QtGui.QAction(self.install[i].sicon,i,self.tray_menu)
+                    act = PyQt6.QtGui.QAction(self.images.getIcon(self.install[i].iconid),i,self.tray_menu)
                     act.triggered.connect(functools.partial(self._ConnectorAction, i))
                     ahk = self.install[i].GetHK()[0]
                     if ahk:
@@ -502,7 +424,7 @@ class giftray(object):
                 # Not clickable
                 ahk = self.install[i].GetHK()[0]
                 if ahk:
-                    act = PyQt6.QtGui.QAction(self.install[i].sicon,i,menu_not)
+                    act = PyQt6.QtGui.QAction(self.images.getIcon(self.install[i].iconid),i,menu_not)
                     act.setToolTip(ahk)
                     act.setDisabled(True)
                     #act.triggered.connect(functools.partial(self._ConnectorNothing, i))
@@ -510,15 +432,16 @@ class giftray(object):
 
             # Sub menus
             self.tray_menu.addSeparator()
+            menuid = self.images.create('folder','custom')
             for i in self.submenus:
                 if i in self.error:
                     continue
                 submenu = PyQt6.QtWidgets.QMenu(i,self.tray_menu)
                 submenu.setToolTipsVisible(True)
-                submenu.setIcon(self.submenus[i].sicon)
+                submenu.setIcon(self.images.getIcon(menuid))
                 if i in self.menu:
                     # All submenu action
-                    act = PyQt6.QtGui.QAction(self.submenus[i].sicon,i,submenu)
+                    act = PyQt6.QtGui.QAction(self.images.getIcon(self.submenus[i].iconid),i,submenu)
                     ahk = self.submenus[i].GetHK()[0]
                     if ahk:
                         act.setToolTip(ahk)
@@ -526,7 +449,7 @@ class giftray(object):
                     submenu.addAction(act)
                     submenu.addSeparator()
                 for c in self.submenus[i].GetContain():  
-                    act = PyQt6.QtGui.QAction(self.install[c].sicon,c,submenu)
+                    act = PyQt6.QtGui.QAction(self.images.getIcon(self.install[c].iconid),c,submenu)
                     ahk = self.install[c].GetHK()[0]
                     if ahk:
                         act.setToolTip(ahk)
@@ -540,9 +463,10 @@ class giftray(object):
             # loop on modules in error
             menu_err = PyQt6.QtWidgets.QMenu('Errors',self.tray_menu)
             menu_err.setToolTipsVisible(True)
-            sicon, picon = _icon.SVG2Icon(self,'dots','maincustom')
-            menu_err.setIcon(sicon)
-            act=PyQt6.QtGui.QAction(self.main_sicon,self.showname,menu_err)
+            id = self.images.create('dots','custom')
+            menu_err.setIcon(self.images.getIcon(id))
+            id = self.images.create(self.images.getPath(self.iconid),'custom')
+            act=PyQt6.QtGui.QAction(self.images.getIcon(id),self.showname,menu_err)
             info,line = self._buildError(self.showname, "")
             act.setToolTip(info)
             act.triggered.connect(functools.partial(self._ConnectorError, self.showname, info+line))
@@ -551,8 +475,8 @@ class giftray(object):
             menu_err.addAction(act)
             menu_err.addSeparator()
             for i in self.error:
-                sicon_err, picon = _icon.SVG2Icon(self,i[0],'maincustom')
-                act=PyQt6.QtGui.QAction(sicon_err,i,menu_err)
+                id = self.images.create(i[0],'custom')
+                act=PyQt6.QtGui.QAction(self.images.getIcon(id),i,menu_err)
                 info,line = self._buildError(i, self.error[i])
                 act.setToolTip(info)
                 act.triggered.connect(functools.partial(self._ConnectorError, i, info+line))
@@ -574,96 +498,104 @@ class giftray(object):
         #ToDo conf Gui
         #ToDo about Gui
         #ToDo update link
-        sicon, picon = _icon.SVG2Icon(self,'pen','maincustom')
+        id = self.images.create('pen','custom')
         act=PyQt6.QtGui.QAction('Generate HotKey',self.tray_menu)
-        act.setIcon(sicon)
+        act.setIcon(self.images.getIcon(id))
         act.setDisabled(True)
         #act.setStatusTip('not developed')
         #act.setShortcut('Ctrl+R')
         self.tray_menu.addAction(act)
-        sicon, picon = _icon.SVG2Icon(self,'conf','maincustom')
+        id = self.images.create('conf','custom')
         act=PyQt6.QtGui.QAction('Show current configuration',self.tray_menu)
-        act.setIcon(sicon)
+        act.setIcon(self.images.getIcon(id))
         act.setDisabled(True)
         self.tray_menu.addAction(act)
-        sicon, picon = _icon.SVG2Icon(self,'query','maincustom')
+        id = self.images.create('query','custom')
         act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
-        act.setIcon(sicon)
+        act.setIcon(self.images.getIcon(id))
         act.triggered.connect(self._ConnectorAbout)
         act.setDisabled(True)
         self.tray_menu.addAction(act)
-        sicon, picon = _icon.SVG2Icon(self,'reload','maincustom')
+        id = self.images.create('reload','custom')
         act=PyQt6.QtGui.QAction('Reload '+self.showname,self.tray_menu)
-        act.setIcon(sicon)
+        act.setIcon(self.images.getIcon(id))
         act.triggered.connect(self._Restart)
         self.tray_menu.addAction(act)
         self.tray_menu.addSeparator()
-        sicon, picon = _icon.SVG2Icon(self,'exit','maincustom')
+        id = self.images.create('exit','custom')
         act=PyQt6.QtGui.QAction('Exit '+self.showname,self.tray_menu)
-        act.setIcon(sicon)
+        act.setIcon(self.images.getIcon(id))
         act.triggered.connect(self.__del__)
         self.tray_menu.addAction(act)
         self.tray.setContextMenu(self.tray_menu)
 
         self.started = True
-        print(self._PrintConf())
+        #print(self._PrintConf())
         return
 
-    def _PrintConf(self):
+    def _PrintConf(self,full=True):
         #TODO: _PrintConf: level for default, all, ?
         config = configparser.ConfigParser()
         config["GENERAL"] = { }
-        if self.conf_colormainicon:
+        if self.conf_colormainicon or full:
             config["GENERAL"]["ColorMainIcon"] = self.conf_colormainicon 
-        if self.conf_coloricons:
+        if self.conf_coloricons or full:
             config["GENERAL"]["ColorIcons"]    = self.conf_coloricons
-        if self.conf_loglevel:#default "WARNING"
+        if self.conf_loglevel != "WARNING" or full:
             config["GENERAL"]["LogLevel"]      = self.conf_loglevel
-        if self.mlight:
+        if self.mlight or full:
             config["GENERAL"]["MainLight"]     = self.mlight
-        if self.mdark:
+        if self.mdark or full:
              config["GENERAL"]["MainDark"]      = self.mdark
-        if self.light:
+        if self.light or full:
             config["GENERAL"]["Light"]        = self.light
-        if self.dark:
+        if self.dark or full:
             config["GENERAL"]["Dark"]          = self.dark
-        # for i in self.avail_modules:
-            # m = i.upper()
-            # config[m]={}
-            # arr = self.avail_modules[i].GetConf(partial=True)
-            # for opt in arr:
-                # config[m][opt] = arr[opt]
-        # for i in self.submenus:
-            # print(i)
-        # for i in self.install:
-            # config[i]={ "function" : self.install[i].module+ "." + self.install[i].name}
-            # #mandatory options
-            # config[i]["ahk"]=self.install[i].ahk
-            # config[i]["click"]=str(self.install[i].menu)
-            # #optional options
-            # path_ico     = self.install[i].used_ico
-            # if path_ico:
-                # name_ico     = os.path.basename(path_ico)
-                # path_ico     = os.path.dirname(path_ico)
-                # col_ico      = os.path.basename(path_ico)
-                # path_ico     = os.path.dirname(path_ico)
-                # main_path_ico= os.path.dirname(self.iconPath)
-                # main_col_ico = os.path.basename(self.iconPath)
-                # if (main_path_ico != path_ico):
-                    # config[i]["ico"] = self.install[i].used_ico
-                # else:
-                    # if "color" in config[self.install[i].module.upper()]:
-                        # if col_ico != config[self.install[i].module.upper()]["color"]:
-                            # config[i]["color"] = col_ico
-                    # elif (col_ico != main_col_ico):
-                        # config[i]["color"] = col_ico
-                    # if "ico" in config[self.install[i].module.upper()]:
-                        # if name_ico != config[self.install[i].module.upper()]["ico"]:
-                            # config[i]["ico"] = name_ico
-                    # elif (name_ico != self.install[i].module+ "_" + self.install[i].name + ".ico"):
-                        # config[i]["ico"] = name_ico
-            # for opt in self.install[i].GetOpt():
-                # config[i][opt]=str(getattr(self.install[i], opt))
+        for i in self.avail_modules:
+            m = i.upper()
+            arr = self.avail_modules[i].GetConf(partial=not full)
+            if not arr and not full:
+                continue
+            config[m]={}
+            for opt in arr:
+                config[m][opt] = arr[opt]
+        for i in self.submenus:
+            c = ','.join(self.submenus[i].GetContain())
+            if not c and not full:
+                continue
+            config[i]={}
+            config[i]["contains"]=','.join(self.submenus[i].GetContain())
+            if self.submenus[i].menu or full:
+                config[i]["click"] = str(self.submenus[i].menu)
+            if self.submenus[i].ahk or full:
+                config[i]["ahk"]=self.submenus[i].ahk
+        for i in self.install:
+            config[i]={ "function" : self.install[i].module+ "." + self.install[i].name}
+            #mandatory options
+            if self.install[i].menu or full:
+                config[i]["click"]=str(self.install[i].menu)
+            if self.install[i].ahk or full:
+                config[i]["ahk"]=self.install[i].ahk
+            #optional options
+            if self.install[i].ico or full:
+                config[i]["ico"] = self.install[i].ico
+            if self.install[i].color:
+                color = self.install[i].color.split('/')[0]
+                if not color == 'custom':
+                    if "color" in config[self.install[i].module.upper()]:
+                        if color != config[self.install[i].module.upper()]["color"].split('/')[0]:
+                            config[i]["color"] = color
+            if self.install[i].light:
+                if "light" in config[self.install[i].module.upper()]:
+                    if self.install[i].light != config[self.install[i].module.upper()]["light"]:
+                            config[i]["light"] = light
+            if self.install[i].dark:
+                if "dark" in config[self.install[i].module.upper()]:
+                    if self.install[i].dark != config[self.install[i].module.upper()]["dark"]:
+                            config[i]["dark"] = dark
+            for opt in self.install[i].GetOpt(sub=not full):
+                print(opt)
+                config[i][opt]=str(getattr(self.install[i], opt))
         f = io.StringIO()
         config.write(f)
         out = f.getvalue()
@@ -814,8 +746,8 @@ class giftray(object):
         box.setText(text)
         box.setInformativeText(info)
         #box.setStandardButtons(PyQt6.QtWidgets.Ok)
-        p = self.main_sicon.pixmap(20)
+        p = self.images.getIcon(self.iconid).pixmap(20)
         #box.setIconPixmap(p)
-        box.setWindowIcon(self.main_sicon)
+        box.setWindowIcon(self.images.getIcon(self.iconid))
         box.exec()
         return

@@ -25,10 +25,12 @@ class general(_feature.general):
                 else:
                     self.giftray.logger.info("'vcxsrv' set to "+tmp)
                     self.conf["vcxsrv"] = tmp
+                    self.subconf["vcxsrv"] = tmp
             elif i == "vcxsrv_timeout".casefold():
                 a = _general.GetOpt(others[i],_general.type.UINT)
                 if a and a < 10:
                     self.conf["vcxsrv_timeout"] = a
+                    self.subconf["vcxsrv_timeout"] = a
                 else:
                     self.AddError("'vcxsrv_timeout' not in [0-10]")
             else:
