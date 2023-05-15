@@ -1,6 +1,7 @@
 [Stop Communication]
     contain = Kill Skype, Kill Discord
 	click   = True
+	ahk     = Ctrl + Win + Escape
 
 [Kill Skype]
 	function = windows.script
