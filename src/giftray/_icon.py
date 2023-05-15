@@ -7,7 +7,7 @@ try:
     import winxpgui as win32gui
 except ImportError:
     import win32gui
-import PyQt6.QtWidgets, PyQt6.QtGui
+import PyQt6.QtWidgets, PyQt6.QtGui, PyQt6.QtSvg
 import logging
 #https://www.svgrepo.com/collection/variety-duotone-line-icons/
 
@@ -88,6 +88,17 @@ def _ValidateIconPath_sub(path="",color="black",project=""):
     return ""
 
 def GetIcon(path,giftray,ico="default_default.ico"):
+    # picon="svg/android_connect.svg"
+    # with open(picon, 'r') as file:
+        # img_str = file.read()
+    # img_str=img_str.replace("000000","32CD32")
+    # img_str=img_str.replace("DDDDDD","FDC75B")
+    # svg_renderer = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
+    # image = PyQt6.QtGui.QImage(64,64, PyQt6.QtGui.QImage.Format.Format_ARGB32)
+    # svg_renderer.render(PyQt6.QtGui.QPainter(image))
+    # pixmap = PyQt6.QtGui.QPixmap.fromImage(image)
+    # icon = PyQt6.QtGui.QIcon(pixmap)
+    # return icon, picon
     if not ico:
         ico="default_default.ico"
     last_try=False
