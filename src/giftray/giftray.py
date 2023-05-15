@@ -48,10 +48,16 @@ class giftray(object):
             self.userdir        = posixpath.join(os.path.dirname(sys.executable),"conf")
         else:
             # executable not python; test if user dir exists
+            #src = posixpath.join(os.getcwd(),"conf") # debug in python with revert previous 'if'
+            src = posixpath.join(os.path.dirname(sys.executable),"conf")
             if not os.path.exists(self.userdir):
                 #os.mkdir(self.userdir)
-                src = posixpath.join(os.path.dirname(sys.executable),"conf")
                 shutil.copytree(src,self.userdir)
+            else:
+                for file in glob.glob(os.path.join(self.userdir,'*.example')):
+                    os.remove(file)
+                for file in glob.glob(os.path.join(src,'*.example')):
+                    shutil.copy(file, self.userdir)
         logging.basicConfig     ( filename=filelog,
                                   level=0,
                                   encoding='utf-8',
