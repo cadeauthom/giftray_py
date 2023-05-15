@@ -715,11 +715,18 @@ class giftray(object):
             self.logger.critical("Fail to get lock to initial ahk thread")
             self.main_error.append("Fail to get lock to initial ahk thread")
         for ahk in self.ahk:
-            if (ctypes.windll.user32.RegisterHotKey(None, self.nb_hotkey+1, self.install[self.ahk[ahk]].hhk["mod"] , self.install[self.ahk[ahk]].hhk["key"])):
+            if self.ahk[ahk] in self.install:
+                menu = self.install[self.ahk[ahk]]
+            elif self.ahk[ahk] in self.submenus:
+                menu = self.submenus[self.ahk[ahk]]
+            else:
+                self.main_error.append(self.ahk[ahk]+" not found to set "+ahk)
+                continue
+            if (ctypes.windll.user32.RegisterHotKey(None, self.nb_hotkey+1, menu.hhk["mod"], menu.hhk["key"])):
                 self.nb_hotkey += 1
                 self.logger.debug("register "+ahk)
             else:
-                self.install[self.ahk[ahk]].AddError("Fail to register Hotkey ("+ahk+")")
+                menu.AddError("Fail to register Hotkey ("+ahk+"): "+ctypes.FormatError(ctypes.GetLastError()))
                 self.error[self.ahk[ahk]]=""
         if self.ahklock.locked():
             self.ahklock.release()
