@@ -11,6 +11,47 @@ import PyQt6.QtWidgets, PyQt6.QtGui, PyQt6.QtSvg
 import logging
 #https://www.svgrepo.com/collection/variety-duotone-line-icons/
 
+
+class colors:
+    class darklight:
+        def __init__(self,dark,light):
+            self.dark  = '000000'
+            self.light = 'AAAAAA'
+            self.update(dark,light)
+        def update(self,dark,light):
+            if len(dark)==6:
+                self.dark  = dark
+            if len(light)==6:
+                self.light = light
+    def __init__(self):
+        self.colors = {}
+        self.set('black','','')
+        self.set('white','FFFFFF','')
+        self.set('blue' ,'1185E1','4DCFE1')
+        self.set('green','32CD32','7CFC00')
+        self.set('red'  ,'ED664C','FDC75B')
+    def copy(self,copy,new):
+        if copy in self.colors:
+            self.set(new,self.colors[copy].dark,self.colors[copy].light)
+        else:
+            self.set(new,'','')
+    def set(self,color,dark,light):
+        if len(color)>1:
+            if color in self.colors:
+                self.colors[color].update(dark,light)
+            else:
+                self.colors[color] = self.darklight(dark,light)
+    def get(self,color):
+        if color in self.colors:
+            return self.colors[color]
+        else:
+            return self.colors["black"]
+    # def list(self):
+        # for color in self.colors:
+            # self.show(color)
+    # def show(self,color):
+            # print(color,self.colors[color].dark,self.colors[color].light)
+
 def _GetTrayIcon(rec):
     try:
         return win32gui.CreateIconFromResource(rec, True)
@@ -87,18 +128,109 @@ def _ValidateIconPath_sub(path="",color="black",project=""):
                 return path
     return ""
 
+def _GetSVG(giftray,svg):
+    psvg = os.path.abspath(svg)
+    if os.path.exists(psvg) and psvg.endswith('.svg'):
+        return(psvg)
+    if len(svg) == 1:
+        psvg = 'letters/'+svg.casefold()+'.svg'
+    elif not svg.endswith('.svg'):
+        psvg = svg+'.svg'
+    else:
+        psvg = svg
+    arrpath = []
+    if not "\\python" in sys.executable:
+        arrpath.append(os.path.dirname(sys.executable))
+    arrpath.append(os.path.dirname(giftray.conf))
+    arrpath.append(os.getcwd())
+    for thispath in arrpath:
+        for endpath in [["svg"],["..","svg"],["build","svg"],["build","exe","svg"],["..","build","svg"]]:
+            path = thispath
+            for k in endpath:
+                path = posixpath.join(path,k)
+            path = os.path.abspath(posixpath.join( path, psvg))
+            if os.path.exists(path):
+                return(path)
+    return("")
+
+
+class svgIcons:
+    class singleIcon:
+        def __init__(self,giftray, svg, color):
+            psvg = _GetSVG(giftray,svg)
+            if not psvg:
+                self.icon = PyQt6.QtWidgets.QWidget().style().standardIcon(
+                                #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
+                                PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
+                self.path = ''
+                return
+            try:
+                with open(psvg, 'r') as file:
+                    img_str = file.read()
+                c = giftray.colors.get(color)
+                black = giftray.colors.get('black')
+                if c.dark != black.dark:
+                    img_str=img_str.replace(black.dark,c.dark)
+                if c.light != black.light:
+                    img_str=img_str.replace(black.light,c.light)
+                self.svg  = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
+                self.image= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
+                self.svg.render(PyQt6.QtGui.QPainter(self.image))
+                self.icon = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(images[id]))
+                self.path = psvg
+            except:
+                self.icon = PyQt6.QtWidgets.QWidget().style().standardIcon(
+                                #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
+                                PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
+                self.path = ''
+            return
+    def __init__(self,giftray):
+        self.images = []
+        self.size   = 0
+        self.giftray= giftray
+    def create(self,svg,color):
+        self.size = self.size+1
+        self.images.append(self.singleIcon(self.giftray,svg,color))
+        return (self.size-1)
+    def getIcon(self,id):
+        if id < self.size:
+            return self.images[id].icon
+        
+images=[]
+svgs=[]
+def SVG2Icon(giftray, svg, color):
+    id = giftray.images.create(svg, color)
+    print(id)
+    return giftray.images.getIcon(id), "fake"
+    psvg = _GetSVG(giftray,svg)
+    if not psvg:
+        standardIcon = PyQt6.QtWidgets.QWidget().style().standardIcon(
+                        #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
+                        PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
+        return standardIcon, ""
+    try:
+        with open(psvg, 'r') as file:
+            img_str = file.read()
+        c = giftray.colors.get(color)
+        black = giftray.colors.get('black')
+        if c.dark != black.dark:
+            img_str=img_str.replace(black.dark,c.dark)
+        if c.light != black.light:
+            img_str=img_str.replace(black.light,c.light)
+        id = len(images)
+        print(id)
+        svgs.append( PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode())) )
+        images.append( PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32) )
+        svgs[id].render(PyQt6.QtGui.QPainter(images[id]))
+        icon = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(images[id]))
+        return icon, psvg
+    except:
+        standardIcon = PyQt6.QtWidgets.QWidget().style().standardIcon(
+                        #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
+                        PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
+        return standardIcon, ""
+
 def GetIcon(path,giftray,ico="default_default.ico"):
-    # picon="svg/android_connect.svg"
-    # with open(picon, 'r') as file:
-        # img_str = file.read()
-    # img_str=img_str.replace("000000","32CD32")
-    # img_str=img_str.replace("DDDDDD","FDC75B")
-    # svg_renderer = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
-    # image = PyQt6.QtGui.QImage(64,64, PyQt6.QtGui.QImage.Format.Format_ARGB32)
-    # svg_renderer.render(PyQt6.QtGui.QPainter(image))
-    # pixmap = PyQt6.QtGui.QPixmap.fromImage(image)
-    # icon = PyQt6.QtGui.QIcon(pixmap)
-    # return icon, picon
     if not ico:
         ico="default_default.ico"
     last_try=False

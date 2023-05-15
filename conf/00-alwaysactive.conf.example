@@ -1,5 +1,5 @@
 [AlwaysActive]
 	function= windows.stayactive
 	click   = True
-	ico     = pro_umountAll
+	ico     = pen
 	enabled = True

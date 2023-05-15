@@ -1,6 +1,6 @@
 [Hibernate]
     function= windows.script
-    ico     = default_exit.ico
+    ico     = exit
     click   = true
     ahk     = Control + Win + F4
     cmd     = shutdown.exe
@@ -10,7 +10,7 @@
 
 [Add Hibernate]
     function= windows.script
-    ico     = windows_addHibernate.ico
+    ico     = right
     click   = true
     cmd     = powercfg.exe
     args    = /hibernate on

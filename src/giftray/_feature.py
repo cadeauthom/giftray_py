@@ -28,6 +28,16 @@ class general:
                 if col != self.giftray.conf_coloricons:
                     self.conf["color"] = col
                     self.subconf["color"] = col
+            elif k == "dark".casefold():
+                dark = _general.GetOpt(general_conf[i],_general.type.STRING)
+                if dark != self.giftray.conf_coloricons:
+                    self.conf["dark"] = dark
+                    self.subconf["dark"] = dark
+            elif k == "light".casefold():
+                light = _general.GetOpt(general_conf[i],_general.type.STRING)
+                if light != self.giftray.conf_coloricons:
+                    self.conf["light"] = light
+                    self.subconf["light"] = light
             else:
                 others[i]=val[i]
         self._Parse(others)
@@ -71,6 +81,8 @@ class object:
         self.show    = show
         self.ahk     = ""
         self.color   = ""
+        self.dark    = ""
+        self.light   = ""
         self.menu    = False
         self.hhk     = []
         self.error   = []
@@ -88,6 +100,10 @@ class object:
                 k = i.casefold()
                 if k == "color".casefold():
                     self.color = _general.GetOpt(general_conf[i],_general.type.STRING)
+                elif k == "dark".casefold():
+                    self.dark = _general.GetOpt(val[i],_general.type.STRING)
+                elif k == "light".casefold():
+                    self.light = _general.GetOpt(val[i],_general.type.STRING)
                 else:
                     others_general[i]=general_conf[i]
         others = dict()
@@ -107,17 +123,35 @@ class object:
             elif k == "color".casefold():
                 self.setopt.append(k)
                 self.color = _general.GetOpt(val[i],_general.type.STRING)
+            elif k == "dark".casefold():
+                self.setopt.append(k)
+                self.dark = _general.GetOpt(val[i],_general.type.STRING)
+            elif k == "light".casefold():
+                self.setopt.append(k)
+                self.light = _general.GetOpt(val[i],_general.type.STRING)
             else:
                 others[i]=val[i]
 
-        iconPath = ""
-        if (self.color and self.color!=self.giftray.conf_coloricons):
-            iconPath = _icon.ValidateIconPath(path    = self.giftray.iconPath,\
-                                              color   = self.color, \
-                                              project = self.giftray.name)
-        if not iconPath:
-            iconPath = self.giftray.iconPath
-        self.sicon, self.used_ico = _icon.GetIcon(iconPath, giftray, self.ico)
+        if not self.color:
+            self.color = 'custom'
+        if self.dark or self.light:
+            colorname = self.color+''.join(random.choices(string.digits, k=10))
+            self.giftray.colors.copy(self.color, colorname)
+            self.color = colorname
+            self.giftray.colors.set(self.color,self.dark,self.light)
+        if self.ico:
+            self.sicon, self.used_ico = _icon.SVG2Icon(self.giftray,self.ico,self.color)
+        else:
+            self.sicon, self.used_ico = _icon.SVG2Icon(self.giftray,self.show[0],self.color)
+        
+        # iconPath = ""
+        # if (self.color and self.color!=self.giftray.conf_coloricons):
+            # iconPath = _icon.ValidateIconPath(path    = self.giftray.iconPath,\
+                                              # color   = self.color, \
+                                              # project = self.giftray.name)
+        # if not iconPath:
+            # iconPath = self.giftray.iconPath
+        # self.sicon, self.used_ico = _icon.GetIcon(iconPath, giftray, self.ico)
         if self.ahk:
             self.hhk, self.ahk, err = giftray.ahk_translator.ahk2hhk(self.ahk)
             if len(err):

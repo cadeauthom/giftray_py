@@ -4,7 +4,7 @@
 
 [Proxy]
     function= wsl.cmd
-    ico     = wsl_proxy.ico
+    ico     = antenna
     click   = true
     #color   = red
     cmd     = ssh -C2qTnNf annuminas -D 8080
@@ -14,7 +14,7 @@
 
 [Terminator]
     function= wsl.cmd
-    ico     = wsl_terminator.ico
+    ico     = terminal
     click   = true
     cmd     = terminator --working-directory $folder
     gui     = True
