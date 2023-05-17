@@ -130,43 +130,58 @@ class colors:
 
 class svgIcons:
     class singleIcon:
-        def _GetSVG(self,svg,conf):
-            psvg = os.path.abspath(svg)
-            if os.path.exists(psvg) and psvg.endswith('.svg'):
-                return(psvg)
-            if len(svg) == 1:
-                psvg = 'letters/'+svg.casefold()+'.svg'
-            elif not svg.endswith('.svg'):
-                psvg = svg+'.svg'
+        def _GetSVG(self,svg,letter,conf):
+            psvgs=[]
+            if svg:
+                psvg = os.path.abspath(svg)
+                if os.path.exists(psvg) and psvg.endswith('.svg'):
+                    return(psvg)
+                if not svg.endswith('.svg'):
+                    psvgs.append(svg+'.svg')
+                else:
+                    psvgs.append(svg)
+            if letter and len(letter)==1 and letter in 'abcdefghijklmnopqrstuvwxyz1234567890':
+                psvgs.append('letters/'+letter.casefold()+'.svg')
             else:
-                psvg = svg
+                psvgs.append('letters/number-circle-fill.svg')
             arrpath = []
             if not "\\python" in sys.executable:
                 arrpath.append(os.path.dirname(sys.executable))
             arrpath.append(os.path.dirname(conf))
             arrpath.append(os.getcwd())
-            for thispath in arrpath:
-                for endpath in [["svg"],["..","svg"],["build","svg"],["build","exe","svg"],["..","build","svg"]]:
-                    path = thispath
-                    for k in endpath:
-                        path = posixpath.join(path,k)
-                    path = os.path.abspath(posixpath.join( path, psvg))
-                    if os.path.exists(path):
-                        return(path)
+            for psvg in psvgs:
+                for thispath in arrpath:
+                    for endpath in [["svg"],["..","svg"],["build","svg"],["build","exe","svg"],["..","build","svg"]]:
+                        path = thispath
+                        for k in endpath:
+                            path = posixpath.join(path,k)
+                        path = os.path.abspath(posixpath.join( path, psvg))
+                        if os.path.exists(path):
+                            return(path)
             return("")
-        def __init__(self,giftray, svg, color):
-            psvg = self._GetSVG(svg,giftray.conf)
-            if not psvg:
+        def __init__(self,giftray, svg, letter, color):
+            self.colors = giftray.colors
+            self.color = color
+            self.psvg = self._GetSVG(svg,letter,giftray.conf)
+            if not self.psvg:
+                self.id = "SP_MessageBoxQuestion"
+            else:
+                c = giftray.colors.get(color)
+                self.id=self.psvg+"/"+c.dark+"/"+c.light
+        def Build(self):
+            if not self.psvg:
+                self.id = "SP_MessageBoxQuestion"
+            if self.id == "SP_MessageBoxQuestion":
                 self.icon = PyQt6.QtWidgets.QWidget().style().standardIcon(
                                 #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
                                 PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
-                self.path = ''
+                self.psvg = ''
                 return
             try:
-                with open(psvg, 'r') as file:
+                with open(self.psvg, 'r') as file:
                     img_str = file.read()
-                c = giftray.colors.get(color)
-                black = giftray.colors.get('black')
+                c = self.colors.get(self.color)
+                black = self.colors.get('black')
                 if c.dark != black.dark:
                     img_str=img_str.replace('#'+black.dark,'#'+c.dark)
                 if c.light != black.light:
@@ -175,27 +190,29 @@ class svgIcons:
                 self.image= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
                 self.svg.render(PyQt6.QtGui.QPainter(self.image))
                 self.icon = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(self.image))
-                self.path = psvg
             except:
-                self.icon = PyQt6.QtWidgets.QWidget().style().standardIcon(
-                                #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
-                                PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
-                self.path = ''
+                self.psvg=""
+                self.id = "SP_MessageBoxQuestion"
+                self.Build()
             return
+        def GetId(self):
+            return self.id
     def __init__(self,giftray):
-        self.images = []
-        self.size   = 0
+        self.images = {}
         self.giftray= giftray
-    def create(self,svg,color):
-        self.size = self.size+1
-        self.images.append(self.singleIcon(self.giftray,svg,color))
-        return (self.size-1)
+    def create(self,svg,letter,color):
+        icon = self.singleIcon(self.giftray,svg,letter,color)
+        if not icon.GetId() in self.images:
+            icon.Build()
+        if not icon.GetId() in self.images:
+            self.images[icon.GetId()] =icon
+        return (icon.GetId())
     def getIcon(self,id):
-        if id < self.size:
+        if id in self.images:
             return self.images[id].icon
     def getPath(self,id):
-        if id < self.size:
-            return self.images[id].path
+        if id in self.images:
+            return self.images[id].psvg
         
 # def GetIcon(path,giftray,ico="default_default.ico"):
     # if not ico:

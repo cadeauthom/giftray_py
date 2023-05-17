@@ -132,10 +132,7 @@ class object:
             self.giftray.colors.copy(self.color, colorname)
             self.color = colorname
             self.giftray.colors.set(self.color,self.dark,self.light)
-        if self.ico:
-            self.iconid = self.giftray.images.create(self.ico,self.color)
-        else:
-            self.iconid = self.giftray.images.create(self.show[0],self.color)
+        self.iconid = self.giftray.images.create(self.ico,self.show[0],self.color)
 
         if self.ahk:
             self.hhk, self.ahk, err = giftray.ahk_translator.ahk2hhk(self.ahk)
