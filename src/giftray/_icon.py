@@ -25,6 +25,7 @@ class colors:
                 self.light = light
     def __init__(self):
         self.colors = {}
+        self.set('default','2ca9bc','000000')
         self.set('black','','')
         self.set('white','FFFFFF','')
         self.set('blue' ,'1185E1','4DCFE1')
@@ -45,7 +46,7 @@ class colors:
         if color in self.colors:
             return self.colors[color]
         else:
-            return self.colors["black"]
+            return self.colors["default"]
     # def list(self):
         # for color in self.colors:
             # self.show(color)
@@ -145,13 +146,13 @@ class svgIcons:
             else:
                 psvgs.append('letters/number-circle-fill.svg')
             arrpath = []
-            if not "\\python" in sys.executable:
+            if not '\\python' in sys.executable:
                 arrpath.append(os.path.dirname(sys.executable))
             arrpath.append(os.path.dirname(conf))
             arrpath.append(os.getcwd())
             for psvg in psvgs:
                 for thispath in arrpath:
-                    for endpath in [["svg"],["..","svg"],["build","svg"],["build","exe","svg"],["..","build","svg"]]:
+                    for endpath in [['svg'],['..','svg'],['build','svg'],['build','exe','svg'],['..','build','svg']]:
                         path = thispath
                         for k in endpath:
                             path = posixpath.join(path,k)
@@ -167,32 +168,31 @@ class svgIcons:
                 self.id = "SP_MessageBoxQuestion"
             else:
                 c = giftray.colors.get(color)
-                self.id=self.psvg+"/"+c.dark+"/"+c.light
+                self.id=self.psvg+'/'+c.dark+'/'+c.light
         def Build(self):
-            if not self.psvg:
-                self.id = "SP_MessageBoxQuestion"
-            if self.id == "SP_MessageBoxQuestion":
+            if not self.psvg or self.id == 'SP_MessageBoxQuestion':
+                self.id   = 'SP_MessageBoxQuestion'
+                self.psvg = ''
                 self.icon = PyQt6.QtWidgets.QWidget().style().standardIcon(
                                 #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
                                 PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
-                self.psvg = ''
                 return
             try:
                 with open(self.psvg, 'r') as file:
                     img_str = file.read()
                 c = self.colors.get(self.color)
-                black = self.colors.get('black')
-                if c.dark != black.dark:
-                    img_str=img_str.replace('#'+black.dark,'#'+c.dark)
-                if c.light != black.light:
-                    img_str=img_str.replace('#'+black.light,'#'+c.light)
+                default = self.colors.get('default')
+                if c.dark != default.dark:
+                    img_str=img_str.replace('#'+default.dark,'#'+c.dark)
+                if c.light != default.light:
+                    img_str=img_str.replace('#'+default.light,'#'+c.light)
                 self.svg  = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
                 self.image= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
                 self.svg.render(PyQt6.QtGui.QPainter(self.image))
                 self.icon = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(self.image))
             except:
-                self.psvg=""
-                self.id = "SP_MessageBoxQuestion"
+                self.psvg = ''
+                self.id   = 'SP_MessageBoxQuestion'
                 self.Build()
             return
         def GetId(self):
