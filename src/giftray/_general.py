@@ -36,13 +36,13 @@ class mainmenuconf:
         self.colors.copy(self.theme,'default')
         self.colors.set('default',self.dark,self.light)
         for ico in self.images.getDefault():
-            path = ''
-            id = -1
             pico = ""
             if ico in self.icos:
                 pico = self.icos[ico]
-            id = self.images.create(pico,'','default',generic=ico)
-            path = self.images.getPath(id)
+            theme = 'default'
+            if ico == 'GENERIC_'+'Tray'.title():
+                theme = 'maincustom'
+            id = self.images.create(pico,'',theme,generic=ico)
             self.ids[ico] = id
     def getIcon(self,id):
         if 'GENERIC_'+id.title() in self.ids:
@@ -164,7 +164,7 @@ def PopUp(title, msg):
         _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
         if found_pid == pid:
             # if win32gui.GetWindowText(hwnd) == "QTrayIconMessageWindow":
-            if win32gui.GetClassName(hwnd) == "Qt642TrayIconMessageWindowClass":
+            if "TrayIconMessageWindowClass" in win32gui.GetClassName(hwnd):
                 hwnds.append (hwnd)
         return True
     hwnds = []

@@ -299,14 +299,9 @@ class giftray(object):
 
         self.mainmenuconf.build()
 
-        #Get ico for Tray
-        self.iconid = self.images.create(self.name+'-0.svg','','maincustom')
-        if not self.images.getPath(self.iconid):
-            self.iconid = self.images.create(self.name+'.svg','','maincustom')
-
         #Set ico to Tray
-        self.tray.setIcon(self.images.getIcon(self.iconid))
-        self.app.setWindowIcon(self.images.getIcon(self.iconid))
+        self.tray.setIcon(self.mainmenuconf.getIcon('Tray'))
+        self.app.setWindowIcon(self.mainmenuconf.getIcon('Tray'))
 
         #Split in general/menu/action
         m_conf=[]
@@ -422,8 +417,7 @@ class giftray(object):
             # loop on modules for main menu and for Not Clickable
             menu_not = PyQt6.QtWidgets.QMenu('Not clickable',self.tray_menu)
             menu_not.setToolTipsVisible(True)
-            id = self.images.create('empty','','custom')
-            menu_not.setIcon(self.images.getIcon(id))
+            menu_not.setIcon(self.mainmenuconf.getIcon('No-Click'))
             for i in self.install:
                 if i in self.error:
                     # not filling here since not defined action are in error but not in install
@@ -460,10 +454,12 @@ class giftray(object):
                     continue
                 submenu = PyQt6.QtWidgets.QMenu(i,self.tray_menu)
                 submenu.setToolTipsVisible(True)
-                submenu.setIcon(self.mainmenuconf.getIcon('Menu'))
+                #submenu.setIcon(self.mainmenuconf.getIcon('Menu'))
+                submenu.setIcon(self.images.getIcon(self.submenus[i].iconid))
                 if i in self.menu:
                     # All submenu action
-                    act = PyQt6.QtGui.QAction(self.images.getIcon(self.submenus[i].iconid),i,submenu)
+                    #act = PyQt6.QtGui.QAction(self.images.getIcon(self.submenus[i].iconid),i,submenu)
+                    act = PyQt6.QtGui.QAction(self.mainmenuconf.getIcon('Menu'),i,submenu)
                     ahk = self.submenus[i].GetHK()[0]
                     if ahk:
                         act.setToolTip(ahk)
@@ -485,10 +481,8 @@ class giftray(object):
             # loop on modules in error
             menu_err = PyQt6.QtWidgets.QMenu('Errors',self.tray_menu)
             menu_err.setToolTipsVisible(True)
-            id = self.images.create('dots','','custom')
-            menu_err.setIcon(self.images.getIcon(id))
-            id = self.images.create(self.images.getPath(self.iconid),'','custom')
-            act=PyQt6.QtGui.QAction(self.images.getIcon(id),self.showname,menu_err)
+            menu_err.setIcon(self.mainmenuconf.getIcon('Errors'))
+            act=PyQt6.QtGui.QAction(self.mainmenuconf.getIcon('Errors'),self.showname,menu_err)
             info,line = self._buildError(self.showname, "")
             act.setToolTip(info)
             act.triggered.connect(functools.partial(self._ConnectorError, self.showname, info+line))
@@ -520,33 +514,28 @@ class giftray(object):
         #ToDo conf Gui
         #ToDo about Gui
         #ToDo update link
-        id = self.images.create('pen','','custom')
         act=PyQt6.QtGui.QAction('Generate HotKey',self.tray_menu)
-        act.setIcon(self.images.getIcon(id))
+        act.setIcon(self.mainmenuconf.getIcon('Generator'))
         act.setDisabled(True)
         #act.setStatusTip('not developed')
         #act.setShortcut('Ctrl+R')
         self.tray_menu.addAction(act)
-        id = self.images.create('conf','','custom')
         act=PyQt6.QtGui.QAction('Show current configuration',self.tray_menu)
-        act.setIcon(self.images.getIcon(id))
+        act.setIcon(self.mainmenuconf.getIcon('Configuration'))
         act.setDisabled(True)
         self.tray_menu.addAction(act)
-        id = self.images.create('query','','custom')
         act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
-        act.setIcon(self.images.getIcon(id))
+        act.setIcon(self.mainmenuconf.getIcon('About'))
         act.triggered.connect(self._ConnectorAbout)
         act.setDisabled(True)
         self.tray_menu.addAction(act)
-        id = self.images.create('reload','','custom')
         act=PyQt6.QtGui.QAction('Reload '+self.showname,self.tray_menu)
-        act.setIcon(self.images.getIcon(id))
+        act.setIcon(self.mainmenuconf.getIcon('Reload'))
         act.triggered.connect(self._Restart)
         self.tray_menu.addAction(act)
         self.tray_menu.addSeparator()
-        id = self.images.create('exit','','custom')
         act=PyQt6.QtGui.QAction('Exit '+self.showname,self.tray_menu)
-        act.setIcon(self.images.getIcon(id))
+        act.setIcon(self.mainmenuconf.getIcon('Exit'))
         act.triggered.connect(self.__del__)
         self.tray_menu.addAction(act)
         self.tray.setContextMenu(self.tray_menu)
@@ -771,8 +760,8 @@ class giftray(object):
         box.setText(text)
         box.setInformativeText(info)
         #box.setStandardButtons(PyQt6.QtWidgets.Ok)
-        p = self.images.getIcon(self.iconid).pixmap(20)
+        #p = self.mainmenuconf.getIcon('Main').pixmap(20)
         #box.setIconPixmap(p)
-        box.setWindowIcon(self.images.getIcon(self.iconid))
+        box.setWindowIcon(self.mainmenuconf.getIcon('Tray'))
         box.exec()
         return
