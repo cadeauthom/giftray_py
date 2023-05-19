@@ -1,9 +1,8 @@
 2ca9bc and 000000 are the only legal colors
-search for wrong colors:
-$ cat * |sed -e 's/#2ca9bc//g' -e 's/#000000//g' | grep '#'
-$ grep -Rin rgb
-change colors from rgb to hex
-$ for a in $(ls); do sed -e 's/ rgb(44, 169, 188)/#2ca9bc/g' -e 's/ rgb(0, 0, 0)/#000000/g' -i $a; done
+change colors from rgb to hex and search for wrong colors:
+for a in $(ls); do sed -e 's/#2ca9bc/#2ca9bc/g' -e 's/#000000/#000000/g' -i $a; done
+cat * |sed -e 's/#2ca9bc//g' -e 's/#000000//g' | grep '#'
+grep -Rin rgb
 
 https://www.svgrepo.com/collection/variety-flat-bordered-icons/
 
