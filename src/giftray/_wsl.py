@@ -9,6 +9,7 @@ from . import _general
 
 class general(_feature.general):
     def _Init(self):
+        self.show = 'WSL'
         tmp = _general.WindowsHandler().GetRealPath( "wsl.exe" )
         if not tmp:
             self.AddError("'wsl.exe' not found")
@@ -18,7 +19,8 @@ class general(_feature.general):
 
     def _Parse(self,others):
         for i in others:
-            if i == "vcxsrv".casefold():
+            k = i.title()
+            if k == "vcxsrv".title():
                 tmp = _general.GetOpt(others[i],_general.type.PATH)
                 if not tmp:
                     self.AddError("'vcxsrv' ("+others[i]+") does not exist")
@@ -26,7 +28,7 @@ class general(_feature.general):
                     self.giftray.logger.info("'vcxsrv' set to "+tmp)
                     self.conf["vcxsrv"] = tmp
                     self.subconf["vcxsrv"] = tmp
-            elif i == "vcxsrv_timeout".casefold():
+            elif k == "vcxsrv_timeout".title():
                 a = _general.GetOpt(others[i],_general.type.UINT)
                 if a and a < 10:
                     self.conf["vcxsrv_timeout"] = a
@@ -107,34 +109,34 @@ class cmd(_feature.action):
         confvcxsrv_timeout = 0
         confvcxsrv     = ""
         for i in others:
-            k = i.casefold()
-            if k == "cmd".casefold():
+            k = i.title()
+            if k == "cmd".title():
                 self.cmd = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
-            elif k == "gui".casefold():
+            elif k == "gui".title():
                 self.gui = _general.GetOpt(others[i],_general.type.BOOL)
                 self.setopt.append(k)
-            elif k == "uniq".casefold():
+            elif k == "uniq".title():
                 self.uniq = _general.GetOpt(others[i],_general.type.BOOL)
                 self.setopt.append(k)
-            elif k == "out".casefold():
+            elif k == "out".title():
                 self.out = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
-            elif k == "vcxsrv".casefold():
+            elif k == "vcxsrv".title():
                 tmp = _general.GetOpt(others[i],_general.type.PATH)
                 if not tmp:
                     self.AddError("'vcxsrv' ("+others[i]+") does not exist")
                 else:
                     self.giftray.logger.info("'vcxsrv' set to "+tmp)
                     self.vcxsrv = tmp
-                    self.setopt.append(k)
-                    self.allopt.append(k)
-            elif k == "vcxsrv_timeout".casefold():
+                    self.setopt.append(k.casefold())
+                    self.allopt.append(k.casefold())
+            elif k == "vcxsrv_timeout".title():
                 a = _general.GetOpt(others[i],_general.type.UINT)
                 if a and a < 10:
                     confvcxsrv_timeout = a
-                    self.setopt.append(k)
-                    self.allopt.append(k)
+                    self.setopt.append(k.casefold())
+                    self.allopt.append(k.casefold())
                 else:
                     self.AddError("'vcxsrv_timeout' not in [0-10]")
             else:

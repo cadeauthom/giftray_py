@@ -37,9 +37,12 @@ class giftray(object):
             self.__del__()
         # Register our signal handler with `SIGINT`(CTRL + C)
         signal.signal(signal.SIGINT, signal_handler)
-        self.showname           = "GifTray"
-        self.name               = "giftray"
-        self.modules            = ['wsl','windows']
+        self.showname           = 'GifTray'
+        self.name               = 'giftray'
+        self.generalsectionword = 'General'
+        self.generalopt         = self.showname+' '+self.generalsectionword.title()
+        self.nativeopt          = self.showname+' Native'
+        self.modules            = ['wsl'.casefold(),'windows'.casefold()]
         #self.modules           = ['template'] # to debug with empty application
         self.userdir            = posixpath.join(os.getenv('USERPROFILE'), self.showname)
         filelog                 = posixpath.join(self.userdir, self.name+".log")
@@ -248,35 +251,35 @@ class giftray(object):
                 self.tray_menu.setStyleSheet(lines);
         #Load GENERAL config to variables
         for section in config.sections():
-            if section.casefold().strip() == 'GENERAL'.casefold():
+            if section.title().strip() == self.generalopt.title():
                 for k in config[section]:
-                    i = k.casefold()
-                    if i == 'MainTheme'.casefold():
+                    i = k.title()
+                    if i == 'MainTheme'.title():
                         self.conf_maintheme = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif i == 'Theme'.casefold():
+                    elif i == 'Theme'.title():
                         self.conf_theme = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif i == 'LogLevel'.casefold():
+                    elif i == 'LogLevel'.title():
                         LevelNamesMapping=logging.getLevelNamesMapping()
                         levelname=_general.GetOpt(str(config[section][k]),_general.type.UPSTRING)
                         if levelname in LevelNamesMapping:
-                            self.conf_loglevel = levelname.casefold()
+                            self.conf_loglevel = levelname.title()
                             self.logger.setLevel(level=LevelNamesMapping[levelname])
                         else:
                             self.logger.error('LogLevel->'+k+"not supported")
-                    elif i == 'Silent'.casefold():
+                    elif i == 'Silent'.title():
                         self.silent = _general.GetOpt(str(config[section][k]),_general.type.BOOL)
-                    elif i == 'MainDark'.casefold():
+                    elif i == 'MainDark'.title():
                         self.mdark = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif i == 'MainLight'.casefold():
+                    elif i == 'MainLight'.title():
                         self.mlight = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif i == 'Dark'.casefold():
+                    elif i == 'Dark'.title():
                         self.dark = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif i == 'Light'.casefold():
+                    elif i == 'Light'.title():
                         self.light = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     else :
                         self.logger.error(section+" : "+k+" is not an existing option")
                 continue
-            if section.title().strip() == 'ICO'.title():
+            if section.title().strip() == self.nativeopt.title():
                 for k in config[section]:
                     i = k.title()
                     if i == 'Dark'.title():
@@ -309,7 +312,7 @@ class giftray(object):
         m_conf=[]
         a_conf=[]
         for section in config.sections():
-            if section.casefold().strip() in ['GENERAL'.casefold(), 'ICO'.casefold()]:
+            if section.title().strip() in [self.generalopt.title(), self.nativeopt.title()]:
                 continue      
             for i in config[section]:
                 if "\n" in config[section][i]:
@@ -324,9 +327,13 @@ class giftray(object):
             if "contain" in config[section]:
                 m_conf.append(section)
                 continue
-            if section.casefold() in self.modules :
-                self.avail_modules[section.casefold().strip()].Parse(config[section])
-                continue
+            section_array = section.casefold().split()
+            if self.generalsectionword.casefold() in section_array and len(section_array) == 2:
+                section_array.remove(self.generalsectionword.casefold())
+                section_found = section_array[0]
+                if section_found in self.avail_modules :
+                    self.avail_modules[section_found].Parse(config[section])
+                    continue
             error = "'"+section+"' is not recognised as action, general configuration or menu"
             self.logger.error(error)
             self.error[section.strip()]=error
@@ -545,29 +552,33 @@ class giftray(object):
         self.tray.setContextMenu(self.tray_menu)
 
         self.started = True
-        #print(self._PrintConf())
+        # print(self._PrintConf())
         return
 
     def _PrintConf(self,full=True):
         #TODO: _PrintConf: level for default, all, ?
         config = configparser.ConfigParser()
-        config["GENERAL"] = { }
+        config[self.generalopt] = { }
         if self.conf_maintheme or full:
-            config["GENERAL"]["MainTheme"] = self.conf_maintheme 
+            config[self.generalopt]["MainTheme"]  = self.conf_maintheme 
         if self.conf_theme or full:
-            config["GENERAL"]["Theme"]     = self.conf_theme
+            config[self.generalopt]["Theme"]      = self.conf_theme
         if self.conf_loglevel != "WARNING" or full:
-            config["GENERAL"]["LogLevel"]      = self.conf_loglevel
+            config[self.generalopt]["LogLevel"]   = self.conf_loglevel
         if self.mlight or full:
-            config["GENERAL"]["MainLight"]     = self.mlight
+            config[self.generalopt]["MainLight"]  = self.mlight
         if self.mdark or full:
-             config["GENERAL"]["MainDark"]      = self.mdark
+            config[self.generalopt]["MainDark"]   = self.mdark
         if self.light or full:
-            config["GENERAL"]["Light"]        = self.light
+            config[self.generalopt]["Light"]      = self.light
         if self.dark or full:
-            config["GENERAL"]["Dark"]          = self.dark
+            config[self.generalopt]["Dark"]       = self.dark
+        if self.silent or full:
+            config[self.generalopt]["Silent"]     = str(self.silent)
+        
+        config[self.nativeopt] = { }
         for i in self.avail_modules:
-            m = i.upper()
+            m = self.avail_modules[i].show+' '+self.generalsectionword.title()
             arr = self.avail_modules[i].GetConf(partial=not full)
             if not arr and not full:
                 continue
@@ -579,35 +590,35 @@ class giftray(object):
             if not c and not full:
                 continue
             config[i]={}
-            config[i]["contains"]=','.join(self.submenus[i].GetContain())
+            config[i]["Contains".title()]=','.join(self.submenus[i].GetContain())
             if self.submenus[i].menu or full:
-                config[i]["click"] = str(self.submenus[i].menu)
+                config[i]["click".title()] = str(self.submenus[i].menu)
             if self.submenus[i].ahk or full:
-                config[i]["ahk"]=self.submenus[i].ahk
+                config[i]["ahk".title()]=self.submenus[i].ahk
         for i in self.install:
-            config[i]={ "function" : self.install[i].module+ "." + self.install[i].name}
+            config[i]={ "function".title() : self.install[i].module+ "." + self.install[i].name}
             #mandatory options
             if self.install[i].menu or full:
-                config[i]["click"]=str(self.install[i].menu)
+                config[i]["click".title()]=str(self.install[i].menu)
             if self.install[i].ahk or full:
-                config[i]["ahk"]=self.install[i].ahk
+                config[i]["ahk".title()]=self.install[i].ahk
             #optional options
             if self.install[i].ico or full:
-                config[i]["ico"] = self.install[i].ico
-            if self.install[i].color:
-                color = self.install[i].color.split('/')[0]
+                config[i]["ico".title()] = self.install[i].ico
+            if self.install[i].theme:
+                color = self.install[i].theme.split('/')[0]
                 if not color == 'custom':
                     if "color" in config[self.install[i].module.upper()]:
                         if color != config[self.install[i].module.upper()]["color"].split('/')[0]:
-                            config[i]["color"] = color
+                            config[i]["color".title()] = color
             if self.install[i].light:
                 if "light" in config[self.install[i].module.upper()]:
                     if self.install[i].light != config[self.install[i].module.upper()]["light"]:
-                            config[i]["light"] = light
+                            config[i]["light".title()] = light
             if self.install[i].dark:
                 if "dark" in config[self.install[i].module.upper()]:
                     if self.install[i].dark != config[self.install[i].module.upper()]["dark"]:
-                            config[i]["dark"] = dark
+                            config[i]["dark".title()] = dark
             for opt in self.install[i].GetOpt(sub=not full):
                 config[i][opt]=str(getattr(self.install[i], opt))
         f = io.StringIO()

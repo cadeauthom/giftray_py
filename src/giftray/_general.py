@@ -44,7 +44,6 @@ class mainmenuconf:
             id = self.images.create(pico,'','default',generic=ico)
             path = self.images.getPath(id)
             self.ids[ico] = id
-        print(self.ids)
     def getIcon(self,id):
         if 'GENERIC_'+id.title() in self.ids:
             return self.images.getIcon(self.ids['GENERIC_'+id.title()])
@@ -66,7 +65,7 @@ def GetOpt(val,t):
             if not val:
                 ret = True
             else:
-                ret = (str(val).casefold() in ['true','on','1'])
+                ret = (str(val).title() in ['True'.title(),'On'.title(),'1'.title()])
         except:
             ret = False
     elif t == type.STRING:

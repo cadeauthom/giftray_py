@@ -23,14 +23,14 @@ class script(_feature.action):
         self.args = ""
         self.admin = False
         for i in others:
-            k = i.casefold()
-            if k == "cmd".casefold():
+            k = i.title()
+            if k == "cmd".title():
                 self.cmd = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
-            elif k == "args".casefold():
+            elif k == "args".title():
                 self.args = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
-            elif k == "admin".casefold():
+            elif k == "admin".title():
                 self.admin = _general.GetOpt(others[i],_general.type.BOOL)
                 self.setopt.append(k)
             else:
@@ -63,8 +63,8 @@ class stayactive(_feature.service):
         self.allopt += ["frequency"]
         self.frequency = 60
         for i in others:
-            k = i.casefold()
-            if k == "frequency".casefold():
+            k = i.title()
+            if k == "frequency".title():
                 a = _general.GetOpt(others[k],_general.type.UINT)
                 if a:
                     self.frequency = a
@@ -98,7 +98,7 @@ class alwaysontop(_feature.action):
         self.top_hwnd = set()
         self.menu = False
         for i in others:
-            k = i.casefold()
+            k = i.title()
             if False:
                 pass
             else:

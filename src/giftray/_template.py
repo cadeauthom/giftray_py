@@ -13,8 +13,8 @@ class template(_feature.action):
         self.allopt.append("localopt")
         self.localopt = "value"
         for i in others:
-            k = i.casefold()
-            if k == "localopt".casefold():
+            k = i.title()
+            if k == "localopt".title():
                 self.localopt = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
             else:

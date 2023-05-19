@@ -5,7 +5,7 @@ import copy
 class general:
     def __init__(self,giftray,show):
         self.giftray= giftray
-        self.show   = show
+        self.show   = show.title()
         self.Clean()
         return
 
@@ -22,22 +22,22 @@ class general:
         self.set = True
         others = dict()
         for i in val:
-            k = i.casefold()
-            if k == "theme".casefold():
+            k = i.title()
+            if k == "Theme".title():
                 col = _general.GetOpt(general_conf[i],_general.type.STRING)
                 if col != self.giftray.conf_theme:
-                    self.conf["theme"] = col
-                    self.subconf["theme"] = col
-            elif k == "dark".casefold():
+                    self.conf["Theme".title()] = col
+                    self.subconf["Theme".title()] = col
+            elif k == "Dark".title():
                 dark = _general.GetOpt(general_conf[i],_general.type.STRING)
                 if dark != self.giftray.conf_theme:
-                    self.conf["dark"] = dark
-                    self.subconf["dark"] = dark
-            elif k == "light".casefold():
+                    self.conf["Dark".title()] = dark
+                    self.subconf["Dark".title()] = dark
+            elif k == "Light".title():
                 light = _general.GetOpt(general_conf[i],_general.type.STRING)
                 if light != self.giftray.conf_theme:
-                    self.conf["light"] = light
-                    self.subconf["light"] = light
+                    self.conf["Light".title()] = light
+                    self.subconf["Light".title()] = light
             else:
                 others[i]=val[i]
         self._Parse(others)
@@ -96,31 +96,31 @@ class object:
             self.error = self.giftray.avail_modules[self.module].GetError()
             general_conf = self.giftray.avail_modules[self.module].GetConf()
             for i in general_conf:
-                k = i.casefold()
-                if k == "theme".casefold():
+                k = i.title()
+                if k == "Theme".title():
                     self.theme = _general.GetOpt(general_conf[i],_general.type.STRING)
-                elif k == "dark".casefold():
+                elif k == "Dark".title():
                     self.dark = _general.GetOpt(val[i],_general.type.STRING)
-                elif k == "light".casefold():
+                elif k == "Light".title():
                     self.light = _general.GetOpt(val[i],_general.type.STRING)
                 else:
                     others_general[i]=general_conf[i]
         others = dict()
         for i in val:
-            k = i.casefold()
-            if k == "function".casefold():
+            k = i.title()
+            if k == "Function".title():
                 pass
-            elif k == "ico".casefold():
+            elif k == "Ico".title():
                 self.ico = _general.GetOpt(val[i],_general.type.STRING)
-            elif k == "click".casefold():
+            elif k == "Click".title():
                 self.menu = _general.GetOpt(val[i],_general.type.BOOL)
-            elif k == "ahk".casefold():
+            elif k == "Ahk".title():
                 self.ahk = _general.GetOpt(val[i],_general.type.STRING)
-            elif k == "theme".casefold():
+            elif k == "Theme".title():
                 self.theme = _general.GetOpt(val[i],_general.type.STRING)
-            elif k == "dark".casefold():
+            elif k == "Dark".title():
                 self.dark = _general.GetOpt(val[i],_general.type.STRING)
-            elif k == "light".casefold():
+            elif k == "Light".title():
                 self.light = _general.GetOpt(val[i],_general.type.STRING)
             else:
                 others[i]=val[i]
@@ -200,8 +200,8 @@ class menu(object):
         self.allopt += 'contain'
         ret_others = dict()
         for i in others:
-            k = i.casefold()
-            if k == "contain".casefold():
+            k = i.title()
+            if k == "Contain".title():
                 self.contain = _general.GetOpt(others[i],_general.type.LISTSTRING)
             else:
                 ret_others[k] = others[k]
@@ -268,12 +268,13 @@ class service(object):
         self.enabled = False
         self.allopt += ['enabled']
         ret_others = dict()
-        for k in others:
-            if k == "enabled".casefold():
-                self.enabled = _general.GetOpt(others[k],_general.type.BOOL)
-                self.setopt.append('enabled')
+        for i in others:
+            k = i.title()
+            if k == "Enabled".title():
+                self.enabled = _general.GetOpt(others[i],_general.type.BOOL)
+                self.setopt.append('enabled'.title())
             else:
-                ret_others[k] = others[k]
+                ret_others[i] = others[i]
         return ret_others
 
     def Check(self):

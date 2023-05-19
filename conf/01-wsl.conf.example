@@ -1,4 +1,4 @@
-[WSL]
+[WSL General]
     vcxsrv  = C:\Program Files\VcXsrv\vcxsrv.exe
     #color   = green
 
