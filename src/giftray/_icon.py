@@ -25,7 +25,7 @@ class colors:
                 self.light = light
     def __init__(self):
         self.colors = {}
-        self.set('default','2ca9bc','000000')
+        self.set('native','2ca9bc','000000')
         self.set('black','','')
         self.set('white','FFFFFF','')
         self.set('blue' ,'1185E1','4DCFE1')
@@ -46,7 +46,7 @@ class colors:
         if color in self.colors:
             return self.colors[color]
         else:
-            return self.colors["default"]
+            return self.colors["native"]
     # def list(self):
         # for color in self.colors:
             # self.show(color)
@@ -101,39 +101,42 @@ class svgIcons:
     def __init__(self,giftray):
         self.images = {}
         self.giftray= giftray
-        self.generic=generic()
+        self.default=default()
     def create(self,svg,letter,theme,generic=''):
-        icon = singleIcon(self.giftray,svg,letter,theme,generic)
+        icon = singleIcon(self.giftray,svg,letter,theme,generic, self.default)
         if not icon.GetId() in self.images:
             icon.Build()
-        if not icon.GetId() in self.images:
-            self.images[icon.GetId()] =icon
-        return (icon.GetId())
+        id = icon.GetId()
+        if not id in self.images:
+            self.images[id] =icon
+        return (id)
     def getIcon(self,id):
         if id in self.images:
             return self.images[id].icon
     def getPath(self,id):
         if id in self.images:
             return self.images[id].psvg
-    def default(self):
-        return self.generic.getGeneric()
+    def getDefault(self):
+        return self.default.getDefault()
 
 class singleIcon:
-    def __init__(self,giftray, svg, letter, theme, generic):
+    def __init__(self, giftray, svg, letter, theme, generic, default):
+        self.default = default
         self.colors = giftray.colors
         self.theme = theme
-        self.generic = generic
-        if self.generic:
-            self.psvg = 'GENERIC'
-            self.id   = 'GENERIC_'+generic
+        self.psvg = ""
+        self.psvg = self._GetSVG(svg, letter, giftray.conf, generic)
+        c = giftray.colors.get(theme)
+        if not self.psvg:
+            self.id = "SP_MessageBoxQuestion"
         else:
-            self.psvg = self._GetSVG(svg,letter,giftray.conf)
-            if not self.psvg:
-                self.id = "SP_MessageBoxQuestion"
-            else:
-                c = giftray.colors.get(theme)
-                self.id=self.psvg+'/'+c.dark+'/'+c.light
-    def _GetSVG(self,svg,letter,conf):
+            self.id=self.psvg+'/'+c.dark+'/'+c.light
+        if generic and not self.psvg:
+            self.psvg = generic
+            giftray.main_error.append("Fail to find '"+generic.split('_')[1]+"' icon")
+            self.id   = self.psvg+'/'+c.dark+'/'+c.light
+
+    def _GetSVG(self,svg,letter,conf,generic):
         psvgs=[]
         if svg:
             psvg = os.path.abspath(svg)
@@ -145,7 +148,7 @@ class singleIcon:
                 psvgs.append(svg)
         if letter and len(letter)==1 and letter in 'abcdefghijklmnopqrstuvwxyz1234567890':
             psvgs.append('letters/'+letter.casefold()+'.svg')
-        else:
+        elif not generic or not generic in self.default.getDefault() :
             psvgs.append('letters/number-circle-fill.svg')
         arrpath = []
         if not '\\python' in sys.executable:
@@ -162,8 +165,9 @@ class singleIcon:
                     if os.path.exists(path):
                         return(path)
         return("")
+
     def Build(self):
-        if not self.psvg or self.id == 'SP_MessageBoxQuestion':
+        if (not self.psvg or self.id == 'SP_MessageBoxQuestion') and not self.id.startswith('GENERIC_'):
             self.id   = 'SP_MessageBoxQuestion'
             self.psvg = ''
             self.icon = PyQt6.QtWidgets.QWidget().style().standardIcon(
@@ -172,17 +176,17 @@ class singleIcon:
             return
         try:
             if self.id.startswith('GENERIC_'):
-                img_str = generic.get(self.id)
+                img_str = self.default.get(self.psvg)
             else:
                 with open(self.psvg, 'r') as file:
                     img_str = file.read()
             c = self.colors.get(self.theme)
-            default = self.colors.get('default')
-            if c.dark != default.dark:
-                img_str=img_str.replace('#'+default.dark,'#CompletelyFakeStringToReplaceDark')
-            if c.light != default.light:
-                img_str=img_str.replace('#'+default.light,'#'+c.light)
-            if c.dark != default.dark:
+            native = self.colors.get('native')
+            if c.dark != native.dark:
+                img_str=img_str.replace('#'+native.dark,'#CompletelyFakeStringToReplaceDark')
+            if c.light != native.light:
+                img_str=img_str.replace('#'+native.light,'#'+c.light)
+            if c.dark != native.dark:
                 img_str=img_str.replace('#CompletelyFakeStringToReplaceDark','#'+c.dark)
             self.svg  = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
             self.image= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
@@ -202,13 +206,16 @@ class singleIcon:
     def GetId(self):
         return self.id
 
-class generic:
+class default:
     def __init__(self):
-        self.generic = []
+        self.default = []
         self.img_str = dict()
-        self.img_str['GENERIC_menu']='<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="add-collection" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><rect id="secondary" x="3" y="3" width="14" height="14" rx="1" style="fill:#2ca9bc; stroke-width: 2;"></rect><path id="primary" d="M7,21H20a1,1,0,0,0,1-1V5" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path><path id="primary-2" data-name="primary" d="M7,10h6M10,7v6m7,3V4a1,1,0,0,0-1-1H4A1,1,0,0,0,3,4V16a1,1,0,0,0,1,1H16A1,1,0,0,0,17,16Z" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path></svg>'
-    def getGeneric(self):
-        if not self.generic:
+        self.img_str['GENERIC_Menu']='<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="add-collection" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><rect id="secondary" x="3" y="3" width="14" height="14" rx="1" style="fill:#2ca9bc; stroke-width: 2;"></rect><path id="primary" d="M7,21H20a1,1,0,0,0,1-1V5" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path><path id="primary-2" data-name="primary" d="M7,10h6M10,7v6m7,3V4a1,1,0,0,0-1-1H4A1,1,0,0,0,3,4V16a1,1,0,0,0,1,1H16A1,1,0,0,0,17,16Z" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path></svg>'
+    def getDefault(self):
+        if not self.default:
             for i in self.img_str:
-                self.generic.append(i.split('_')[1])
-        return self.generic
+                #self.default.append(i.split('_')[1])
+                self.default.append(i)
+        return self.default
+    def get(self,g):
+        return self.img_str[g]

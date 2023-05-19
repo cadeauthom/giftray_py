@@ -28,22 +28,26 @@ class mainmenuconf:
         self.images = images
         self.dark   = ''
         self.light  = ''
-        self.theme  = 'default'
+        self.theme  = 'native'
         self.icos   = dict()
         self.ids    = dict()
     def build(self):
         self.colors.copy('maincustom','default')
         self.colors.copy(self.theme,'default')
         self.colors.set('default',self.dark,self.light)
-        for ico in self.images.default():
+        for ico in self.images.getDefault():
             path = ''
             id = -1
+            pico = ""
             if ico in self.icos:
-                id = self.images.create(self.icos[ico],'','default')
-                path = self.images.getPath(id)
-            if not path:
-                id = self.images.create('','','default',generic=ico)
-
+                pico = self.icos[ico]
+            id = self.images.create(pico,'','default',generic=ico)
+            path = self.images.getPath(id)
+            self.ids[ico] = id
+        print(self.ids)
+    def getIcon(self,id):
+        if 'GENERIC_'+id.title() in self.ids:
+            return self.images.getIcon(self.ids['GENERIC_'+id.title()])
 
 def GetOpt(val,t):
     ret = None

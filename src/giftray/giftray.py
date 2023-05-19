@@ -190,8 +190,8 @@ class giftray(object):
             for i in range(self.nb_hotkey):
                 ctypes.windll.user32.UnregisterHotKey(None, i)
         self.conf               = os.path.abspath(posixpath.join( self.userdir, self.name+".conf"))
-        self.conf_maintheme     = ""
-        self.conf_theme         = ""
+        self.conf_maintheme     = "native"
+        self.conf_theme         = "native"
         self.conf_loglevel      = "WARNING"
         self.nb_hotkey          = 0
         self.started            = False
@@ -276,17 +276,17 @@ class giftray(object):
                     else :
                         self.logger.error(section+" : "+k+" is not an existing option")
                 continue
-            if section.casefold().strip() == 'ICO'.casefold():
+            if section.title().strip() == 'ICO'.title():
                 for k in config[section]:
-                    i = k.casefold()
-                    if i == 'Dark'.casefold():
+                    i = k.title()
+                    if i == 'Dark'.title():
                         self.mainmenuconf.dark = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif i == 'Light'.casefold():
+                    elif i == 'Light'.title():
                         self.mainmenuconf.light = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif i == 'Theme'.casefold():
+                    elif i == 'Theme'.title():
                         self.mainmenuconf.theme = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif i in self.images.default():
-                        self.mainmenuconf.icos[i] = _general.GetOpt(str(config[section][k]),_general.type.STRING)
+                    elif 'GENERIC_'+i in self.images.getDefault():
+                        self.mainmenuconf.icos['GENERIC_'+i] = _general.GetOpt(str(config[section][k]),_general.type.STRING)
 
         self.colors.copy(self.conf_theme,'custom')
         self.colors.set('custom',self.dark,self.light)
@@ -448,13 +448,12 @@ class giftray(object):
 
             # Sub menus
             self.tray_menu.addSeparator()
-            menuid = self.images.create('add-collection','','custom')
             for i in self.submenus:
                 if i in self.error:
                     continue
                 submenu = PyQt6.QtWidgets.QMenu(i,self.tray_menu)
                 submenu.setToolTipsVisible(True)
-                submenu.setIcon(self.images.getIcon(menuid))
+                submenu.setIcon(self.mainmenuconf.getIcon('Menu'))
                 if i in self.menu:
                     # All submenu action
                     act = PyQt6.QtGui.QAction(self.images.getIcon(self.submenus[i].iconid),i,submenu)
@@ -610,7 +609,6 @@ class giftray(object):
                     if self.install[i].dark != config[self.install[i].module.upper()]["dark"]:
                             config[i]["dark"] = dark
             for opt in self.install[i].GetOpt(sub=not full):
-                print(opt)
                 config[i][opt]=str(getattr(self.install[i], opt))
         f = io.StringIO()
         config.write(f)
