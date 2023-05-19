@@ -190,8 +190,8 @@ class giftray(object):
             for i in range(self.nb_hotkey):
                 ctypes.windll.user32.UnregisterHotKey(None, i)
         self.conf               = os.path.abspath(posixpath.join( self.userdir, self.name+".conf"))
-        self.conf_colormainicon = ""
-        self.conf_coloricons    = ""
+        self.conf_maintheme     = ""
+        self.conf_theme         = ""
         self.conf_loglevel      = "WARNING"
         self.nb_hotkey          = 0
         self.started            = False
@@ -251,10 +251,10 @@ class giftray(object):
             if section.casefold().strip() == 'GENERAL'.casefold():
                 for k in config[section]:
                     i = k.casefold()
-                    if i == 'ColorMainIcon'.casefold():
-                        self.conf_colormainicon = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif i == 'ColorIcons'.casefold():
-                        self.conf_coloricons = _general.GetOpt(str(config[section][k]),_general.type.STRING)
+                    if i == 'MainTheme'.casefold():
+                        self.conf_maintheme = _general.GetOpt(str(config[section][k]),_general.type.STRING)
+                    elif i == 'Theme'.casefold():
+                        self.conf_theme = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif i == 'LogLevel'.casefold():
                         LevelNamesMapping=logging.getLevelNamesMapping()
                         levelname=_general.GetOpt(str(config[section][k]),_general.type.UPSTRING)
@@ -297,10 +297,10 @@ class giftray(object):
                     elif i in officials:
                         self.mainmenuconf.icos[i] = _general.GetOpt(str(config[section][k]),_general.type.STRING)
 
-        self.colors.copy(self.conf_coloricons,'custom')
+        self.colors.copy(self.conf_theme,'custom')
         self.colors.set('custom',self.dark,self.light)
         self.colors.copy('custom','maincustom')
-        self.colors.copy(self.conf_colormainicon,'maincustom')
+        self.colors.copy(self.conf_maintheme,'maincustom')
         self.colors.set('maincustom',self.mdark,self.mlight)
         #Get ico for Tray
         self.iconid = self.images.create(self.name+'-0.svg','','maincustom')
@@ -559,10 +559,10 @@ class giftray(object):
         #TODO: _PrintConf: level for default, all, ?
         config = configparser.ConfigParser()
         config["GENERAL"] = { }
-        if self.conf_colormainicon or full:
-            config["GENERAL"]["ColorMainIcon"] = self.conf_colormainicon 
-        if self.conf_coloricons or full:
-            config["GENERAL"]["ColorIcons"]    = self.conf_coloricons
+        if self.conf_maintheme or full:
+            config["GENERAL"]["MainTheme"] = self.conf_maintheme 
+        if self.conf_theme or full:
+            config["GENERAL"]["Theme"]     = self.conf_theme
         if self.conf_loglevel != "WARNING" or full:
             config["GENERAL"]["LogLevel"]      = self.conf_loglevel
         if self.mlight or full:

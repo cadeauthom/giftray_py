@@ -23,19 +23,19 @@ class general:
         others = dict()
         for i in val:
             k = i.casefold()
-            if k == "color".casefold():
+            if k == "theme".casefold():
                 col = _general.GetOpt(general_conf[i],_general.type.STRING)
-                if col != self.giftray.conf_coloricons:
-                    self.conf["color"] = col
-                    self.subconf["color"] = col
+                if col != self.giftray.conf_theme:
+                    self.conf["theme"] = col
+                    self.subconf["theme"] = col
             elif k == "dark".casefold():
                 dark = _general.GetOpt(general_conf[i],_general.type.STRING)
-                if dark != self.giftray.conf_coloricons:
+                if dark != self.giftray.conf_theme:
                     self.conf["dark"] = dark
                     self.subconf["dark"] = dark
             elif k == "light".casefold():
                 light = _general.GetOpt(general_conf[i],_general.type.STRING)
-                if light != self.giftray.conf_coloricons:
+                if light != self.giftray.conf_theme:
                     self.conf["light"] = light
                     self.subconf["light"] = light
             else:
@@ -80,7 +80,7 @@ class object:
         self.giftray = giftray
         self.show    = show
         self.ahk     = ""
-        self.color   = ""
+        self.theme   = ""
         self.dark    = ""
         self.light   = ""
         self.menu    = False
@@ -97,8 +97,8 @@ class object:
             general_conf = self.giftray.avail_modules[self.module].GetConf()
             for i in general_conf:
                 k = i.casefold()
-                if k == "color".casefold():
-                    self.color = _general.GetOpt(general_conf[i],_general.type.STRING)
+                if k == "theme".casefold():
+                    self.theme = _general.GetOpt(general_conf[i],_general.type.STRING)
                 elif k == "dark".casefold():
                     self.dark = _general.GetOpt(val[i],_general.type.STRING)
                 elif k == "light".casefold():
@@ -116,8 +116,8 @@ class object:
                 self.menu = _general.GetOpt(val[i],_general.type.BOOL)
             elif k == "ahk".casefold():
                 self.ahk = _general.GetOpt(val[i],_general.type.STRING)
-            elif k == "color".casefold():
-                self.color = _general.GetOpt(val[i],_general.type.STRING)
+            elif k == "theme".casefold():
+                self.theme = _general.GetOpt(val[i],_general.type.STRING)
             elif k == "dark".casefold():
                 self.dark = _general.GetOpt(val[i],_general.type.STRING)
             elif k == "light".casefold():
@@ -125,14 +125,14 @@ class object:
             else:
                 others[i]=val[i]
 
-        if not self.color:
-            self.color = 'custom'
+        if not self.theme:
+            self.theme = 'custom'
         if self.dark or self.light:
-            colorname = self.color+'/'+''.join(random.choices(string.digits, k=10))
-            self.giftray.colors.copy(self.color, colorname)
-            self.color = colorname
-            self.giftray.colors.set(self.color,self.dark,self.light)
-        self.iconid = self.giftray.images.create(self.ico,self.show[0],self.color)
+            themename = self.theme+'/'+''.join(random.choices(string.digits, k=10))
+            self.giftray.colors.copy(self.theme, themename)
+            self.theme = themename
+            self.giftray.colors.set(self.theme,self.dark,self.light)
+        self.iconid = self.giftray.images.create(self.ico,self.show[0],self.theme)
 
         if self.ahk:
             self.hhk, self.ahk, err = giftray.ahk_translator.ahk2hhk(self.ahk)
