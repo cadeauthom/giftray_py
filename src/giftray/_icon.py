@@ -183,9 +183,11 @@ class svgIcons:
                 c = self.colors.get(self.color)
                 default = self.colors.get('default')
                 if c.dark != default.dark:
-                    img_str=img_str.replace('#'+default.dark,'#'+c.dark)
+                    img_str=img_str.replace('#'+default.dark,'#CompletelyFakeStringToReplaceDark')
                 if c.light != default.light:
                     img_str=img_str.replace('#'+default.light,'#'+c.light)
+                if c.dark != default.dark:
+                    img_str=img_str.replace('#CompletelyFakeStringToReplaceDark','#'+c.dark)
                 self.svg  = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
                 self.image= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
                 self.svg.render(PyQt6.QtGui.QPainter(self.image))

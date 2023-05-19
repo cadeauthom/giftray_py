@@ -1,5 +1,5 @@
 [Nothing]
     function= template.template
-    ico     = empty
+    ico     = check-circle
     click   = true
     #ahk     = Ctrl + Win + Maj + y

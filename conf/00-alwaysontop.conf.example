@@ -2,3 +2,4 @@
 	function= windows.alwaysontop
 	click   = False
 	ahk     = Win + *
+	ico     = push-pin

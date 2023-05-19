@@ -2,7 +2,7 @@
     contain = Kill Skype, Kill Discord
     click   = True
     ahk     = Ctrl + Win + Escape
-    ico = teamviewer
+    ico = curve-arrow-right-3
 
 [Kill Skype]
     function = windows.script
@@ -23,7 +23,7 @@
 [Reduce Network]
     contain = Kill DropBox, Kill TeamViewer
     click   = True
-    ico     = curve-arrow-right-3
+    ico     = take-off
 
 [Kill DropBox]
     function = windows.script

@@ -432,7 +432,7 @@ class giftray(object):
 
             # Sub menus
             self.tray_menu.addSeparator()
-            menuid = self.images.create('folder-alt','','custom')
+            menuid = self.images.create('add-collection','','custom')
             for i in self.submenus:
                 if i in self.error:
                     continue

@@ -1,5 +1,5 @@
 [AlwaysActive]
 	function= windows.stayactive
 	click   = True
-	ico     = pen
+	ico     = cursor-2
 	enabled = True

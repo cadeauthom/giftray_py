@@ -4,7 +4,7 @@
 
 [Proxy]
     function= wsl.cmd
-    ico     = antenna
+    ico     = cloudy
     click   = true
     #color   = red
     cmd     = ssh -C2qTnNf annuminas -D 8080

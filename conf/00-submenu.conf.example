@@ -1,25 +1,30 @@
 [Directories ]
     contain = Program Files, Users, Program Files (x86), Windows
 	click   = True
+	ico     = folder-favorite
 
 [Program Files]
 	function= windows.script
 	cmd     = C:\Program Files\
 	click   = True
+	ico     = folder-alt
 
 [Program Files (x86)]
 	function= windows.script
 	cmd     = C:\Program Files (x86)\
 	click   = False
+	ico     = folder-alt
 
 [Users]
 	function= windows.script
 	cmd     = C:\Users\
 	click   = True
 	ahk     = Ctrl + Win + Maj + F1
+	ico     = folder-alt
 
 [Windows]
 	function= windows.script
 	cmd     = C:\Windows\
 	click   = False
 	ahk     = Ctrl + Win + Maj + F2
+	ico     = folder-alt

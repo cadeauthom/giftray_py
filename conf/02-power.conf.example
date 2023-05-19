@@ -1,8 +1,8 @@
 [Hibernate]
     function= windows.script
-    ico     = exit
+    ico     = sign-out-alt-2
     click   = true
-    ahk     = Control + Win + F4
+    #ahk     = Control + Win + F4
     cmd     = shutdown.exe
     args    = /h
     admin   = False
@@ -10,7 +10,7 @@
 
 [Add Hibernate]
     function= windows.script
-    ico     = right
+    ico     = sign-out-4
     click   = true
     cmd     = powercfg.exe
     args    = /hibernate on
