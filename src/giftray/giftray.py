@@ -201,6 +201,7 @@ class giftray(object):
         self.mlight             = ''
         self.dark               = ''
         self.light              = ''
+        self.mainmenuconf       = _general.mainmenuconf(self.colors)
 
     def _Restart(self):
         self._ResetVar()
@@ -249,11 +250,12 @@ class giftray(object):
         for section in config.sections():
             if section.casefold().strip() == 'GENERAL'.casefold():
                 for k in config[section]:
-                    if k.casefold() == 'ColorMainIcon'.casefold():
+                    i = k.casefold()
+                    if i == 'ColorMainIcon'.casefold():
                         self.conf_colormainicon = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif k.casefold() == 'ColorIcons'.casefold():
+                    elif i == 'ColorIcons'.casefold():
                         self.conf_coloricons = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif k.casefold() == 'LogLevel'.casefold():
+                    elif i == 'LogLevel'.casefold():
                         LevelNamesMapping=logging.getLevelNamesMapping()
                         levelname=_general.GetOpt(str(config[section][k]),_general.type.UPSTRING)
                         if levelname in LevelNamesMapping:
@@ -261,19 +263,39 @@ class giftray(object):
                             self.logger.setLevel(level=LevelNamesMapping[levelname])
                         else:
                             self.logger.error('LogLevel->'+k+"not supported")
-                    elif k.casefold() == 'Silent'.casefold():
+                    elif i == 'Silent'.casefold():
                         self.silent = _general.GetOpt(str(config[section][k]),_general.type.BOOL)
-                    elif k.casefold() == 'MainDark'.casefold():
+                    elif i == 'MainDark'.casefold():
                         self.mdark = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif k.casefold() == 'MainLight'.casefold():
+                    elif i == 'MainLight'.casefold():
                         self.mlight = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif k.casefold() == 'Dark'.casefold():
+                    elif i == 'Dark'.casefold():
                         self.dark = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif k.casefold() == 'Light'.casefold():
+                    elif i == 'Light'.casefold():
                         self.light = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     else :
                         self.logger.error(section+" : "+k+" is not an existing option")
                 continue
+            if section.casefold().strip() == 'ICO'.casefold():
+                officials = [   'main'.casefold(),
+                                'no-click'.casefold(),
+                                'menu'.casefold(),
+                                'errors'.casefold(),
+                                'generator'.casefold(),
+                                'configuration'.casefold(),
+                                'about'.casefold(),
+                                'reload'.casefold(),
+                                'exit'.casefold()]
+                for k in config[section]:
+                    i = k.casefold()
+                    if i == 'Dark'.casefold():
+                        self.mainmenuconf.dark = _general.GetOpt(str(config[section][k]),_general.type.STRING)
+                    elif i == 'Light'.casefold():
+                        self.mainmenuconf.light = _general.GetOpt(str(config[section][k]),_general.type.STRING)
+                    elif i == 'Theme'.casefold():
+                        self.mainmenuconf.theme = _general.GetOpt(str(config[section][k]),_general.type.STRING)
+                    elif i in officials:
+                        self.mainmenuconf.icos[i] = _general.GetOpt(str(config[section][k]),_general.type.STRING)
 
         self.colors.copy(self.conf_coloricons,'custom')
         self.colors.set('custom',self.dark,self.light)
@@ -293,7 +315,7 @@ class giftray(object):
         m_conf=[]
         a_conf=[]
         for section in config.sections():
-            if section.casefold().strip() == 'GENERAL'.casefold():
+            if section.casefold().strip() in ['GENERAL'.casefold(), 'ICO'.casefold()]:
                 continue      
             for i in config[section]:
                 if "\n" in config[section][i]:
@@ -313,7 +335,7 @@ class giftray(object):
                 continue
             error = "'"+section+"' is not recognised as action, general configuration or menu"
             self.logger.error(error)
-            self.main_error.append(error)
+            self.error[section.strip()]=error
 
         for section in m_conf:
             orig_section=section
@@ -483,10 +505,10 @@ class giftray(object):
                 menu_err.addAction(act)
 
             self.tray_menu.addSeparator()
-            menu_ina = PyQt6.QtWidgets.QMenu('Inactive',self.tray_menu)
             #TODO find not use modules
-            if not menu_ina.isEmpty():
-                self.tray_menu.addMenu(menu_ina)
+            #menu_ina = PyQt6.QtWidgets.QMenu('Inactive',self.tray_menu)
+            #if not menu_ina.isEmpty():
+            #    self.tray_menu.addMenu(menu_ina)
             if not menu_not.isEmpty():
                 self.tray_menu.addMenu(menu_not)
             if not menu_err.isEmpty():

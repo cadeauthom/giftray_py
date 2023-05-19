@@ -22,6 +22,17 @@ class type(enum.Enum):
     LISTSTRING  = 7
     PATH        = 8
 
+class mainmenuconf:
+    def __init__(self,colors):
+        self.colors = colors
+        self.dark   = ''
+        self.light  = ''
+        self.theme  = 'default'
+        self.icos   = dict()
+        self.ids    = dict()
+    def BuildIcos(self):
+        self.ids = self.icos
+
 def GetOpt(val,t):
     ret = None
     if t == type.UINT:
