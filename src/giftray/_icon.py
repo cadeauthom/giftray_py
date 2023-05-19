@@ -97,113 +97,13 @@ class colors:
     # #return PyQt6.QtWidgets.QWidget().style().standardIcon(PyQt6.QtWidgets.QStyle.StandardPixmap.SP_DialogHelpButton)
     # return PyQt6.QtWidgets.QWidget().style().standardIcon( PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion)
 
-# def ValidateIconPath(path="",color="black",project=""):
-    # return _ValidateIconPath_sub(path,color,project).replace('\\','/')
-
-# def _Test_Path(path):
-    # if not os.path.isdir(path):
-        # return False
-    # if not(any(File.endswith(".ico") for File in os.listdir(path))):
-        # return False
-    # return True
-
-# def _ValidateIconPath_sub(path="",color="black",project=""):
-    # input_path = path
-    # if path:
-        # path = os.path.abspath(posixpath.join(path,color))
-        # if _Test_Path(path):
-            # return path
-    # if not color:
-        # return _ValidateIconPath_sub(path=input_path,color="blue",project=project)
-    # arrpath = []
-    # if not "\\python" in sys.executable:
-        # arrpath.append(os.path.dirname(sys.executable))
-    # arrpath.append(os.getcwd())
-    # for thispath in arrpath:
-        # for endpath in [["icons"],["..","icons"],["build","icons"],["build","exe","icons"],["..","build","icons"]]:
-            # path = thispath
-            # for k in endpath:
-                # path = posixpath.join( path, k)
-            # path = os.path.abspath(posixpath.join( path, color))
-            # if _Test_Path(path):
-                # return path
-    # return ""
-
 class svgIcons:
-    class singleIcon:
-        def _GetSVG(self,svg,letter,conf):
-            psvgs=[]
-            if svg:
-                psvg = os.path.abspath(svg)
-                if os.path.exists(psvg) and psvg.endswith('.svg'):
-                    return(psvg)
-                if not svg.endswith('.svg'):
-                    psvgs.append(svg+'.svg')
-                else:
-                    psvgs.append(svg)
-            if letter and len(letter)==1 and letter in 'abcdefghijklmnopqrstuvwxyz1234567890':
-                psvgs.append('letters/'+letter.casefold()+'.svg')
-            else:
-                psvgs.append('letters/number-circle-fill.svg')
-            arrpath = []
-            if not '\\python' in sys.executable:
-                arrpath.append(os.path.dirname(sys.executable))
-            arrpath.append(os.path.dirname(conf))
-            arrpath.append(os.getcwd())
-            for psvg in psvgs:
-                for thispath in arrpath:
-                    for endpath in [['svg'],['..','svg'],['build','svg'],['build','exe','svg'],['..','build','svg']]:
-                        path = thispath
-                        for k in endpath:
-                            path = posixpath.join(path,k)
-                        path = os.path.abspath(posixpath.join( path, psvg))
-                        if os.path.exists(path):
-                            return(path)
-            return("")
-        def __init__(self,giftray, svg, letter, color):
-            self.colors = giftray.colors
-            self.color = color
-            self.psvg = self._GetSVG(svg,letter,giftray.conf)
-            if not self.psvg:
-                self.id = "SP_MessageBoxQuestion"
-            else:
-                c = giftray.colors.get(color)
-                self.id=self.psvg+'/'+c.dark+'/'+c.light
-        def Build(self):
-            if not self.psvg or self.id == 'SP_MessageBoxQuestion':
-                self.id   = 'SP_MessageBoxQuestion'
-                self.psvg = ''
-                self.icon = PyQt6.QtWidgets.QWidget().style().standardIcon(
-                                #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
-                                PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
-                return
-            try:
-                with open(self.psvg, 'r') as file:
-                    img_str = file.read()
-                c = self.colors.get(self.color)
-                default = self.colors.get('default')
-                if c.dark != default.dark:
-                    img_str=img_str.replace('#'+default.dark,'#CompletelyFakeStringToReplaceDark')
-                if c.light != default.light:
-                    img_str=img_str.replace('#'+default.light,'#'+c.light)
-                if c.dark != default.dark:
-                    img_str=img_str.replace('#CompletelyFakeStringToReplaceDark','#'+c.dark)
-                self.svg  = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
-                self.image= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
-                self.svg.render(PyQt6.QtGui.QPainter(self.image))
-                self.icon = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(self.image))
-            except:
-                self.psvg = ''
-                self.id   = 'SP_MessageBoxQuestion'
-                self.Build()
-            return
-        def GetId(self):
-            return self.id
     def __init__(self,giftray):
         self.images = {}
         self.giftray= giftray
-    def create(self,svg,letter,color):
-        icon = self.singleIcon(self.giftray,svg,letter,color)
+        self.generic=generic()
+    def create(self,svg,letter,theme,generic=''):
+        icon = singleIcon(self.giftray,svg,letter,theme,generic)
         if not icon.GetId() in self.images:
             icon.Build()
         if not icon.GetId() in self.images:
@@ -215,30 +115,100 @@ class svgIcons:
     def getPath(self,id):
         if id in self.images:
             return self.images[id].psvg
-        
-# def GetIcon(path,giftray,ico="default_default.ico"):
-    # if not ico:
-        # ico="default_default.ico"
-    # last_try=False
-    # if ico=="default_default.ico":
-        # last_try=True
-    # icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
-    # if ':' in ico:
-        # iconPathName = os.path.abspath(ico).replace('\\','/')
-    # else:
-        # iconPathName = os.path.abspath(posixpath.join( path, ico )).replace('\\','/')
-    # if os.path.isfile(iconPathName):
-        # try:
-            # standardIcon = PyQt6.QtGui.QIcon(iconPathName)
-            # #hicon = win32gui.LoadImage(0, iconPathName, win32con.IMAGE_ICON, 0, 0, icon_flags)
-            # if standardIcon.availableSizes() != []:
-                # return standardIcon, iconPathName
-        # except:
-            # pass
-    # if not last_try:
-        # return GetIcon(path,giftray)
-    # #hicon = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
-    # standardIcon = PyQt6.QtWidgets.QWidget().style().standardIcon(
-                        # #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
-                        # PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
-    # return standardIcon, ""
+    def default(self):
+        return self.generic.getGeneric()
+
+class singleIcon:
+    def __init__(self,giftray, svg, letter, theme, generic):
+        self.colors = giftray.colors
+        self.theme = theme
+        self.generic = generic
+        if self.generic:
+            self.psvg = 'GENERIC'
+            self.id   = 'GENERIC_'+generic
+        else:
+            self.psvg = self._GetSVG(svg,letter,giftray.conf)
+            if not self.psvg:
+                self.id = "SP_MessageBoxQuestion"
+            else:
+                c = giftray.colors.get(theme)
+                self.id=self.psvg+'/'+c.dark+'/'+c.light
+    def _GetSVG(self,svg,letter,conf):
+        psvgs=[]
+        if svg:
+            psvg = os.path.abspath(svg)
+            if os.path.exists(psvg) and psvg.endswith('.svg'):
+                return(psvg)
+            if not svg.endswith('.svg'):
+                psvgs.append(svg+'.svg')
+            else:
+                psvgs.append(svg)
+        if letter and len(letter)==1 and letter in 'abcdefghijklmnopqrstuvwxyz1234567890':
+            psvgs.append('letters/'+letter.casefold()+'.svg')
+        else:
+            psvgs.append('letters/number-circle-fill.svg')
+        arrpath = []
+        if not '\\python' in sys.executable:
+            arrpath.append(os.path.dirname(sys.executable))
+        arrpath.append(os.path.dirname(conf))
+        arrpath.append(os.getcwd())
+        for psvg in psvgs:
+            for thispath in arrpath:
+                for endpath in [['svg'],['..','svg'],['build','svg'],['build','exe','svg'],['..','build','svg']]:
+                    path = thispath
+                    for k in endpath:
+                        path = posixpath.join(path,k)
+                    path = os.path.abspath(posixpath.join( path, psvg))
+                    if os.path.exists(path):
+                        return(path)
+        return("")
+    def Build(self):
+        if not self.psvg or self.id == 'SP_MessageBoxQuestion':
+            self.id   = 'SP_MessageBoxQuestion'
+            self.psvg = ''
+            self.icon = PyQt6.QtWidgets.QWidget().style().standardIcon(
+                            #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
+                            PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
+            return
+        try:
+            if self.id.startswith('GENERIC_'):
+                img_str = generic.get(self.id)
+            else:
+                with open(self.psvg, 'r') as file:
+                    img_str = file.read()
+            c = self.colors.get(self.theme)
+            default = self.colors.get('default')
+            if c.dark != default.dark:
+                img_str=img_str.replace('#'+default.dark,'#CompletelyFakeStringToReplaceDark')
+            if c.light != default.light:
+                img_str=img_str.replace('#'+default.light,'#'+c.light)
+            if c.dark != default.dark:
+                img_str=img_str.replace('#CompletelyFakeStringToReplaceDark','#'+c.dark)
+            self.svg  = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
+            self.image= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
+            self.svg.render(PyQt6.QtGui.QPainter(self.image))
+            self.icon = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(self.image))
+            #not svg:
+                # icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
+                # standardIcon = PyQt6.QtGui.QIcon(iconPathName)
+                # #hicon = win32gui.LoadImage(0, iconPathName, win32con.IMAGE_ICON, 0, 0, icon_flags)
+                # if standardIcon.availableSizes() != []:
+                    # return standardIcon, iconPathName
+        except:
+            self.psvg = ''
+            self.id   = 'SP_MessageBoxQuestion'
+            self.Build()
+        return
+    def GetId(self):
+        return self.id
+
+class generic:
+    def __init__(self):
+        self.generic = []
+        self.img_str = dict()
+        self.img_str['GENERIC_menu']='<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="add-collection" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><rect id="secondary" x="3" y="3" width="14" height="14" rx="1" style="fill:#2ca9bc; stroke-width: 2;"></rect><path id="primary" d="M7,21H20a1,1,0,0,0,1-1V5" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path><path id="primary-2" data-name="primary" d="M7,10h6M10,7v6m7,3V4a1,1,0,0,0-1-1H4A1,1,0,0,0,3,4V16a1,1,0,0,0,1,1H16A1,1,0,0,0,17,16Z" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path></svg>'
+    def getGeneric(self):
+        if not self.generic:
+            for i in self.img_str:
+                self.generic.append(i.split('_')[1])
+        return self.generic

@@ -23,15 +23,27 @@ class type(enum.Enum):
     PATH        = 8
 
 class mainmenuconf:
-    def __init__(self,colors):
+    def __init__(self,colors,images):
         self.colors = colors
+        self.images = images
         self.dark   = ''
         self.light  = ''
         self.theme  = 'default'
         self.icos   = dict()
         self.ids    = dict()
-    def BuildIcos(self):
-        self.ids = self.icos
+    def build(self):
+        self.colors.copy('maincustom','default')
+        self.colors.copy(self.theme,'default')
+        self.colors.set('default',self.dark,self.light)
+        for ico in self.images.default():
+            path = ''
+            id = -1
+            if ico in self.icos:
+                id = self.images.create(self.icos[ico],'','default')
+                path = self.images.getPath(id)
+            if not path:
+                id = self.images.create('','','default',generic=ico)
+
 
 def GetOpt(val,t):
     ret = None

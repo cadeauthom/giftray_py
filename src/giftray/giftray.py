@@ -201,7 +201,7 @@ class giftray(object):
         self.mlight             = ''
         self.dark               = ''
         self.light              = ''
-        self.mainmenuconf       = _general.mainmenuconf(self.colors)
+        self.mainmenuconf       = _general.mainmenuconf(self.colors, self.images)
 
     def _Restart(self):
         self._ResetVar()
@@ -277,15 +277,6 @@ class giftray(object):
                         self.logger.error(section+" : "+k+" is not an existing option")
                 continue
             if section.casefold().strip() == 'ICO'.casefold():
-                officials = [   'main'.casefold(),
-                                'no-click'.casefold(),
-                                'menu'.casefold(),
-                                'errors'.casefold(),
-                                'generator'.casefold(),
-                                'configuration'.casefold(),
-                                'about'.casefold(),
-                                'reload'.casefold(),
-                                'exit'.casefold()]
                 for k in config[section]:
                     i = k.casefold()
                     if i == 'Dark'.casefold():
@@ -294,7 +285,7 @@ class giftray(object):
                         self.mainmenuconf.light = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif i == 'Theme'.casefold():
                         self.mainmenuconf.theme = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-                    elif i in officials:
+                    elif i in self.images.default():
                         self.mainmenuconf.icos[i] = _general.GetOpt(str(config[section][k]),_general.type.STRING)
 
         self.colors.copy(self.conf_theme,'custom')
@@ -302,6 +293,9 @@ class giftray(object):
         self.colors.copy('custom','maincustom')
         self.colors.copy(self.conf_maintheme,'maincustom')
         self.colors.set('maincustom',self.mdark,self.mlight)
+
+        self.mainmenuconf.build()
+
         #Get ico for Tray
         self.iconid = self.images.create(self.name+'-0.svg','','maincustom')
         if not self.images.getPath(self.iconid):
