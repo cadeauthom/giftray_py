@@ -41,6 +41,7 @@ SRC_CONF	= conf
 BUILD_SVG	= $(BUILD)/svg
 BUILD_CONF	= $(BUILD)/conf
 BUILD_EXE	= $(BUILD)/exe
+BUILD_SRC	= $(BUILD)/src
 
 ############### Variable Definition
 LOWPROJECT 	= $(shell echo $(PROJECT) | tr '[:upper:]' '[:lower:]')
@@ -50,13 +51,13 @@ SVG		= $(SRC_SVG)/$(LOWPROJECT)-$(ICONB).svg
 CONF		= $(wildcard $(SRC_CONF)/*.example) $(SRC_CONF)/list_key.txt $(wildcard $(SRC_CONF)/$(LOWPROJECT).*)
 
 HTML_SVGS	= $(SRC)/svg2html.py
-PY		= $(wildcard $(SRC)/$(LOWPROJECT)/*.py)
+PY		= $(SRC)/$(PROJECT).py
 PY_LIBS		= $(wildcard $(SRC)/$(LOWPROJECT)/*.py)
 SETUP		= $(SRC)/setup.py
-CFG		= $(SRC)/setup.cfg
+#CFG		= $(SRC)/setup.cfg
 
-SRCS		= $(PY) $(PY_LIBS) $(SETUP) $(CFG)
-
+IN_PY		= $(SETUP) $(PY) $(PY_LIBS)
+OUT_PY		= $(patsubst $(SRC)/%, $(BUILD_SRC)/%, $(IN_PY))
 OUT_SVGS	= $(patsubst $(SRC_SVG)/%, $(BUILD_SVG)/%, $(SVGS))
 OUT_CONF	= $(patsubst $(SRC_CONF)/%, $(BUILD_CONF)/%, $(CONF))
 OUT_ICO 	= $(BUILD)/$(LOWPROJECT).ico
@@ -110,15 +111,30 @@ $(OUT_ICO): $(SVG)
 	@mkdir -p $(@D)
 	$(CMD_START) $< | $(PATH_CONVERT) $(FLAGS_CONVERT_ICO) $@
 
-$(OUT_EXEC): $(SETUP) $(SRCS) $(SVG) $(SVGS) $(CONF)
+$(BUILD_SRC)/%: $(SRC)/%
 	@mkdir -p $(@D)
-	# cd $(<D); \
-	# $(PATH_PYTHON) $(<F) Giftray.py path/giftray.ico\
-		# build_exe --build-exe ../$(BUILD_EXE) \
-		# bdist_msi --bdist-dir ../$(BUILD_EXE) \
-		          # --dist-dir ../$(@D)       \
-			  # -k                          \
-			  # --target-name $(@F)
+	cp $< $@
+
+$(OUT_EXEC): $(OUT_PY) $(SVG) $(SVGS) $(CONF)
+	@mkdir -p $(@D)
+	cp -r $(SRC) $(BUILD)/
+	cd $(BUILD_SRC); \
+	$(PATH_PYTHON) $(<F) 				\
+		--setup-project=$(PROJECT)		\
+		--setup-script=$(notdir $(PY))		\
+		--setup-icon=../$(notdir $(OUT_ICO))	\
+		--setup-include=$(LOWPROJECT)		\
+		--setup-include-files=../$(BUILD_SVG:$(BUILD)/%=%)     \
+		--setup-include-files=../$(BUILD_CONF:$(BUILD)/%=%)    \
+		bdist_msi			\
+		          --dist-dir ../../$(@D)\
+			  -k			\
+			  --target-name $(@F)
+		#build_exe --build-exe ../$(BUILD_EXE) \
+		#bdist_msi --bdist-dir ../$(BUILD_EXE) \
+		#          --dist-dir ../$(@D)       \
+		#	  -k                          \
+		#	  --target-name $(@F)
 
 ############### Usual builin actions
 .PHONY: clean mrproper

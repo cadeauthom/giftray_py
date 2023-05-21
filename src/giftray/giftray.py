@@ -214,6 +214,9 @@ class giftray(object):
         exist_conf = False
         if os.path.isfile(self.conf) :
             exist_conf = True
+        elif os.path.isfile(self.conf+'.example'):
+            exist_conf = True
+            self.conf = self.conf+'.example'
         else:
             thispath = os.getcwd()
             for endpath in [[],
