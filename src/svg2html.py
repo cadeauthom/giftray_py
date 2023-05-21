@@ -1,4 +1,5 @@
 import os
+import sys
 import glob
 
 def recursive_dir_search_svg(directory):
@@ -32,6 +33,10 @@ start='''
 		</style>
 	</head>
 	<body>'''
+
+for i in sys.argv:
+    the_dir = i
+os.chdir(i)
 print(start)
-print(recursive_dir_search_svg("svg"))
+print(recursive_dir_search_svg('svg'))
 print(end)
