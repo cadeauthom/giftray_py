@@ -6,12 +6,10 @@ import glob
 def recursive_dir_search_svg(directory):
     out = ""
     files = glob.glob(directory+"/*.svg")
-    print(files)
     if files:
       out+="<details><summary>"+directory+"</summary><ul>\n"
       for f in files:
-        print(f)
-        out+="<li><img src="+f+" /> <span>"+os.path.basename(f)+"</span>\n"
+        out+="<li><img src="+f+"/> <span>"+os.path.basename(f)+"</span>\n"
       out+="</ul></details>\n"
     dirs = glob.glob(directory+"/*")
     for d in dirs:
@@ -43,7 +41,7 @@ for name, value in options:
 
 if not os.path.exists(directory) or not os.path.isdir(directory):
     print(directory+' is not a valid directory to be explored')
-    exit(2)
+    help()
 
 if out:
     file_name, file_extension = os.path.splitext(out)
@@ -56,9 +54,8 @@ if out:
     elif not file_dir:
         pass
     else:
-    #elif not os.path.exists(file_dir) or not os.path.isdir(file_dir):
         print(out+' must be without directory definiton')
-        exit(2)
+        help()
 
 end ='''
 </body>

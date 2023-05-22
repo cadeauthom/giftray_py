@@ -133,8 +133,9 @@ class singleIcon:
             self.id=self.psvg+'/'+c.dark+'/'+c.light
         if generic and not self.psvg:
             self.psvg = generic
-            giftray.main_error.append("Fail to find '"+generic.split('_')[1]+"' icon")
             self.id   = self.psvg+'/'+c.dark+'/'+c.light
+            if svg or letter:
+                giftray.main_error.append("Fail to find '"+generic.split('_')[1]+"' icon")
 
     def _GetSVG(self,svg,letter,conf,generic):
         psvgs=[]
@@ -143,9 +144,9 @@ class singleIcon:
             if os.path.exists(psvg) and psvg.endswith('.svg'):
                 return(psvg)
             if not svg.endswith('.svg'):
-                psvgs.append(svg+'.svg')
+                psvgs.append('icons/'+svg+'.svg')
             else:
-                psvgs.append(svg)
+                psvgs.append('icons/'+svg)
         if letter and len(letter)==1 and letter in 'abcdefghijklmnopqrstuvwxyz1234567890':
             psvgs.append('letters/'+letter.casefold()+'.svg')
         elif not generic or not generic in self.default.getDefault() :
@@ -157,7 +158,7 @@ class singleIcon:
         arrpath.append(os.getcwd())
         for psvg in psvgs:
             for thispath in arrpath:
-                for endpath in [['svg'],['..','svg'],['build','svg'],['build','exe','svg'],['..','build','svg']]:
+                for endpath in [['svg'],['src','svg']]:
                     path = thispath
                     for k in endpath:
                         path = posixpath.join(path,k)

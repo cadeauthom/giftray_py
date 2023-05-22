@@ -48,7 +48,8 @@ class giftray(object):
         filelog                 = posixpath.join(self.userdir, self.name+".log")
         if "\\python" in sys.executable:
             filelog             = self.name+".log"
-            self.userdir        = posixpath.join(os.path.dirname(sys.executable),"conf")
+            # self.userdir        = posixpath.join(os.path.dirname(sys.executable),"src/conf")
+            self.userdir        = ('src/conf')
         else:
             # executable not python; test if user dir exists
             #src = posixpath.join(os.getcwd(),"conf") # debug in python with revert previous 'if'
@@ -193,7 +194,7 @@ class giftray(object):
             for i in range(self.nb_hotkey):
                 ctypes.windll.user32.UnregisterHotKey(None, i)
         self.conf               = os.path.abspath(posixpath.join( self.userdir, self.name+".conf"))
-        self.conf_maintheme     = "native"
+        self.conf_maintheme     = "white"
         self.conf_theme         = "native"
         self.conf_loglevel      = "WARNING"
         self.nb_hotkey          = 0
@@ -213,6 +214,9 @@ class giftray(object):
         exist_conf = False
         if os.path.isfile(self.conf) :
             exist_conf = True
+        elif os.path.isfile(self.conf+'.example'):
+            exist_conf = True
+            self.conf = self.conf+'.example'
         else:
             thispath = os.getcwd()
             for endpath in [[],
@@ -479,24 +483,30 @@ class giftray(object):
                 self.tray_menu.addMenu(submenu)
 
             # loop on modules in error
-            menu_err = PyQt6.QtWidgets.QMenu('Errors',self.tray_menu)
-            menu_err.setToolTipsVisible(True)
-            menu_err.setIcon(self.mainmenuconf.getIcon('Errors'))
-            act=PyQt6.QtGui.QAction(self.mainmenuconf.getIcon('Errors'),self.showname,menu_err)
+            if len(self.error) == 0:
+                act=PyQt6.QtGui.QAction(self.mainmenuconf.getIcon('Errors'),self.showname,self.tray_menu)
+            else:
+                menu_err = PyQt6.QtWidgets.QMenu('Errors',self.tray_menu)
+                menu_err.setToolTipsVisible(True)
+                menu_err.setIcon(self.mainmenuconf.getIcon('Errors'))
+                act=PyQt6.QtGui.QAction(self.mainmenuconf.getIcon('Errors'),self.showname,menu_err)
             info,line = self._buildError(self.showname, "")
             act.setToolTip(info)
             act.triggered.connect(functools.partial(self._ConnectorError, self.showname, info+line))
             if len(self.error) == 0 and len(self.main_error) == 0 :
                 act.setDisabled(True)
-            menu_err.addAction(act)
-            menu_err.addSeparator()
-            for i in self.error:
-                id = self.images.create('',i[0],'custom')
-                act=PyQt6.QtGui.QAction(self.images.getIcon(id),i,menu_err)
-                info,line = self._buildError(i, self.error[i])
-                act.setToolTip(info)
-                act.triggered.connect(functools.partial(self._ConnectorError, i, info+line))
+            if len(self.error) == 0:
+                pass
+            else:
                 menu_err.addAction(act)
+                menu_err.addSeparator()
+                for i in self.error:
+                    id = self.images.create('',i[0],'custom')
+                    act=PyQt6.QtGui.QAction(self.images.getIcon(id),i,menu_err)
+                    info,line = self._buildError(i, self.error[i])
+                    act.setToolTip(info)
+                    act.triggered.connect(functools.partial(self._ConnectorError, i, info+line))
+                    menu_err.addAction(act)
 
             self.tray_menu.addSeparator()
             #TODO find not use modules
@@ -505,7 +515,9 @@ class giftray(object):
             #    self.tray_menu.addMenu(menu_ina)
             if not menu_not.isEmpty():
                 self.tray_menu.addMenu(menu_not)
-            if not menu_err.isEmpty():
+            if len(self.error) == 0:
+                self.tray_menu.addAction(act)
+            elif not menu_err.isEmpty():
                 self.tray_menu.addMenu(menu_err)
 
         self.tray_menu.addSeparator()
@@ -702,7 +714,7 @@ class giftray(object):
         elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Context:
             self.tray_menu.show()
         elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
-            self._about()
+            self._ConnectorAbout()
         elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.MiddleClick:
             self.__del__()
         return
