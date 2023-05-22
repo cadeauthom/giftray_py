@@ -8,6 +8,7 @@ def help():
 project=''
 script=''
 icon=''
+version=''
 includes=[]
 includefiles=[]
 new_argv=[]
@@ -18,6 +19,8 @@ for i in sys.argv:
         script=i.split('=')[1]
     elif i.startswith("--setup-icon="):
         icon=i.split('=')[1]
+    elif i.startswith("--setup-version="):
+        version=i.split('=')[1]
     elif i.startswith("--setup-include="):
         includes+=(i.split('=')[1]).split(',')
     elif i.startswith("--setup-include-files="):
@@ -37,7 +40,7 @@ if (not project
 cfg='''
 [metadata]
 name = PROJECT
-version = 0.1
+version = VERSION
 description = PROJECT
 #Tray and Hotkeys for custom shortcuts and commands
 [build_exe]
@@ -57,6 +60,7 @@ cfg = cfg.replace('PROJECT',project)
 cfg = cfg.replace('INCLUDEFILES',','.join(includefiles))
 cfg = cfg.replace('INCLUDES',','.join(includes))
 cfg = cfg.replace('ICON',icon)
+cfg = cfg.replace('VERSION',version)
 
 with open('setup.cfg','w') as file:
     file.write(cfg)

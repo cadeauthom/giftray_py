@@ -43,6 +43,15 @@ BUILD_CONF	= $(BUILD)/conf
 BUILD_EXE	= $(BUILD)/exe
 BUILD_SRC	= $(BUILD)/src
 
+#VERSION_MAIN	= $(shell git describe --tags)
+VERSION_TAG_COM = $(shell git rev-list --tags --max-count=1)
+VERSION_MAIN	= $(shell git describe --tags $(VERSION_TAG_COM))
+VERSION_COMMITS	= $(shell git rev-list $(VERSION_MAIN)..HEAD --count)
+VERSION_STAGES	= $(shell git status -s | egrep -c "^\w")
+VERSION_DIFFS	= $(shell git status -s | egrep -c "^.\w")
+VERSION_DATE	= $(shell date +%s)
+VERSION		= $(VERSION_MAIN)-$(VERSION_COMMITS).$(VERSION_STAGES).$(VERSION_DIFFS).$(VERSION_DATE)
+
 ############### Variable Definition
 LOWPROJECT 	= $(shell echo $(PROJECT) | tr '[:upper:]' '[:lower:]')
 
@@ -50,19 +59,20 @@ SVGS		= $(wildcard $(SRC_SVG)/*/*.svg)
 SVG		= $(SRC_SVG)/$(LOWPROJECT)-$(ICONB).svg
 CONF		= $(wildcard $(SRC_CONF)/*.example) $(SRC_CONF)/list_key.txt $(wildcard $(SRC_CONF)/$(LOWPROJECT).*)
 
-HTML_SVGS	= $(SRC)/svg2html.py
+HTML_PY		= $(SRC)/svg2html.py
 PY		= $(SRC)/$(PROJECT).py
 PY_LIBS		= $(wildcard $(SRC)/$(LOWPROJECT)/*.py)
 SETUP		= $(SRC)/setup.py
 #CFG		= $(SRC)/setup.cfg
 
 IN_PY		= $(SETUP) $(PY) $(PY_LIBS)
+OUT_HTML_PY	= $(patsubst $(SRC)/%, $(BUILD_SRC)/%, $(HTML_PY))
 OUT_PY		= $(patsubst $(SRC)/%, $(BUILD_SRC)/%, $(IN_PY))
 OUT_SVGS	= $(patsubst $(SRC_SVG)/%, $(BUILD_SVG)/%, $(SVGS))
 OUT_CONF	= $(patsubst $(SRC_CONF)/%, $(BUILD_CONF)/%, $(CONF))
 OUT_ICO 	= $(BUILD)/$(LOWPROJECT).ico
 OUT_HTML_SVGS	= $(BUILD)/list_SVGs.html
-OUT_EXEC	= $(DIST)/$(PROJECT).msi
+OUT_EXEC	= $(DIST)/$(PROJECT).$(VERSION).msi
 
 ############### Commands from variables
 ifndef COLOR
@@ -80,19 +90,15 @@ ifeq ($(COLOR),green)
 endif
 
 ############### Actions of makefile
-all: pre svg conf ico exec
+all: svg conf ico exec
 
-exec: pre $(OUT_EXEC)
+exec: $(OUT_EXEC)
 
-svg: pre $(OUT_SVGS) $(OUT_HTML_SVGS)
+svg: $(OUT_SVGS) $(OUT_HTML_SVGS)
 
-conf: pre $(OUT_CONF)
+conf: $(OUT_CONF)
 
-ico: pre $(OUT_ICO)
-
-pre:
-	mkdir -p $(BUILD)
-	cp -r $(SRC) $(BUILD)/
+ico: $(OUT_ICO)
 
 # use this one to force the rebuild of colored icon
 color:
@@ -103,7 +109,7 @@ $(BUILD_SVG)/%: $(SRC_SVG)/%
 	@mkdir -p $(@D)
 	cp $< $@
 
-$(OUT_HTML_SVGS): $(HTML_SVGS) $(OUT_SVGS)
+$(OUT_HTML_SVGS): $(HTML_PY) $(OUT_SVGS) $(OUT_HTML_PY)
 	@mkdir -p $(@D)
 	cd $(@D); \
 	$(PATH_PYTHON) $< -d $(BUILD_SVG:$(BUILD)/%=%) -o $(@F)
@@ -128,6 +134,7 @@ $(OUT_EXEC): $(OUT_PY) $(SVG) $(SVGS) $(CONF)
 		--setup-project=$(PROJECT)		\
 		--setup-script=$(notdir $(PY))		\
 		--setup-icon=../$(notdir $(OUT_ICO))	\
+		--setup-version==$(VERSION)		\
 		--setup-include=$(LOWPROJECT)		\
 		--setup-include-files=../$(BUILD_SVG:$(BUILD)/%=%)     \
 		--setup-include-files=../$(BUILD_CONF:$(BUILD)/%=%)    \
