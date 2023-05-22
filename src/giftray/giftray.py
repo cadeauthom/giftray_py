@@ -57,6 +57,8 @@ class giftray(object):
             if not os.path.exists(self.userdir):
                 #os.mkdir(self.userdir)
                 shutil.copytree(src,self.userdir)
+                for file in glob.glob(os.path.join(self.userdir,'*.example')):
+                    shutil.copy(file, file.replace('.example',''))
             else:
                 for file in glob.glob(os.path.join(self.userdir,'*.example')):
                     os.remove(file)
@@ -248,6 +250,8 @@ class giftray(object):
                 self.main_error.append(print_error)
                 self.logger.error(print_error)
             qss = os.path.abspath(posixpath.join( os.path.dirname(self.conf), self.name+".qss"))
+            if not(os.path.exists(qss) and os.path.isfile(qss)):
+                qss = os.path.abspath(posixpath.join( os.path.dirname(self.conf), self.name+".qss.example"))
             if os.path.exists(qss) and os.path.isfile(qss):
                 f = open(qss,"r")
                 lines = '\n'.join(f.readlines())

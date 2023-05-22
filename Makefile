@@ -57,7 +57,7 @@ LOWPROJECT 	= $(shell echo $(PROJECT) | tr '[:upper:]' '[:lower:]')
 
 SVGS		= $(wildcard $(SRC_SVG)/*/*.svg)
 SVG		= $(SRC_SVG)/$(LOWPROJECT)-$(ICONB).svg
-CONF		= $(wildcard $(SRC_CONF)/*.example) $(SRC_CONF)/list_key.txt $(wildcard $(SRC_CONF)/$(LOWPROJECT).*)
+CONF		= $(wildcard $(SRC_CONF)/*.example) $(SRC_CONF)/list_key.txt
 
 HTML_PY		= $(SRC)/svg2html.py
 PY		= $(SRC)/$(PROJECT).py
@@ -126,18 +126,19 @@ $(BUILD_SRC)/%: $(SRC)/%
 	@mkdir -p $(@D)
 	cp $< $@
 
-
 $(OUT_EXEC): $(OUT_PY) $(SVG) $(SVGS) $(CONF)
 	@mkdir -p $(@D)
 	cd $(BUILD_SRC); \
 	$(PATH_PYTHON) $(<F) 				\
 		--setup-project=$(PROJECT)		\
 		--setup-script=$(notdir $(PY))		\
-		--setup-icon=../$(notdir $(OUT_ICO))	\
+		--setup-icon=../$(OUT_ICO:$(BUILD)/%=%)	\
 		--setup-version==$(VERSION)		\
 		--setup-include=$(LOWPROJECT)		\
-		--setup-include-files=../$(BUILD_SVG:$(BUILD)/%=%)     \
-		--setup-include-files=../$(BUILD_CONF:$(BUILD)/%=%)    \
+		--setup-include-files=../$(BUILD_SVG:$(BUILD)/%=%)	\
+		--setup-include-files=../$(BUILD_CONF:$(BUILD)/%=%)	\
+		--setup-include-files=../$(OUT_ICO:$(BUILD)/%=%)	\
+		--setup-include-files=../$(OUT_HTML_SVGS:$(BUILD)/%=%)	\
 		bdist_msi			\
 		          --dist-dir ../../$(@D)\
 			  -k			\
