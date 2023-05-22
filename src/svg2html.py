@@ -6,11 +6,19 @@ import glob
 def recursive_dir_search_svg(directory):
     out = ""
     files = glob.glob(directory+"/*.svg")
+    c=0
+    m=6
     if files:
-      out+="<details><summary>"+directory+"</summary><ul>\n"
+      out+="<details><summary>"+directory+"</summary><table><tr>\n"
       for f in files:
-        out+="<li><img src="+f+"/> <span>"+os.path.basename(f)+"</span>\n"
-      out+="</ul></details>\n"
+        out+="<th><img src="+f+"/> <span>"+os.path.basename(f)+"</span></th>\n"
+        c+=1
+        if c == m:
+            out+="</tr><tr>\n"
+            c=0
+      if c != 0:
+        out+="</tr>\n"
+      out+="</table></details>\n"
     dirs = glob.glob(directory+"/*")
     for d in dirs:
       if os.path.isdir(d):
@@ -66,9 +74,9 @@ start='''
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <title>GifTray Images</title>
 		<style type="text/css">
-			ul li {list-style: none; margin-bottom: 15px;}
-			ul li img {display: inline; width:20px; height:20px;}
-			ul li span {display: inline ;}
+			table tr th {}
+			table tr th img {display: inline; width:20px; height:20px;}
+			table tr th span {display: inline ;}
 		</style>
 	</head>
 	<body>'''
