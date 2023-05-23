@@ -133,7 +133,7 @@ $(OUT_EXEC): $(OUT_PY) $(SVG) $(SVGS) $(CONF)
 		--setup-project=$(PROJECT)		\
 		--setup-script=$(notdir $(PY))		\
 		--setup-icon=../$(OUT_ICO:$(BUILD)/%=%)	\
-		--setup-version==$(VERSION)		\
+		--setup-version=$(VERSION)		\
 		--setup-include=$(LOWPROJECT)		\
 		--setup-include-files=../$(BUILD_SVG:$(BUILD)/%=%)	\
 		--setup-include-files=../$(BUILD_CONF:$(BUILD)/%=%)	\
