@@ -35,8 +35,6 @@ tail -f giftray.log
 #set/unset startup
 #get conf examples
 
-#ico => menu, but still menu opt
-
 #Windows
 #    = script
 #       + env var

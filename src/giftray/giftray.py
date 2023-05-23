@@ -38,7 +38,7 @@ class giftray(object):
         # Register our signal handler with `SIGINT`(CTRL + C)
         signal.signal(signal.SIGINT, signal_handler)
         self.showname           = 'GifTray'
-        self.name               = 'giftray'
+        self.name               = self.showname.casefold()
         self.generalsectionword = 'General'
         self.generalopt         = self.showname+' '+self.generalsectionword.title()
         self.nativeopt          = self.showname+' Native'
@@ -195,7 +195,7 @@ class giftray(object):
         if hasattr(self, "nb_hotkey"):
             for i in range(self.nb_hotkey):
                 ctypes.windll.user32.UnregisterHotKey(None, i)
-        self.conf               = os.path.abspath(posixpath.join( self.userdir, self.name+".conf"))
+        self.conf               = "" #os.path.abspath(posixpath.join( self.userdir, self.name+".conf"))
         self.conf_maintheme     = "white"
         self.conf_theme         = "native"
         self.conf_loglevel      = "WARNING"
@@ -214,25 +214,29 @@ class giftray(object):
         #Find and read config file
         config = configparser.ConfigParser(strict=False)
         exist_conf = False
-        if os.path.isfile(self.conf) :
-            exist_conf = True
-        elif os.path.isfile(self.conf+'.example'):
-            exist_conf = True
-            self.conf = self.conf+'.example'
-        else:
-            thispath = os.getcwd()
-            for endpath in [[],
-                            ["conf"],
-                            ["..","conf"],
-                            ["..","..","conf"]]:
-                path = thispath
-                for k in endpath:
-                    path = posixpath.join( path, k)
-                path = os.path.abspath(posixpath.join( path, self.name+".conf"))
-                if os.path.exists(path) and os.path.isfile(path) :
-                    self.conf = path
-                    exist_conf = True
+        thispath = os.getcwd()
+        for filename in [   self.name+".conf",
+                            self.showname+".conf",
+                            self.name+".conf.example",
+                            self.showname+".conf.example"]:
+            if exist_conf:
+                break
+            for maindir in [self.userdir,
+                            os.getcwd()]:
+                if exist_conf:
                     break
+                for endpath in [[],
+                                ["conf"],
+                                ["..","conf"],
+                                ["..","..","conf"]]:
+                    path = maindir
+                    for k in endpath:
+                        path = posixpath.join( path, k)
+                    path = os.path.abspath(posixpath.join( path, filename))
+                    if os.path.exists(path) and os.path.isfile(path) :
+                        self.conf = path
+                        exist_conf = True
+                        break
         if not exist_conf:
             self.main_error.append("Fail to find configuration")
             self.logger.error("Fail to find configuration")
@@ -488,7 +492,7 @@ class giftray(object):
 
             # loop on modules in error
             if len(self.error) == 0:
-                act=PyQt6.QtGui.QAction(self.mainmenuconf.getIcon('Errors'),self.showname,self.tray_menu)
+                act=PyQt6.QtGui.QAction(self.mainmenuconf.getIcon('Errors'),'Errors',self.tray_menu)
             else:
                 menu_err = PyQt6.QtWidgets.QMenu('Errors',self.tray_menu)
                 menu_err.setToolTipsVisible(True)
@@ -530,22 +534,21 @@ class giftray(object):
         #ToDo conf Gui
         #ToDo about Gui
         #ToDo update link
-        act=PyQt6.QtGui.QAction('Generate HotKey',self.tray_menu)
-        act.setIcon(self.mainmenuconf.getIcon('Generator'))
-        act.setDisabled(True)
-        #act.setStatusTip('not developed')
-        #act.setShortcut('Ctrl+R')
-        self.tray_menu.addAction(act)
-        act=PyQt6.QtGui.QAction('Show current configuration',self.tray_menu)
-        act.setIcon(self.mainmenuconf.getIcon('Configuration'))
-        act.setDisabled(True)
-        self.tray_menu.addAction(act)
-        act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
-        act.setIcon(self.mainmenuconf.getIcon('About'))
-        act.triggered.connect(self._ConnectorAbout)
-        act.setDisabled(True)
-        self.tray_menu.addAction(act)
-        act=PyQt6.QtGui.QAction('Reload '+self.showname,self.tray_menu)
+        # act=PyQt6.QtGui.QAction('Generate HotKey',self.tray_menu)
+        # act.setIcon(self.mainmenuconf.getIcon('Generator'))
+        # act.setDisabled(True)
+        # #act.setStatusTip('not developed')
+        # self.tray_menu.addAction(act)
+        # act=PyQt6.QtGui.QAction('Show current configuration',self.tray_menu)
+        # act.setIcon(self.mainmenuconf.getIcon('Configuration'))
+        # act.setDisabled(True)
+        # self.tray_menu.addAction(act)
+        # act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
+        # act.setIcon(self.mainmenuconf.getIcon('About'))
+        # act.triggered.connect(self._ConnectorAbout)
+        # act.setDisabled(True)
+        # self.tray_menu.addAction(act)
+        act=PyQt6.QtGui.QAction('Reload configuration',self.tray_menu)
         act.setIcon(self.mainmenuconf.getIcon('Reload'))
         act.triggered.connect(self._Restart)
         self.tray_menu.addAction(act)
