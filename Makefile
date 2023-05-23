@@ -50,7 +50,7 @@ VERSION_COMMITS	= $(shell git rev-list $(VERSION_MAIN)..HEAD --count)
 VERSION_STAGES	= $(shell git status -s | egrep -c "^\w")
 VERSION_DIFFS	= $(shell git status -s | egrep -c "^.\w")
 VERSION_DATE	= $(shell date +%s)
-VERSION		= $(VERSION_MAIN)-$(VERSION_COMMITS).$(VERSION_STAGES).$(VERSION_DIFFS).$(VERSION_DATE)
+VERSION		= $(VERSION_MAIN).$(VERSION_COMMITS).$(VERSION_STAGES).$(VERSION_DIFFS).$(VERSION_DATE)
 
 ############### Variable Definition
 LOWPROJECT 	= $(shell echo $(PROJECT) | tr '[:upper:]' '[:lower:]')
