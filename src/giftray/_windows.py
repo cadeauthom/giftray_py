@@ -47,7 +47,7 @@ class script(_feature.action):
 
     def _Run(self):
         out = self.cmd
-        cmd = ' { Start-Process "'+self.cmd+'"'
+        cmd = ' & { Start-Process -WindowStyle hidden "'+self.cmd+'"'
         if self.args:
             cmd += ' -ArgumentList "' + self.args+'"'
             out += ' ' + self.args
