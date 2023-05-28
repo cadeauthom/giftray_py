@@ -47,7 +47,7 @@ class script(_feature.action):
 
     def _Run(self):
         out = self.cmd
-        cmd = '& { Start-Process "'+self.cmd+'"'
+        cmd = ' { Start-Process "'+self.cmd+'"'
         if self.args:
             cmd += ' -ArgumentList "' + self.args+'"'
             out += ' ' + self.args
@@ -55,7 +55,7 @@ class script(_feature.action):
             cmd += ' -Verb RunAs'
             out += ' as admin'
         cmd += '}'
-        prog = subprocess.Popen(['Powershell ', '-Command', cmd])
+        prog = subprocess.Popen(['Powershell',  '-Command', cmd])
         return out
 
 class stayactive(_feature.service):
