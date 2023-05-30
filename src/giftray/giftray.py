@@ -600,6 +600,10 @@ class giftray(object):
                 self.tray_menu.addMenu(menu_err)
 
         self.tray_menu.addSeparator()
+        menu_help = PyQt6.QtWidgets.QMenu('Help',self.tray_menu)
+        menu_help.setToolTipsVisible(True)
+        menu_help.setIcon(self.mainmenuconf.getIcon('Help'))
+
         # Define menu default actions
         #ToDo generator Gui
         #ToDo conf Gui
@@ -619,11 +623,12 @@ class giftray(object):
         # act.triggered.connect(self._ConnectorAbout)
         # act.setDisabled(True)
         # self.tray_menu.addAction(act)
-        act=PyQt6.QtGui.QAction('Reload configuration',self.tray_menu)
+        act=PyQt6.QtGui.QAction('Reload configuration',menu_help)
         act.setIcon(self.mainmenuconf.getIcon('Reload'))
         act.triggered.connect(self._Restart)
-        self.tray_menu.addAction(act)
-        self.tray_menu.addSeparator()
+        menu_help.addAction(act)
+        self.tray_menu.addMenu(menu_help)
+
         act=PyQt6.QtGui.QAction('Exit '+self.showname,self.tray_menu)
         act.setIcon(self.mainmenuconf.getIcon('Exit'))
         act.triggered.connect(self.__del__)
