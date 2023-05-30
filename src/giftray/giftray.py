@@ -23,6 +23,7 @@ import PyQt6.QtWidgets, PyQt6.QtGui
 import notifypy
 import functools
 import natsort
+import psutil
 
 from . import _general
 from . import _icon
@@ -39,26 +40,29 @@ class giftray(object):
         signal.signal(signal.SIGINT, signal_handler)
         self.showname           = 'GifTray'
         self.name               = self.showname.casefold()
+        self.lockfile           = None
+        self.python = ( "\\python" in sys.executable )
+        if self.python:
+            self.tempdir = './'
+        else:
+            for k in ['TMP','TEMP','USERPROFILE']:
+                self.tempdir = os.getenv(k)
+                if self.tempdir:
+                    break
+            if not self.tempdir:
+                sys.exit()
+        if not self._checkLockFile():
+            print('plop')
+            return
         self.generalsectionword = 'General'
         self.generalopt         = self.showname+' '+self.generalsectionword.title()
         self.nativeopt          = self.showname+' Native'
         self.modules            = ['wsl'.casefold(),'windows'.casefold()]
         #self.modules           = ['template'] # to debug with empty application
-        if "\\python" in sys.executable:
-            self.python = True
-        else:
-            self.python = False
         if self.python:
-            self.temp           = './'
             # self.userdir        = posixpath.join(os.path.dirname(sys.executable),"src/conf")
             self.userdir        = ('src/conf')
         else:
-            for k in ['TMP','TEMP','USERPROFILE']:
-                self.temp = os.getenv(k)
-                if self.temp:
-                    break
-            if not self.temp:
-                sys.exit()
             for k in ['APPDATA','LOCALAPPDATA','USERPROFILE']:
                 self.userdir = os.getenv(k)
                 if self.userdir:
@@ -87,7 +91,7 @@ class giftray(object):
                     os.remove(file)
                 for file in glob.glob(os.path.join(src,'*.example')):
                     shutil.copy(file, self.userdir)
-        filelog             = posixpath.join(self.temp,    self.name+".log")
+        filelog             = posixpath.join(self.tempdir,    self.name+".log")
         logging.basicConfig     ( filename=filelog,
                                   level=0,
                                   encoding='utf-8',
@@ -142,6 +146,7 @@ class giftray(object):
         timer = PyQt6.QtCore.QTimer()
         timer.start(500)  # You may change this if you wish.
         timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
+        print('plop')
         self.app.exec()
         if th.is_alive():
             self.logger.debug('Kill flusher')
@@ -149,9 +154,49 @@ class giftray(object):
         return
 
     def __del__(self):
+        if self.lockfile:
+            if os.path.isfile(self.lockfile):
+                os.remove(self.lockfile)
+        else:
+            return
         self._ResetVar()
         self.app.quit()
         self.logger.info("Exiting")
+
+    def _checkLockFile(self):
+        lockfile = posixpath.join(self.tempdir,self.name+'.lock')
+        already_running = False
+        my_pid      = os.getpid()
+        my_process  = psutil.Process(my_pid)
+        my_name     = my_process.name()
+        my_exe 	    = my_process.exe()
+        my_username = my_process.username()
+        current_process = None
+        if os.path.isfile(lockfile):
+            current_pid = 0
+            with open(lockfile, 'r') as file:
+                current_pid = file.read()
+            if current_pid:
+                try:
+                    current_process = psutil.Process(int(current_pid))
+                except:
+                    current_process = None
+        if current_process:
+            current_name     = current_process.name()
+            current_exe 	 = current_process.exe()
+            current_username = current_process.username()
+
+            if (my_name     == current_name     and
+                my_exe      == current_exe and
+                my_username == current_username):
+                return False
+        self.lockfile = lockfile
+        self._writeLockFile()
+        return True
+
+    def _writeLockFile(self):
+        with open(self.lockfile, 'w') as file:
+            file.write(str(os.getpid()))
 
     def _ResetVar(self):
         if hasattr(self, "avail_modules"):
@@ -737,6 +782,8 @@ class giftray(object):
     def _Thread4Flush(self):
         logger = logging.getLogger()
         while True:
+            if not os.path.isfile(self.lockfile):
+                self._writeLockFile()
             logger.handlers[0].flush()
             for i in range(10): time.sleep(1)
         return
