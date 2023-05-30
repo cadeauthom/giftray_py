@@ -44,17 +44,40 @@ class giftray(object):
         self.nativeopt          = self.showname+' Native'
         self.modules            = ['wsl'.casefold(),'windows'.casefold()]
         #self.modules           = ['template'] # to debug with empty application
-        self.userdir            = posixpath.join(os.getenv('USERPROFILE'), self.showname)
-        filelog                 = posixpath.join(self.userdir, self.name+".log")
         if "\\python" in sys.executable:
-            filelog             = self.name+".log"
+            self.python = True
+        else:
+            self.python = False
+        if self.python:
+            self.temp           = './'
             # self.userdir        = posixpath.join(os.path.dirname(sys.executable),"src/conf")
             self.userdir        = ('src/conf')
         else:
+            for k in ['TMP','TEMP','USERPROFILE']:
+                self.temp = os.getenv(k)
+                if self.temp:
+                    break
+            if not self.temp:
+                sys.exit()
+            for k in ['APPDATA','LOCALAPPDATA','USERPROFILE']:
+                self.userdir = os.getenv(k)
+                if self.userdir:
+                    break
+            if not self.userdir:
+                sys.exit()
+            self.userdir            = posixpath.join(self.userdir, self.showname)
             # executable not python; test if user dir exists
             #src = posixpath.join(os.getcwd(),"conf") # debug in python with revert previous 'if'
             src = posixpath.join(os.path.dirname(sys.executable),"conf")
-            if not os.path.exists(self.userdir):
+            update = os.path.exists(self.userdir)
+            if not update:
+                # to update beta version:
+                if os.getenv('USERPROFILE'):
+                    beta_dir = posixpath.join(os.getenv('USERPROFILE'), self.showname)
+                    if os.path.exists(beta_dir):
+                        shutil.move(beta_dir, self.userdir)
+                        update = True
+            if not update:
                 #os.mkdir(self.userdir)
                 shutil.copytree(src,self.userdir)
                 for file in glob.glob(os.path.join(self.userdir,'*.example')):
@@ -64,6 +87,7 @@ class giftray(object):
                     os.remove(file)
                 for file in glob.glob(os.path.join(src,'*.example')):
                     shutil.copy(file, self.userdir)
+        filelog             = posixpath.join(self.temp,    self.name+".log")
         logging.basicConfig     ( filename=filelog,
                                   level=0,
                                   encoding='utf-8',
@@ -71,7 +95,7 @@ class giftray(object):
                                   datefmt='%d-%b-%y %H:%M:%S')
         self.logger             = logging.getLogger(__name__)
         # Define app
-        self.app  = PyQt6.QtWidgets.QApplication([])
+        self.app = PyQt6.QtWidgets.QApplication([])
         self.app.setStyle('Fusion')
         self.app.setQuitOnLastWindowClosed ( False )
         #self.win_handler        = PyQt6.QtWidgets.QWidget()
@@ -245,7 +269,7 @@ class giftray(object):
             confs = [self.conf]
             #Find other conf files
             confs += natsort.os_sorted(glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf')))
-            if "\\python" in sys.executable:
+            if self.python:
                 confs += natsort.os_sorted(glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf.example')))
             try:
                 config.read(confs, encoding="utf8")
@@ -267,8 +291,10 @@ class giftray(object):
                 for k in config[section]:
                     i = k.title()
                     if i == 'MainTheme'.title():
+                        self.mainmenuconf.set('tray', 'theme', _general.GetOpt(str(config[section][k]),_general.type.STRING))
                         self.conf_maintheme = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif i == 'Theme'.title():
+                        self.mainmenuconf.set('other', 'theme', _general.GetOpt(str(config[section][k]),_general.type.STRING))
                         self.conf_theme = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif i == 'LogLevel'.title():
                         LevelNamesMapping=logging.getLevelNamesMapping()
@@ -277,37 +303,37 @@ class giftray(object):
                             self.conf_loglevel = levelname.title()
                             self.logger.setLevel(level=LevelNamesMapping[levelname])
                         else:
+                            self.main_error.append('LogLevel->'+k+"not supported")
                             self.logger.error('LogLevel->'+k+"not supported")
                     elif i == 'Silent'.title():
                         self.silent = _general.GetOpt(str(config[section][k]),_general.type.BOOL)
                     elif i == 'MainDark'.title():
+                        self.mainmenuconf.set('tray', 'dark', _general.GetOpt(str(config[section][k]),_general.type.STRING))
                         self.mdark = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif i == 'MainLight'.title():
+                        self.mainmenuconf.set('tray', 'light', _general.GetOpt(str(config[section][k]),_general.type.STRING))
                         self.mlight = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif i == 'Dark'.title():
+                        self.mainmenuconf.set('other', 'dark', _general.GetOpt(str(config[section][k]),_general.type.STRING))
                         self.dark = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     elif i == 'Light'.title():
+                        self.mainmenuconf.set('other', 'light', _general.GetOpt(str(config[section][k]),_general.type.STRING))
                         self.light = _general.GetOpt(str(config[section][k]),_general.type.STRING)
                     else :
+                        self.main_error.append(section+" : "+k+" is not an existing option")
                         self.logger.error(section+" : "+k+" is not an existing option")
                 continue
             if section.title().strip() == self.nativeopt.title():
                 for k in config[section]:
                     i = k.title()
                     if i == 'Dark'.title():
-                        self.mainmenuconf.dark = _general.GetOpt(str(config[section][k]),_general.type.STRING)
+                        self.mainmenuconf.set('default', 'dark', _general.GetOpt(str(config[section][k]),_general.type.STRING))
                     elif i == 'Light'.title():
-                        self.mainmenuconf.light = _general.GetOpt(str(config[section][k]),_general.type.STRING)
+                        self.mainmenuconf.set('default', 'light', _general.GetOpt(str(config[section][k]),_general.type.STRING))
                     elif i == 'Theme'.title():
-                        self.mainmenuconf.theme = _general.GetOpt(str(config[section][k]),_general.type.STRING)
+                        self.mainmenuconf.set('default', 'theme', _general.GetOpt(str(config[section][k]),_general.type.STRING))
                     elif 'GENERIC_'+i in self.images.getDefault():
                         self.mainmenuconf.icos['GENERIC_'+i] = _general.GetOpt(str(config[section][k]),_general.type.STRING)
-
-        self.colors.copy(self.conf_theme,'custom')
-        self.colors.set('custom',self.dark,self.light)
-        self.colors.copy('custom','maincustom')
-        self.colors.copy(self.conf_maintheme,'maincustom')
-        self.colors.set('maincustom',self.mdark,self.mlight)
 
         self.mainmenuconf.build()
 
@@ -509,7 +535,7 @@ class giftray(object):
                 menu_err.addAction(act)
                 menu_err.addSeparator()
                 for i in self.error:
-                    id = self.images.create('',i[0],'custom')
+                    id = self.images.create('',i[0],'other')
                     act=PyQt6.QtGui.QAction(self.images.getIcon(id),i,menu_err)
                     info,line = self._buildError(i, self.error[i])
                     act.setToolTip(info)
@@ -615,7 +641,7 @@ class giftray(object):
                 config[i]["ico".title()] = self.install[i].ico
             if self.install[i].theme:
                 color = self.install[i].theme.split('/')[0]
-                if not color == 'custom':
+                if not color == 'other':
                     if "color" in config[self.install[i].module.upper()]:
                         if color != config[self.install[i].module.upper()]["color"].split('/')[0]:
                             config[i]["color".title()] = color

@@ -126,7 +126,7 @@ class object:
                 others[i]=val[i]
 
         if not self.theme:
-            self.theme = 'custom'
+            self.theme = 'other'
         if self.dark or self.light:
             themename = self.theme+'/'+''.join(random.choices(string.digits, k=10))
             self.giftray.colors.copy(self.theme, themename)

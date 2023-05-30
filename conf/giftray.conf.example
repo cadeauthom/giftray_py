@@ -1,18 +1,19 @@
 [GIFTRAY GENERAL]
-#blue, black, red, green, white, native
-#MainTheme       = white
-Theme           = native
+#native, black, grey, white, blue, red, green, monowhite
+#darkgrey, darkwhite, darkblue, darkred, darkgreen, darkyellow
+#MainTheme       = monowhite
+#Theme           = native
 #CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
 LogLevel        = DEBUG
 Silent          = Off
 #Dark            = AA6600
-MainDark        = FFFFFF
-MainLight       = FFFFFF
+#MainDark        = FFFFFF
+#MainLight       = FFFFFF
 
 [GIFTRAY NATIVE]
 #Light           = F7F7FF
 #Dark            = C49991
-Theme           = native
+#Theme           = native
 #Main            = gift
 #No-Click        = decrease-circle
 #Menu            = add-collection

@@ -22,31 +22,44 @@ class type(enum.Enum):
     LISTSTRING  = 7
     PATH        = 8
 
+
 class mainmenuconf:
     def __init__(self,colors,images):
         self.colors = colors
         self.images = images
-        self.dark   = ''
-        self.light  = ''
-        self.theme  = 'native'
+        self.themes = { 'tray'   : {'theme': 'monowhite',
+                                    'dark': '',
+                                    'light': ''},
+                        'default': {'theme': 'native',
+                                    'dark': '',
+                                    'light': ''},
+                        'other'  : {'theme': 'native',
+                                    'dark': '',
+                                    'light': ''}}
         self.icos   = dict()
         self.ids    = dict()
     def build(self):
-        self.colors.copy('maincustom','default')
-        self.colors.copy(self.theme,'default')
-        self.colors.set('default',self.dark,self.light)
+        for theme in self.themes:
+            self.colors.copy(self.themes[theme]['theme'],theme)
+            self.colors.set(theme,self.themes[theme]['dark'],self.themes[theme]['light'])
         for ico in self.images.getDefault():
             pico = ""
             if ico in self.icos:
                 pico = self.icos[ico]
             theme = 'default'
             if ico == 'GENERIC_'+'Tray'.title():
-                theme = 'maincustom'
+                theme = 'tray'
             id = self.images.create(pico,'',theme,generic=ico)
             self.ids[ico] = id
     def getIcon(self,id):
         if 'GENERIC_'+id.title() in self.ids:
             return self.images.getIcon(self.ids['GENERIC_'+id.title()])
+    def set(self, theme, field, value):
+        if not theme in self.themes:
+            return
+        if not field in self.themes[theme]:
+            return
+        self.themes[theme][field] = value
 
 def GetOpt(val,t):
     ret = None

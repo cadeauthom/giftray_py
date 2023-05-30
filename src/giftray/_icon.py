@@ -25,12 +25,20 @@ class colors:
                 self.light = light
     def __init__(self):
         self.colors = {}
-        self.set('native','2ca9bc','000000')
-        self.set('black','','')
-        self.set('white','FFFFFF','')
-        self.set('blue' ,'1185E1','4DCFE1')
-        self.set('green','32CD32','7CFC00')
-        self.set('red'  ,'FDC75B','ED664C')
+        self.set('native'    ,'2ca9bc','000000')
+        self.set('grey'      ,''      ,''      )
+        self.set('darkgrey'  ,'AAAAAA','000000')
+        self.set('black'     ,'000000','000000')
+        self.set('white'     ,'FFFFFF',''      )
+        self.set('darkwhite' ,'FFFFFF','000000')
+        self.set('blue'      ,'1185E1','4DCFE1')
+        self.set('darkblue'  ,'1185E1','000000')
+        self.set('green'     ,'32CD32','7CFC00')
+        self.set('darkgreen' ,'32CD32','000000')
+        self.set('red'       ,'FDC75B','ED664C')
+        self.set('darkred'   ,'ED664C','000000')
+        self.set('darkyellow','FDC75B','000000')
+        self.set('monowhite' ,'FFFFFF','FFFFFF')
     def copy(self,copy,new):
         if copy in self.colors:
             self.set(new,self.colors[copy].dark,self.colors[copy].light)
@@ -50,8 +58,9 @@ class colors:
     # def list(self):
         # for color in self.colors:
             # self.show(color)
+        # print("End Colors")
     # def show(self,color):
-            # print(color,self.colors[color].dark,self.colors[color].light)
+            # print('color set:',color,self.colors[color].dark,self.colors[color].light)
 
 # def _GetTrayIcon(rec):
     # try:
