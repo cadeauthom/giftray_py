@@ -30,12 +30,15 @@ class script(_feature.action):
             if k == "cmd".title():
                 self.cmd = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
+                self.configuration["Command"] = _feature.conffield(self.cmd, type=_general.type.STRING)
             elif k == "args".title():
                 self.args = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
+                self.configuration["Arguments"] = _feature.conffield(self.args, type=_general.type.STRING)
             elif k == "admin".title():
                 self.admin = _general.GetOpt(others[i],_general.type.BOOL)
                 self.setopt.append(k)
+                self.configuration["AsAdmin"] = _feature.conffield(self.admin, type=_general.type.BOOL)
             else:
                 self.AddError("'"+i+"' not defined")
         if not self.cmd:
@@ -72,6 +75,7 @@ class stayactive(_feature.service):
                 a = _general.GetOpt(others[k],_general.type.UINT)
                 if a:
                     self.frequency = a
+                self.configuration["Frequency"] = _feature.conffield(a, type=_general.type.UINT)
             else:
                 self.AddError("'"+i+"' not defined")
 

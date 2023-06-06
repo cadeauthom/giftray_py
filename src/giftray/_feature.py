@@ -144,7 +144,7 @@ class object:
                 self.configuration["Click"] = conffield(val[i], type=_general.type.BOOL)
             elif k == "Ahk".title():
                 self.ahk = _general.GetOpt(val[i],_general.type.STRING)
-                self.configuration["ahk"] = conffield(val[i])
+                self.configuration["AHK"] = conffield(val[i])
             elif k == "Theme".title():
                 self.theme = _general.GetOpt(val[i],_general.type.STRING)
                 self.configuration["Theme"] = conffield(val[i])
