@@ -55,6 +55,12 @@ class colors:
             return self.colors[color]
         else:
             return self.colors["native"]
+    def GetName(self,color):
+        c = color.casefold()
+        if color in self.colors:
+            return c
+        else:
+            return 'native'
     # def list(self):
         # for color in self.colors:
             # self.show(color)

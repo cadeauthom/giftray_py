@@ -18,6 +18,9 @@ from . import _general
 
 class script(_feature.action):
     def _Init(self,others,others_general):
+        self.configuration_type["Command"]=_general.type.PATH
+        self.configuration_type["Arguments"]=_general.type.STRING
+        self.configuration_type["AsAdmin"]=_general.type.BOOL
         self.allopt += ["cmd","args","admin"]
         self.cmd = ""
         self.args = ""
@@ -60,6 +63,7 @@ class script(_feature.action):
 
 class stayactive(_feature.service):
     def _Init(self,others,others_general):
+        self.configuration_type["Frequency"]=_general.type.UINT
         self.allopt += ["frequency"]
         self.frequency = 60
         for i in others:
@@ -94,6 +98,7 @@ class alwaysontop(_feature.action):
         _feature.action.__del__(self)
 
     def _Init(self,others,others_general):
+        self.configuration_type.pop("Click")
         self.allopt += []
         self.top_hwnd = set()
         self.menu = False

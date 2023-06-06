@@ -636,11 +636,39 @@ class giftray(object):
         self.tray.setContextMenu(self.tray_menu)
 
         self.started = True
-        # print(self._PrintConf())
+        print(self._PrintConf())
         return
 
     def _PrintConf(self,full=True):
         #TODO: _PrintConf: level for default, all, ?
+        print(self.mainmenuconf.themes)
+        print(self.mainmenuconf.icos)
+        for i in self.avail:
+            mod,feat = i.split('.')
+            temp = _general.Str2Class(self.name+'._'+mod,feat)('template',[],self).configuration_type
+            print(i,temp)
+        for i in self.avail_modules:
+            print('----',i)
+            for k in self.avail_modules[i].configuration_type:
+                if k in self.avail_modules[i].configuration:
+                    print(k,'->',self.avail_modules[i].configuration[k].value)
+                else:
+                    print(k,'unset')
+        for i in self.submenus:
+            print('----',i)
+            for k in self.submenus[i].configuration_type:
+                if k in self.submenus[i].configuration:
+                    print(k,'->',self.submenus[i].configuration[k].value)
+                else:
+                    print(k,'unset')
+        for i in self.install:
+            print('----',i)
+            for k in self.install[i].configuration_type:
+                if k in self.install[i].configuration:
+                    print(k,'->',self.install[i].configuration[k].value)
+                else:
+                    print(k,'unset')
+        return 'End'
         config = configparser.ConfigParser()
         config[self.generalopt] = { }
         if self.conf_maintheme or full:

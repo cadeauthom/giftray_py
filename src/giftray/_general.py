@@ -21,6 +21,8 @@ class type(enum.Enum):
     UPSTRING    = 6
     LISTSTRING  = 7
     PATH        = 8
+    COLOR       = 9
+    THEME       = 10
 
 
 class mainmenuconf:
@@ -112,6 +114,12 @@ def GetOpt(val,t):
             ret = []
     elif t == type.PATH: #no subpath management, no icon path
         ret = WindowsHandler().GetRealPath(str(val))
+    elif t == type.COLOR:
+        ret = str(val).upper()
+        if re.fullmatch(r"^[0-9a-fA-F]{6}$", ret) is not None:
+            ret = '000000'
+    elif t == type.THEME:
+        ret = giftray.colors.GetName(str(t))
     return ret
 
 class WindowsHandler():

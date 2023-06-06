@@ -2,6 +2,13 @@ from . import _icon
 from . import _general
 import copy
 
+class conffield:
+    def __init__(self, value, type=_general.type.STRING):
+        self.type = type
+        self.value = _general.GetOpt(value,type)
+    def _print(self):
+        print(self.value)
+
 class general:
     def __init__(self,giftray,show):
         self.giftray= giftray
@@ -26,16 +33,19 @@ class general:
             if k == "Theme".title():
                 col = _general.GetOpt(general_conf[i],_general.type.STRING)
                 if col != self.giftray.conf_theme:
+                    self.configuration["Theme"] = conffield(col)
                     self.conf["Theme".title()] = col
                     self.subconf["Theme".title()] = col
             elif k == "Dark".title():
                 dark = _general.GetOpt(general_conf[i],_general.type.STRING)
                 if dark != self.giftray.conf_theme:
+                    self.configuration["Dark"] = conffield(dark)
                     self.conf["Dark".title()] = dark
                     self.subconf["Dark".title()] = dark
             elif k == "Light".title():
                 light = _general.GetOpt(general_conf[i],_general.type.STRING)
                 if light != self.giftray.conf_theme:
+                    self.configuration["light"] = conffield(light)
                     self.conf["Light".title()] = light
                     self.subconf["Light".title()] = light
             else:
@@ -54,6 +64,10 @@ class general:
         self.subconf= dict()
         self.set    = False
         self.used   = False
+        self.configuration = dict()
+        self.configuration_type = { "Theme": _general.type.STRING,
+                                    "Light": _general.type.COLOR,
+                                    "Dark": _general.type.COLOR}
         self._Init()
         return
 
@@ -90,6 +104,15 @@ class object:
         self.name    = type(self).__name__
         self.ico     = ""
         self.parents = []
+        self.configuration = dict()
+        self.configuration["Function"] = conffield(self.module+'.'+self.name)
+        self.configuration_type = { "Function": _general.type.STRING,
+                                    "Theme": _general.type.STRING,
+                                    "Light": _general.type.COLOR,
+                                    "Dark": _general.type.COLOR,
+                                    "Ico": _general.type.STRING,
+                                    "Click": _general.type.BOOL,
+                                    "AHK": _general.type.STRING}
 
         others_general = dict()
         if self.module in self.giftray.avail_modules:
@@ -99,10 +122,13 @@ class object:
                 k = i.title()
                 if k == "Theme".title():
                     self.theme = _general.GetOpt(general_conf[i],_general.type.STRING)
+                    self.configuration["Theme"] = conffield(self.theme)
                 elif k == "Dark".title():
                     self.dark = _general.GetOpt(val[i],_general.type.STRING)
+                    self.configuration["Dark"] = conffield(self.dark)
                 elif k == "Light".title():
                     self.light = _general.GetOpt(val[i],_general.type.STRING)
+                    self.configuration["Dark"] = conffield(self.light)
                 else:
                     others_general[i]=general_conf[i]
         others = dict()
@@ -112,16 +138,22 @@ class object:
                 pass
             elif k == "Ico".title():
                 self.ico = _general.GetOpt(val[i],_general.type.STRING)
+                self.configuration["Ico"] = conffield(val[i])
             elif k == "Click".title():
                 self.menu = _general.GetOpt(val[i],_general.type.BOOL)
+                self.configuration["Click"] = conffield(val[i], type=_general.type.BOOL)
             elif k == "Ahk".title():
                 self.ahk = _general.GetOpt(val[i],_general.type.STRING)
+                self.configuration["ahk"] = conffield(val[i])
             elif k == "Theme".title():
                 self.theme = _general.GetOpt(val[i],_general.type.STRING)
+                self.configuration["Theme"] = conffield(val[i])
             elif k == "Dark".title():
                 self.dark = _general.GetOpt(val[i],_general.type.STRING)
+                self.configuration["Dark"] = conffield(val[i])
             elif k == "Light".title():
                 self.light = _general.GetOpt(val[i],_general.type.STRING)
+                self.configuration["Light"] = conffield(val[i])
             else:
                 others[i]=val[i]
 
@@ -196,6 +228,9 @@ class menu(object):
         object.__del__(self)
 
     def _PreInit(self,others):
+        del self.configuration["Function"]
+        del self.configuration_type["Function"]
+        self.configuration_type["Contain"] = _general.type.LISTSTRING
         self.contain = []
         self.allopt += 'contain'
         ret_others = dict()
@@ -205,6 +240,7 @@ class menu(object):
                 self.contain = _general.GetOpt(others[i],_general.type.LISTSTRING)
             else:
                 ret_others[k] = others[k]
+        self.configuration["Contain"] = conffield(','.join(self.contain),_general.type.LISTSTRING)
         return ret_others
 
     def GetContain(self):
@@ -263,6 +299,7 @@ class service(object):
         object.__del__(self)
 
     def _PreInit(self,others):
+        self.configuration_type["Enabled"] = _general.type.BOOL
         self.thread = _general.KThread(target=self._Run)
         self.active = False
         self.enabled = False
@@ -275,6 +312,7 @@ class service(object):
                 self.setopt.append('enabled'.title())
             else:
                 ret_others[i] = others[i]
+        self.configuration["Enabled"] = conffield(self.enabled,_general.type.BOOL)
         return ret_others
 
     def Check(self):

@@ -9,6 +9,8 @@ from . import _general
 
 class general(_feature.general):
     def _Init(self):
+        self.configuration_type["vcxsrv"]=_general.type.PATH
+        self.configuration_type["vcxsrv_timeout"]=_general.type.UINT
         self.show = 'WSL'
         tmp = _general.WindowsHandler().GetRealPath( "wsl.exe" )
         if not tmp:
@@ -28,11 +30,13 @@ class general(_feature.general):
                     self.giftray.logger.info("'vcxsrv' set to "+tmp)
                     self.conf["vcxsrv"] = tmp
                     self.subconf["vcxsrv"] = tmp
+                    self.configuration["vcxsrv"] = _feature.conffield(tmp, type=_general.type.PATH)
             elif k == "vcxsrv_timeout".title():
                 a = _general.GetOpt(others[i],_general.type.UINT)
                 if a and a < 10:
                     self.conf["vcxsrv_timeout"] = a
                     self.subconf["vcxsrv_timeout"] = a
+                    self.configuration["vcxsrv_timeout"] = _feature.conffield(a, type=_general.type.UINT)
                 else:
                     self.AddError("'vcxsrv_timeout' not in [0-10]")
             else:
@@ -99,6 +103,10 @@ class cmd(_feature.action):
         return pathL,driveW,driveL
 
     def _Init(self,others,others_general):
+        self.configuration_type["Command"]=_general.type.STRING
+        self.configuration_type["Uniq"]=_general.type.BOOL
+        self.configuration_type["GUI"]=_general.type.BOOL
+        self.configuration_type["Output"]=_general.type.STRING
         self.allopt         += ["cmd","uniq","gui","out"]
         self.cmd            = ""
         self.uniq           = False
@@ -113,15 +121,19 @@ class cmd(_feature.action):
             if k == "cmd".title():
                 self.cmd = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
+                self.configuration["Command"] = _feature.conffield(self.cmd, type=_general.type.STRING)
             elif k == "gui".title():
                 self.gui = _general.GetOpt(others[i],_general.type.BOOL)
                 self.setopt.append(k)
+                self.configuration["GUI"] = _feature.conffield(self.gui, type=_general.type.BOOL)
             elif k == "uniq".title():
                 self.uniq = _general.GetOpt(others[i],_general.type.BOOL)
                 self.setopt.append(k)
+                self.configuration["Uniq"] = _feature.conffield(self.uniq, type=_general.type.BOOL)
             elif k == "out".title():
                 self.out = _general.GetOpt(others[i],_general.type.STRING)
                 self.setopt.append(k)
+                self.configuration["Output"] = _feature.conffield(self.out, type=_general.type.STRING)
             elif k == "vcxsrv".title():
                 tmp = _general.GetOpt(others[i],_general.type.PATH)
                 if not tmp:
@@ -131,12 +143,14 @@ class cmd(_feature.action):
                     self.vcxsrv = tmp
                     self.setopt.append(k.casefold())
                     self.allopt.append(k.casefold())
+                    self.configuration["vcxsrv"] = _feature.conffield(tmp, type=_general.type.PATH)
             elif k == "vcxsrv_timeout".title():
                 a = _general.GetOpt(others[i],_general.type.UINT)
                 if a and a < 10:
                     confvcxsrv_timeout = a
                     self.setopt.append(k.casefold())
                     self.allopt.append(k.casefold())
+                    self.configuration["vcxsrv_timeout"] = _feature.conffield(confvcxsrv_timeout, type=_general.type.UINT)
                 else:
                     self.AddError("'vcxsrv_timeout' not in [0-10]")
             else:
