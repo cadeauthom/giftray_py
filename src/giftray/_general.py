@@ -26,26 +26,37 @@ class type(enum.Enum):
 
 class trayconf:
     def __init__(self):
-        self.full = dict()
-        self.full['themes'] = []
-        self.full['templates'] = dict()
-        self.full['generals'] = dict()
-        self.full['folders'] = dict()
-        self.full['actions'] = dict()
-    def updateThemes(self,colors):
-        self.full['themes'] = []
-        if colors:
-            self.full['themes'] = colors.listThemes()
+        self.json = dict()
+        self.json['conf'] = dict()
+        self.json['conf']['generals'] = dict()
+        self.json['conf']['folders'] = dict()
+        self.json['conf']['actions'] = dict()
+        self.json['conf']['generals']['themes'] = {
+                        'tray'   : {'theme': 'monowhite',
+                                    'dark': '',
+                                    'light': ''},
+                        'default': {'theme': 'native',
+                                    'dark': '',
+                                    'light': ''},
+                        'other'  : {'theme': 'native',
+                                    'dark': '',
+                                    'light': ''}}
+        self.json['conf']['generals']['LogLevel'] = "WARNING"
+        self.json['conf']['generals']['Silent'] = False
     def addConf(self, type, name, args):
         if not type or not name or not args:
             return
-        if not type in self.full:
+        if not type in self.json['conf']:
             return
-        if name in self.full[type]:
+        if name in self.json['conf'][type]:
             print("Update")
-        self.full[type][name] = args
+        self.json['conf'][type][name] = args
     def print(self):
-        print(self.full)
+        self.write('plop')
+    def write(self,path):
+        import json
+        json_object = json.dumps(self.json['conf'], indent = 4)
+        print(json_object)
 
 class mainmenuconf:
     def __init__(self,colors,images):

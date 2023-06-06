@@ -164,7 +164,8 @@ class object:
             self.giftray.colors.copy(self.theme, themename)
             self.theme = themename
             self.giftray.colors.set(self.theme,self.dark,self.light)
-        self.iconid = self.giftray.images.create(self.ico,self.show[0],self.theme)
+        if 'colors' in dir(self.giftray):
+            self.iconid = self.giftray.images.create(self.ico,self.show[0],self.theme)
 
         if self.ahk:
             self.hhk, self.ahk, err = giftray.ahk_translator.ahk2hhk(self.ahk)

@@ -111,7 +111,7 @@ class giftray(object):
         self.tray.setVisible    ( True )
         self.tray.show          ()
         self.tray.activated.connect( self._ConnectorTray )
-        self.avail              = []
+        self.template           = dict()
         self.avail_modules      = dict()
         self.images             = _icon.svgIcons(self)
         for m in self.modules:
@@ -136,7 +136,7 @@ class giftray(object):
                 if not "_Run" in (dir(obj)):
                     self.logger.error("Feature '" +full+ "' does not have '_custom_run' defined")
                     continue
-                self.avail.append(full)
+                self.template[full] = _general.Str2Class(mod,fct)('template',[],self).configuration_type
             if not m in self.avail_modules:
                 self.avail_modules[m] = _feature.general(self,m)
         self._Restart            ()
@@ -454,7 +454,7 @@ class giftray(object):
                 self.error[section] = "Module '"+module+"' not loaded"
                 self.logger.error("Module '"+module+"' not loaded for '"+section+"'")
                 continue
-            if not fct in self.avail:
+            if not fct in self.template:
                 self.error[section] = "'"+feat+"' not defined in module '" +module + "'"
                 self.logger.error("'"+feat+"' not defined in module '" +module+"' from '"+section+"')")
                 continue
@@ -642,10 +642,6 @@ class giftray(object):
     def _PrintConf(self,full=True):
         #TODO: _PrintConf: level for default, all, ?
         config = _general.trayconf()
-        config.updateThemes(self.colors)
-        for i in self.avail:
-            mod,feat = i.split('.')
-            config.addConf('templates',i, _general.Str2Class(self.name+'._'+mod,feat)('template',[],self).configuration_type)
         for i in self.avail_modules:
             conf = dict()
             for k in self.avail_modules[i].configuration_type:
@@ -671,13 +667,12 @@ class giftray(object):
                     conf[k] = None
             config.addConf('actions',i,conf)
         config.print()
+        return
         print('----------------')
         print(self.mainmenuconf.themes)
         print(self.mainmenuconf.icos)
-        for i in self.avail:
-            mod,feat = i.split('.')
-            temp = _general.Str2Class(self.name+'._'+mod,feat)('template',[],self).configuration_type
-            print(i,temp)
+        for i in self.template:
+            print(i,self.template[i])
         for i in self.avail_modules:
             print('----',i)
             for k in self.avail_modules[i].configuration_type:
