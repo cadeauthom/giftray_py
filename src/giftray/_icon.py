@@ -61,6 +61,11 @@ class colors:
             return c
         else:
             return 'native'
+    def listThemes(self):
+        a = []
+        for c in self.colors:
+            a.append(c)
+        return a
     # def list(self):
         # for color in self.colors:
             # self.show(color)

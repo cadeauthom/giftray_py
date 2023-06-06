@@ -24,6 +24,28 @@ class type(enum.Enum):
     COLOR       = 9
     THEME       = 10
 
+class trayconf:
+    def __init__(self):
+        self.full = dict()
+        self.full['themes'] = []
+        self.full['templates'] = dict()
+        self.full['generals'] = dict()
+        self.full['folders'] = dict()
+        self.full['actions'] = dict()
+    def updateThemes(self,colors):
+        self.full['themes'] = []
+        if colors:
+            self.full['themes'] = colors.listThemes()
+    def addConf(self, type, name, args):
+        if not type or not name or not args:
+            return
+        if not type in self.full:
+            return
+        if name in self.full[type]:
+            print("Update")
+        self.full[type][name] = args
+    def print(self):
+        print(self.full)
 
 class mainmenuconf:
     def __init__(self,colors,images):

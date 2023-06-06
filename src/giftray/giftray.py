@@ -641,6 +641,37 @@ class giftray(object):
 
     def _PrintConf(self,full=True):
         #TODO: _PrintConf: level for default, all, ?
+        config = _general.trayconf()
+        config.updateThemes(self.colors)
+        for i in self.avail:
+            mod,feat = i.split('.')
+            config.addConf('templates',i, _general.Str2Class(self.name+'._'+mod,feat)('template',[],self).configuration_type)
+        for i in self.avail_modules:
+            conf = dict()
+            for k in self.avail_modules[i].configuration_type:
+                if k in self.avail_modules[i].configuration:
+                    conf[k] = self.avail_modules[i].configuration[k].value
+                else:
+                    conf[k] = None
+            config.addConf('generals',i,conf)
+        for i in self.submenus:
+            conf = dict()
+            for k in self.submenus[i].configuration_type:
+                if k in self.submenus[i].configuration:
+                    conf[k] = self.submenus[i].configuration[k].value
+                else:
+                    conf[k] = None
+            config.addConf('folders',i,conf)
+        for i in self.install:
+            conf = dict()
+            for k in self.install[i].configuration_type:
+                if k in self.install[i].configuration:
+                    conf[k] = self.install[i].configuration[k].value
+                else:
+                    conf[k] = None
+            config.addConf('actions',i,conf)
+        config.print()
+        print('----------------')
         print(self.mainmenuconf.themes)
         print(self.mainmenuconf.icos)
         for i in self.avail:
