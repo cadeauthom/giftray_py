@@ -107,6 +107,8 @@ class cmd(_feature.action):
         self.configuration_type["Uniq"]=_general.type.BOOL
         self.configuration_type["GUI"]=_general.type.BOOL
         self.configuration_type["Output"]=_general.type.STRING
+        # self.configuration_type["vcxsrv"]=_general.type.PATH
+        # self.configuration_type["vcxsrv_timeout"]=_general.type.UINT
         self.allopt         += ["cmd","uniq","gui","out"]
         self.cmd            = ""
         self.uniq           = False

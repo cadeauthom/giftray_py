@@ -114,6 +114,7 @@ class giftray(object):
         self.template           = dict()
         self.avail_modules      = dict()
         self.images             = _icon.svgIcons(self)
+        self.ahk_translator     = _general.ahk()
         for m in self.modules:
             mod=self.name+'._'+m
             if not mod in sys.modules:
@@ -146,7 +147,6 @@ class giftray(object):
         timer = PyQt6.QtCore.QTimer()
         timer.start(500)  # You may change this if you wish.
         timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
-        print('plop')
         self.app.exec()
         if th.is_alive():
             self.logger.debug('Kill flusher')
@@ -222,10 +222,6 @@ class giftray(object):
                 self.ahklock.release()
         else:
             self.ahklock = _general.Lock()
-        if hasattr(self, "ahk_translator"):
-            pass
-        else:
-            self.ahk_translator = _general.ahk()
         if hasattr(self, "error"):
             self.error.clear()
         else:
@@ -278,7 +274,170 @@ class giftray(object):
         self.light              = ''
         self.mainmenuconf       = _general.mainmenuconf(self.colors, self.images)
 
+    def _conf2JSON(self):
+        config = configparser.ConfigParser(strict=False)
+        exist_conf = False
+        thispath = os.getcwd()
+        for filename in [   self.name+".conf",
+                            self.showname+".conf",
+                            self.name+".conf.example",
+                            self.showname+".conf.example"]:
+            if exist_conf:
+                break
+            for maindir in [self.userdir,
+                            os.getcwd()]:
+                if exist_conf:
+                    break
+                for endpath in [[],
+                                ["conf"],
+                                ["..","conf"],
+                                ["..","..","conf"]]:
+                    path = maindir
+                    for k in endpath:
+                        path = posixpath.join( path, k)
+                    path = os.path.abspath(posixpath.join( path, filename))
+                    if os.path.exists(path) and os.path.isfile(path) :
+                        self.conf = path
+                        exist_conf = True
+                        break
+        if not exist_conf:
+            self.main_error.append("Fail to find configuration")
+            self.logger.error("Fail to find configuration")
+        else:
+            self.logger.info('Configuration found : '+self.conf)
+            confs = [self.conf]
+            #Find other conf files
+            confs += natsort.os_sorted(glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf')))
+            if self.python:
+                confs += natsort.os_sorted(glob.glob(os.path.join(os.path.dirname(self.conf),'*.conf.example')))
+            try:
+                config.read(confs, encoding="utf8")
+            except Exception as e:
+                print_error = "Fail to read configuration (" + os.path.dirname(self.conf) + "): " + str(e)
+                self.main_error.append(print_error)
+                self.logger.error(print_error)
+            # qss = os.path.abspath(posixpath.join( os.path.dirname(self.conf), self.name+".qss"))
+            # if not(os.path.exists(qss) and os.path.isfile(qss)):
+                # qss = os.path.abspath(posixpath.join( os.path.dirname(self.conf), self.name+".qss.example"))
+            # if os.path.exists(qss) and os.path.isfile(qss):
+                # f = open(qss,"r")
+                # lines = '\n'.join(f.readlines())
+                # f.close()
+                # self.tray_menu.setStyleSheet(lines)
+
+        trayconf = _general.trayconf()
+        for section in config.sections():
+            if section.title().strip() == self.generalopt.title():
+                for k in config[section]:
+                    i = k.title()
+                    if i == 'MainTheme'.title():
+                        trayconf.updateTheme('Tray', 'Theme', _general.GetOpt(str(config[section][k]),_general.type.STRING))
+                    elif i == 'Theme'.title():
+                        trayconf.updateTheme('Custom', 'Theme', _general.GetOpt(str(config[section][k]),_general.type.STRING))
+                    elif i == 'LogLevel'.title():
+                        LevelNamesMapping=logging.getLevelNamesMapping()
+                        levelname=_general.GetOpt(str(config[section][k]),_general.type.UPSTRING)
+                        if levelname in LevelNamesMapping:
+                            trayconf.setOpt('LogLevel', levelname)
+                    elif i == 'Silent'.title():
+                        trayconf.setOpt('Silent', _general.GetOpt(str(config[section][k]),_general.type.BOOL))
+                    elif i == 'MainDark'.title():
+                        trayconf.updateTheme('Tray', 'Dark', _general.GetOpt(str(config[section][k]),_general.type.STRING))
+                    elif i == 'MainLight'.title():
+                        trayconf.updateTheme('Tray', 'Light', _general.GetOpt(str(config[section][k]),_general.type.STRING))
+                    elif i == 'Dark'.title():
+                        trayconf.updateTheme('Custom', 'Dark', _general.GetOpt(str(config[section][k]),_general.type.STRING))
+                    elif i == 'Light'.title():
+                        trayconf.updateTheme('Custom', 'Light', _general.GetOpt(str(config[section][k]),_general.type.STRING))
+                continue
+            if section.title().strip() == self.nativeopt.title():
+                for k in config[section]:
+                    i = k.title()
+                    if i == 'Dark'.title():
+                        trayconf.updateTheme('Default', 'Dark', _general.GetOpt(str(config[section][k]),_general.type.STRING))
+                    elif i == 'Light'.title():
+                        trayconf.updateTheme('Default', 'Light', _general.GetOpt(str(config[section][k]),_general.type.STRING))
+                    elif i == 'Theme'.title():
+                        trayconf.updateTheme('Default', 'Theme', _general.GetOpt(str(config[section][k]),_general.type.STRING))
+                    elif 'GENERIC_'+i in self.images.getDefault():
+                        trayconf.setIco(i, _general.GetOpt(str(config[section][k]),_general.type.STRING))
+
+        for i in self.avail_modules:
+            conf = dict()
+            for k in self.avail_modules[i].configuration_type:
+                if k in self.avail_modules[i].configuration:
+                    conf[k] = self.avail_modules[i].configuration[k].value
+                else:
+                    conf[k] = None
+            for section in config.sections():
+                section_array = section.casefold().split()
+                if self.generalsectionword.casefold() in section_array and len(section_array) == 2:
+                    section_array.remove(self.generalsectionword.casefold())
+                    section_found = section_array[0]
+                    if section_found == i.casefold() :
+                        for k in (config[section]):
+                            if k in self.avail_modules[i].configuration_type:
+                                conf[k] = _general.GetOpt(config[section][k],self.avail_modules[i].configuration_type[k])
+                            # else:
+                                # print('error',k,config[section][k])
+                        continue
+            trayconf.addConf('Generals',i,conf)
+                #Split in general/menu/action
+        m_conf=[]
+        a_conf=[]
+        for section in config.sections():
+            if section.title().strip() in [self.generalopt.title(), self.nativeopt.title()]:
+                continue
+            for i in config[section]:
+                if "\n" in config[section][i]:
+                    continue
+            if "function" in config[section]:
+                a_conf.append(section)
+                continue
+            if "contain" in config[section]:
+                m_conf.append(section)
+                continue
+        for section in m_conf:
+            orig_section=section
+            section=section.strip()
+            if trayconf.isInTray(section):
+                continue
+            new_class = _feature.menu(section,config[orig_section],self)
+            conf = dict()
+            for k in new_class.configuration_type:
+                if k in new_class.configuration:
+                    conf[k] = new_class.configuration[k].value
+                else:
+                    conf[k] = None
+            trayconf.addConf('Folders',section,conf)
+        for section in a_conf:
+            orig_section=section
+            section=section.strip()
+            fct = config[section]["function"].casefold()
+            if fct.count('.') != 1:
+                continue
+            module, feat = fct.split(".")
+            mod = self.name+'._'+module
+            if not mod in sys.modules.keys():
+                continue
+            if not fct in self.template:
+                continue
+            if trayconf.isInTray(section):
+                continue
+            new_class = _general.Str2Class(mod,feat)(section,config[orig_section],self)
+            conf = dict()
+            print (section, new_class.configuration_type)
+            for k in new_class.configuration_type:
+                if k in new_class.configuration:
+                    conf[k] = new_class.configuration[k].value
+                else:
+                    conf[k] = trayconf.getGeneral(module,k)
+            trayconf.addConf('Actions',section,conf)
+        config.clear()
+        trayconf.print()
+
     def _Restart(self):
+        self._conf2JSON()
         self._ResetVar()
         #Find and read config file
         config = configparser.ConfigParser(strict=False)
@@ -391,7 +550,7 @@ class giftray(object):
         a_conf=[]
         for section in config.sections():
             if section.title().strip() in [self.generalopt.title(), self.nativeopt.title()]:
-                continue      
+                continue
             for i in config[section]:
                 if "\n" in config[section][i]:
                     self.error[section.strip()] = "Indentation issue in '" + section +"'"
@@ -636,7 +795,7 @@ class giftray(object):
         self.tray.setContextMenu(self.tray_menu)
 
         self.started = True
-        print(self._PrintConf())
+        # print(self._PrintConf())
         return
 
     def _PrintConf(self,full=True):
@@ -649,7 +808,7 @@ class giftray(object):
                     conf[k] = self.avail_modules[i].configuration[k].value
                 else:
                     conf[k] = None
-            config.addConf('generals',i,conf)
+            config.addConf('Generals',i,conf)
         for i in self.submenus:
             conf = dict()
             for k in self.submenus[i].configuration_type:
@@ -657,7 +816,7 @@ class giftray(object):
                     conf[k] = self.submenus[i].configuration[k].value
                 else:
                     conf[k] = None
-            config.addConf('folders',i,conf)
+            config.addConf('Folders',i,conf)
         for i in self.install:
             conf = dict()
             for k in self.install[i].configuration_type:
@@ -665,7 +824,7 @@ class giftray(object):
                     conf[k] = self.install[i].configuration[k].value
                 else:
                     conf[k] = None
-            config.addConf('actions',i,conf)
+            config.addConf('Actions',i,conf)
         config.print()
         return
         print('----------------')
