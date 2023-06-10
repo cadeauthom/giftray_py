@@ -16,8 +16,6 @@ try:
 except ImportError:
     import winxpgui as win32gui
 # import win32gui_struct
-import logging
-import importlib
 import ctypes, ctypes.wintypes
 import PyQt6.QtWidgets, PyQt6.QtGui
 import notifypy
@@ -25,6 +23,7 @@ import functools
 import natsort
 import psutil
 
+from . import _var
 from . import _general
 from . import _icon
 from . import _feature
@@ -38,81 +37,26 @@ class giftray(object):
             self.__del__()
         # Register our signal handler with `SIGINT`(CTRL + C)
         signal.signal(signal.SIGINT, signal_handler)
-        self.showname           = 'GifTray'
-        self.name               = self.showname.casefold()
-        self.lockfile           = None
-        self.python = ( "\\python" in sys.executable )
-        if self.python:
-            self.tempdir = './'
-        else:
-            for k in ['TMP','TEMP','USERPROFILE']:
-                self.tempdir = os.getenv(k)
-                if self.tempdir:
-                    break
-            if not self.tempdir:
-                sys.exit()
-        if not self._checkLockFile():
-            print('plop')
-            return
-        self.generalsectionword = 'General'
-        self.generalopt         = self.showname+' '+self.generalsectionword.title()
-        self.nativeopt          = self.showname+' Native'
-        self.modules            = ['wsl'.casefold(),'windows'.casefold()]
-        #self.modules           = ['template'] # to debug with empty application
-        if self.python:
-            # self.userdir        = posixpath.join(os.path.dirname(sys.executable),"src/conf")
-            self.userdir        = ('src/conf')
-        else:
-            for k in ['APPDATA','LOCALAPPDATA','USERPROFILE']:
-                self.userdir = os.getenv(k)
-                if self.userdir:
-                    break
-            if not self.userdir:
-                sys.exit()
-            self.userdir            = posixpath.join(self.userdir, self.showname)
-            # executable not python; test if user dir exists
-            #src = posixpath.join(os.getcwd(),"conf") # debug in python with revert previous 'if'
-            src = posixpath.join(os.path.dirname(sys.executable),"conf")
-            update = os.path.exists(self.userdir)
-            if not update:
-                # to update beta version:
-                if os.getenv('USERPROFILE'):
-                    beta_dir = posixpath.join(os.getenv('USERPROFILE'), self.showname)
-                    if os.path.exists(beta_dir):
-                        shutil.move(beta_dir, self.userdir)
-                        update = True
-            if not update:
-                #os.mkdir(self.userdir)
-                shutil.copytree(src,self.userdir)
-                for file in glob.glob(os.path.join(self.userdir,'*.example')):
-                    shutil.copy(file, file.replace('.example',''))
-            else:
-                for file in glob.glob(os.path.join(self.userdir,'*.example')):
-                    os.remove(file)
-                for file in glob.glob(os.path.join(src,'*.example')):
-                    shutil.copy(file, self.userdir)
-        filelog             = posixpath.join(self.tempdir,    self.name+".log")
-        logging.basicConfig     ( filename=filelog,
-                                  level=0,
-                                  encoding='utf-8',
-                                  format='%(asctime)s - %(levelname)s - %(message)s',
-                                  datefmt='%d-%b-%y %H:%M:%S')
-        self.logger             = logging.getLogger(__name__)
+        self.mainvar = _var.mainvar()
         # Define app
         self.app = PyQt6.QtWidgets.QApplication([])
         self.app.setStyle('Fusion')
         self.app.setQuitOnLastWindowClosed ( False )
-        #self.win_handler        = PyQt6.QtWidgets.QWidget()
         # Define tray
         self.tray = PyQt6.QtWidgets.QSystemTrayIcon(
                         PyQt6.QtWidgets.QWidget().style().standardIcon( #or self.win_handler
                             PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
-        self.tray.setToolTip    ( str(self.showname) )
+        self.tray.setToolTip    (self.mainvar.showname)
         self.tray.setVisible    ( True )
         self.tray.show          ()
         self.tray.activated.connect( self._ConnectorTray )
-        self.template           = dict()
-        self.avail_modules      = dict()
+
+        
+        self.trayconf = _var.trayconf(self.mainvar)
+        self.trayconf.load()
+        self.trayconf.print()
+        sys.exit()
+        '''
         self.images             = _icon.svgIcons(self)
         self.ahk_translator     = _general.ahk()
         for m in self.modules:
@@ -151,52 +95,14 @@ class giftray(object):
         if th.is_alive():
             self.logger.debug('Kill flusher')
             th.kill()
+        '''
         return
 
     def __del__(self):
-        if self.lockfile:
-            if os.path.isfile(self.lockfile):
-                os.remove(self.lockfile)
-        else:
-            return
+        self.mainvar.removeLockFile()
         self._ResetVar()
         self.app.quit()
         self.logger.info("Exiting")
-
-    def _checkLockFile(self):
-        lockfile = posixpath.join(self.tempdir,self.name+'.lock')
-        already_running = False
-        my_pid      = os.getpid()
-        my_process  = psutil.Process(my_pid)
-        my_name     = my_process.name()
-        my_exe 	    = my_process.exe()
-        my_username = my_process.username()
-        current_process = None
-        if os.path.isfile(lockfile):
-            current_pid = 0
-            with open(lockfile, 'r') as file:
-                current_pid = file.read()
-            if current_pid:
-                try:
-                    current_process = psutil.Process(int(current_pid))
-                except:
-                    current_process = None
-        if current_process:
-            current_name     = current_process.name()
-            current_exe 	 = current_process.exe()
-            current_username = current_process.username()
-
-            if (my_name     == current_name     and
-                my_exe      == current_exe and
-                my_username == current_username):
-                return False
-        self.lockfile = lockfile
-        self._writeLockFile()
-        return True
-
-    def _writeLockFile(self):
-        with open(self.lockfile, 'w') as file:
-            file.write(str(os.getpid()))
 
     def _ResetVar(self):
         if hasattr(self, "avail_modules"):
@@ -274,7 +180,9 @@ class giftray(object):
         self.light              = ''
         self.mainmenuconf       = _general.mainmenuconf(self.colors, self.images)
 
+    '''
     def _conf2JSON(self):
+        return
         config = configparser.ConfigParser(strict=False)
         exist_conf = False
         thispath = os.getcwd()
@@ -325,7 +233,7 @@ class giftray(object):
                 # f.close()
                 # self.tray_menu.setStyleSheet(lines)
 
-        trayconf = _general.trayconf()
+        trayconf = _var.trayconf()
         for section in config.sections():
             if section.title().strip() == self.generalopt.title():
                 for k in config[section]:
@@ -426,7 +334,6 @@ class giftray(object):
                 continue
             new_class = _general.Str2Class(mod,feat)(section,config[orig_section],self)
             conf = dict()
-            print (section, new_class.configuration_type)
             for k in new_class.configuration_type:
                 if k in new_class.configuration:
                     conf[k] = new_class.configuration[k].value
@@ -435,10 +342,42 @@ class giftray(object):
             trayconf.addConf('Actions',section,conf)
         config.clear()
         trayconf.print()
-
+    '''
     def _Restart(self):
+        '''
         self._conf2JSON()
         self._ResetVar()
+        exist_conf = False
+        thispath = os.getcwd()
+        for filename in [   self.name+".json",
+                            self.showname+".json",
+                            self.name+".json.bak",
+                            self.showname+".json.bak"]:
+            if exist_conf:
+                break
+            for maindir in [self.userdir,
+                            os.getcwd()]:
+                if exist_conf:
+                    break
+                for endpath in [[],
+                                ["conf"],
+                                ["..","conf"],
+                                ["..","..","conf"]]:
+                    path = maindir
+                    for k in endpath:
+                        path = posixpath.join( path, k)
+                    path = os.path.abspath(posixpath.join( path, filename))
+                    if os.path.exists(path) and os.path.isfile(path) :
+                        self.conf = path
+                        exist_conf = True
+                        break
+        if not exist_conf:
+            self.main_error.append("Fail to find configuration")
+            self.logger.error("Fail to find configuration")
+        else:
+            trayconf = _general.trayconf()
+            trayconf.load()
+            trayconf.print()
         #Find and read config file
         config = configparser.ConfigParser(strict=False)
         exist_conf = False
@@ -796,6 +735,7 @@ class giftray(object):
 
         self.started = True
         # print(self._PrintConf())
+        '''
         return
 
     def _PrintConf(self,full=True):
@@ -1000,8 +940,7 @@ class giftray(object):
     def _Thread4Flush(self):
         logger = logging.getLogger()
         while True:
-            if not os.path.isfile(self.lockfile):
-                self._writeLockFile()
+            self.mainvar.writeLockFile()
             logger.handlers[0].flush()
             for i in range(10): time.sleep(1)
         return

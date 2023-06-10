@@ -1,0 +1,254 @@
+{
+  "Generals": {
+    "LogLevel": "DEBUG",
+    "Silent": false,
+    "Icons": {
+      "Tray": null,
+      "Errors": null,
+      "Exit": null,
+      "Reload": null,
+      "No-Click": null,
+      "Menu": null,
+      "About": null,
+      "Generator": null,
+      "Help": null,
+      "Configuration": null
+    },
+    "Themes": {
+      "Tray": {
+        "Theme": "MonoWhite",
+        "Dark": "",
+        "Light": ""
+      },
+      "Default": {
+        "Theme": "Native",
+        "Dark": "",
+        "Light": ""
+      },
+      "Custom": {
+        "Theme": "Native",
+        "Dark": "",
+        "Light": ""
+      }
+    },
+    "wsl": {
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "vcxsrv": "C:\\Program Files\\VcXsrv\\vcxsrv.exe",
+      "vcxsrv_timeout": null
+    },
+    "windows": {
+      "Theme": null,
+      "Light": null,
+      "Dark": null
+    }
+  },
+  "Folders": {
+    "Directories": {
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "folder-favorite",
+      "Click": true,
+      "AHK": null,
+      "Contain": [
+        "Program Files",
+        "Users",
+        "Program Files (x86)",
+        "Windows"
+      ]
+    },
+    "Stop Communication": {
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "curve-arrow-right-3",
+      "Click": true,
+      "AHK": "Ctrl + Win + Escape",
+      "Contain": [
+        "Kill Skype",
+        "Kill Discord"
+      ]
+    },
+    "Reduce Network": {
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "take-off",
+      "Click": true,
+      "AHK": null,
+      "Contain": [
+        "Kill DropBox",
+        "Kill TeamViewer"
+      ]
+    }
+  },
+  "Actions": {
+    "AlwaysActive": {
+      "Function": "windows.stayactive",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "cursor-2",
+      "Click": true,
+      "AHK": null,
+      "Enabled": true,
+      "Frequency": null
+    },
+    "AlwaysOnTop": {
+      "Function": "windows.alwaysontop",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "push-pin",
+      "AHK": "Win + *"
+    },
+    "Program Files": {
+      "Function": "windows.script",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "folder-alt",
+      "Click": true,
+      "AHK": null,
+      "Command": "C:\\Program Files\\",
+      "Arguments": null,
+      "AsAdmin": null
+    },
+    "Program Files (x86)": {
+      "Function": "windows.script",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "folder-alt",
+      "Click": false,
+      "AHK": null,
+      "Command": "C:\\Program Files (x86)\\",
+      "Arguments": null,
+      "AsAdmin": null
+    },
+    "Users": {
+      "Function": "windows.script",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "folder-alt",
+      "Click": true,
+      "AHK": "Ctrl + Win + Maj + F1",
+      "Command": "C:\\Users\\",
+      "Arguments": null,
+      "AsAdmin": null
+    },
+    "Windows": {
+      "Function": "windows.script",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "folder-alt",
+      "Click": false,
+      "AHK": "Ctrl + Win + Maj + F2",
+      "Command": "C:\\Windows\\",
+      "Arguments": null,
+      "AsAdmin": null
+    },
+    "Proxy": {
+      "Function": "wsl.cmd",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "cloudy",
+      "Click": true,
+      "AHK": "Ctrl + Win + Maj + P",
+      "Command": "ssh -C2qTnNf annuminas -D 8080",
+      "Uniq": true,
+      "GUI": null,
+      "Output": null
+    },
+    "Terminator": {
+      "Function": "wsl.cmd",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "terminal",
+      "Click": true,
+      "AHK": "Ctrl + Win + Maj + T",
+      "Command": "terminator --working-directory $folder",
+      "Uniq": true,
+      "GUI": true,
+      "Output": null
+    },
+    "Kill Skype": {
+      "Function": "windows.script",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "skype",
+      "Click": false,
+      "AHK": null,
+      "Command": "taskkill.exe",
+      "Arguments": "/f /T /im skype.exe",
+      "AsAdmin": true
+    },
+    "Kill Discord": {
+      "Function": "windows.script",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "discord",
+      "Click": false,
+      "AHK": null,
+      "Command": "taskkill.exe",
+      "Arguments": "/f /T /im Discord.exe",
+      "AsAdmin": true
+    },
+    "Kill DropBox": {
+      "Function": "windows.script",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "dropbox",
+      "Click": false,
+      "AHK": null,
+      "Command": "taskkill.exe",
+      "Arguments": "/f /T /im dropbox.exe",
+      "AsAdmin": true
+    },
+    "Kill TeamViewer": {
+      "Function": "windows.script",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "teamviewer",
+      "Click": false,
+      "AHK": null,
+      "Command": "net.exe",
+      "Arguments": "stop TeamViewer /y",
+      "AsAdmin": true
+    },
+    "Hibernate": {
+      "Function": "windows.script",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "sign-out-alt-2",
+      "Click": true,
+      "AHK": null,
+      "Command": "shutdown.exe",
+      "Arguments": "/h",
+      "AsAdmin": true
+    },
+    "Add Hibernate": {
+      "Function": "windows.script",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "sign-out-4",
+      "Click": true,
+      "AHK": null,
+      "Command": "powercfg.exe",
+      "Arguments": "/hibernate on",
+      "AsAdmin": true
+    }
+  }
+}
