@@ -21,4 +21,5 @@ src/__pycache__/
 *.exe
 *.wav
 
+*.bak
 test*
