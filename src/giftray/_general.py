@@ -125,7 +125,7 @@ def GetOpt(val,t):
         ret = WindowsHandler().GetRealPath(str(val))
     elif t == type.COLOR:
         ret = str(val).upper()
-        if re.fullmatch(r"^[0-9a-fA-F]{6}$", ret) is not None:
+        if re.fullmatch(r"^[0-9a-fA-F]{6}$", ret) is None:
             ret = '000000'
     # elif t == type.THEME:
         # ret = giftray.colors.GetName(str(t))

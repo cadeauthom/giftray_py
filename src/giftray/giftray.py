@@ -22,6 +22,7 @@ import notifypy
 import functools
 import natsort
 import psutil
+import logging
 
 from . import _var
 from . import _general
@@ -51,11 +52,6 @@ class giftray(object):
         self.tray.show          ()
         self.tray.activated.connect( self._ConnectorTray )
 
-        
-        self.trayconf = _var.trayconf(self.mainvar)
-        self.trayconf.load()
-        self.trayconf.print()
-        sys.exit()
         '''
         self.images             = _icon.svgIcons(self)
         self.ahk_translator     = _general.ahk()
@@ -84,8 +80,9 @@ class giftray(object):
                 self.template[full] = _general.Str2Class(mod,fct)('template',[],self).configuration_type
             if not m in self.avail_modules:
                 self.avail_modules[m] = _feature.general(self,m)
-        self._Restart            ()
-        self.logger.info        ("Entering wait state")
+        '''
+        self._Restart()
+        self.mainvar.logger.info("Entering wait state")
         th = _general.KThread(target=self._Thread4Flush)
         th.start()
         timer = PyQt6.QtCore.QTimer()
@@ -93,18 +90,18 @@ class giftray(object):
         timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
         self.app.exec()
         if th.is_alive():
-            self.logger.debug('Kill flusher')
+            self.mainvar.logger.debug('Kill flusher')
             th.kill()
-        '''
         return
 
     def __del__(self):
         self.mainvar.removeLockFile()
         self._ResetVar()
         self.app.quit()
-        self.logger.info("Exiting")
+        self.mainvar.logger.info("Exiting")
 
     def _ResetVar(self):
+        return
         if hasattr(self, "avail_modules"):
             for i in self.avail_modules:
                 self.avail_modules[i].Clean()
@@ -344,6 +341,10 @@ class giftray(object):
         trayconf.print()
     '''
     def _Restart(self):
+        self.trayconf = _var.trayconf(self.mainvar)
+        self.trayconf.load()
+        #self.trayconf.print()
+
         '''
         self._conf2JSON()
         self._ResetVar()
@@ -479,11 +480,13 @@ class giftray(object):
                         self.mainmenuconf.icos['GENERIC_'+i] = _general.GetOpt(str(config[section][k]),_general.type.STRING)
 
         self.mainmenuconf.build()
-
+        '''
+        '''
         #Set ico to Tray
         self.tray.setIcon(self.mainmenuconf.getIcon('Tray'))
         self.app.setWindowIcon(self.mainmenuconf.getIcon('Tray'))
-
+        '''
+        '''
         #Split in general/menu/action
         m_conf=[]
         a_conf=[]
@@ -881,7 +884,7 @@ class giftray(object):
             action=self.install[args]
             start_time = datetime.datetime.now()
             show = action.show+start_time.strftime(" [%H%M%S]")
-            self.logger.debug('Run '+show)
+            self.mainvar.logger.debug('Run '+show)
             th = _general.KThread(target=action.Run)
             th.start()
             th.join(10)
@@ -890,23 +893,23 @@ class giftray(object):
                 _general.PopUp(args, out)
             duration = datetime.datetime.now() - start_time
             if th.is_alive():
-                self.logger.debug('Kill '+show +' after '+str(duration.seconds)+' sec')
+                self.mainvar.logger.debug('Kill '+show +' after '+str(duration.seconds)+' sec')
                 th.kill()
             else:
-                self.logger.debug(show+ ' ran in '+str(duration.seconds)+' sec')
+                self.mainvar.logger.debug(show+ ' ran in '+str(duration.seconds)+' sec')
             #few seconds before releasing lock
             #TODO: releasing lock time in configuration
             if not silent:
                 time.sleep(3)
-            self.logger.debug('Release lock')
+            self.mainvar.logger.debug('Release lock')
             if self.lock.locked(): self.lock.release()
         return out
 
     def _Thread4ahk(self):
-        self.logger.info("Starting ahk thread")
+        self.mainvar.logger.info("Starting ahk thread")
         # Initialisation
         if not self.ahklock.locked():
-            self.logger.critical("Fail to get lock to initial ahk thread")
+            self.mainvar.logger.critical("Fail to get lock to initial ahk thread")
             self.main_error.append("Fail to get lock to initial ahk thread")
         for ahk in self.ahk:
             if self.ahk[ahk] in self.install:
@@ -918,7 +921,7 @@ class giftray(object):
                 continue
             if (ctypes.windll.user32.RegisterHotKey(None, self.nb_hotkey+1, menu.hhk["mod"], menu.hhk["key"])):
                 self.nb_hotkey += 1
-                self.logger.debug("register "+ahk)
+                self.mainvar.logger.debug("register "+ahk)
             else:
                 menu.AddError("Fail to register Hotkey ("+ahk+"): "+ctypes.FormatError(ctypes.GetLastError()))
                 self.error[self.ahk[ahk]]=""
@@ -934,7 +937,7 @@ class giftray(object):
                     self._ConnectorAction(self.ahk[ahk])
             ctypes.windll.user32.TranslateMessage(ctypes.byref(msg))
             ctypes.windll.user32.DispatchMessageA(ctypes.byref(msg))
-        self.logger.info("Ending ahk thread")
+        self.mainvar.logger.info("Ending ahk thread")
         return
 
     def _Thread4Flush(self):
@@ -959,11 +962,11 @@ class giftray(object):
     def _ConnectorAction(self,feature):
         if self.lock.locked():
             if feature in self.install:
-                self.logger.debug('Lock locked for ' + self.install[feature].show)
+                self.mainvar.logger.debug('Lock locked for ' + self.install[feature].show)
             elif feature in self.submenus:
-                self.logger.debug('Lock locked for ' + self.submenus[feature].show)
+                self.mainvar.logger.debug('Lock locked for ' + self.submenus[feature].show)
             else:
-                self.logger.critical('Lock locked for undefined feature' + feature)
+                self.mainvar.logger.critical('Lock locked for undefined feature' + feature)
             return
         a=_general.KThread(target=self._Thread4Run,args=[feature])
         a.start()
