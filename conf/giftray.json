@@ -89,7 +89,7 @@
       "Theme": null,
       "Light": null,
       "Dark": null,
-      "Ico": "push-pin",
+      "Ico": "cursor-2",
       "AHK": "Win + *"
     },
     "Program Files": {
@@ -97,7 +97,7 @@
       "Theme": null,
       "Light": null,
       "Dark": null,
-      "Ico": "folder-alt",
+      "Ico": "cursor-2",
       "Click": true,
       "AHK": null,
       "Command": "C:\\Program Files\\",
