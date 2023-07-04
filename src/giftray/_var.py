@@ -451,19 +451,19 @@ class trayconf:
                                     'SVG'   : svg,
                                     'Path'  : path_svg
                                     }
-        #print(json.dumps(self.internal['Icons'], indent = 2))
+        # print(json.dumps(self.internal['Icons'], indent = 2))
         for image in self.internal['Icons']['Images']:
             try:
-                img_str = self.internal['Icons']['Images'][image]
-                d1 = self.internal['Themes'][self.internal['Icons']['Images']['Theme']]['Dark']
+                img_str = self.internal['Icons']['Images'][image]['SVG']
+                d1 = self.internal['Themes'][self.internal['Icons']['Images'][image]['Theme']]['Dark']
                 dn = self.internal['Themes']['Native']['Dark']
-                l1 = self.internal['Themes'][self.internal['Icons']['Images']['Theme']]['Light']
+                l1 = self.internal['Themes'][self.internal['Icons']['Images'][image]['Theme']]['Light']
                 ln = self.internal['Themes']['Native']['Light']
                 if  l1 != ln:
                     img_str=img_str.replace('#'+dn,'#CompletelyFakeStringToReplaceDark')
                     img_str=img_str.replace('#'+ln,'#'+l1)
                     img_str=img_str.replace('#CompletelyFakeStringToReplaceDark','#'+d1)
-                elif d1 != d2:
+                elif d1 != dn:
                     img_str=img_str.replace('#'+dn,'#'+d1)
                 self.internal['Icons']['Images'][image]['BuilderSVG'] = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
                 self.internal['Icons']['Images'][image]['BuilderImage']= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
