@@ -29,7 +29,9 @@ class mainvar():
         self.name           = self.showname.casefold()
         self.python         = ( "\\python" in sys.executable )
         self.lockfile       = None
-        self.modules        = ['wsl'.casefold(),'windows'.casefold()]
+        # self.modules        = ['wsl'.casefold(),'windows'.casefold()]
+        # self.modules        = ['feature'.casefold()]
+        self.modules        = []
         self.avail_modules  = dict()
         self.template       = dict()
         if self.python:
@@ -53,6 +55,7 @@ class mainvar():
                                   format='%(asctime)s - %(levelname)s - %(message)s',
                                   datefmt='%d-%b-%y %H:%M:%S')
         self.logger = logging.getLogger(__name__)
+        '''
         for m in self.modules:
             mod=self.name+'._'+m
             if not mod in sys.modules:
@@ -78,7 +81,12 @@ class mainvar():
                 self.template[full] = _general.Str2Class(mod,fct)('template',[],self).configuration_type            
             if not m in self.avail_modules:
                 self.avail_modules[m] = _feature.general(self,m)
-        self.template['Folder'] = _feature.menu('template',[],self).configuration_type
+        '''
+        self.template['stayactive'] = _feature.stayactive ('template',[],self).configuration_type
+        self.template['wsl']        = _feature.wsl        ('template',[],self).configuration_type
+        self.template['alwaysontop']= _feature.alwaysontop('template',[],self).configuration_type
+        self.template['script']     = _feature.script     ('template',[],self).configuration_type
+        self.template['Folder']     = _feature.menu       ('template',[],self).configuration_type
         self.ahk = _general.ahk()
 
     def _checkLockFile(self):
@@ -279,19 +287,23 @@ class trayconf:
                 else:
                     errors.append('LogLevel->'+k+"not supported")
                 continue
-            if k ==  'Silent':
+            elif k ==  'Silent':
                 self.conf['Generals']['Silent'] = config['Generals']['Silent']
                 continue
-            if k ==  'Icons':
+            elif k ==  'Icons':
                 for i in config['Generals']['Icons']:
-                    if i in self.conf['Generals']['Icons']:
-                        self.conf['Generals']['Icons'][i] = config['Generals']['Icons'][i]
+                    # if i in self.conf['Generals']['Icons']:
+                        # self.conf['Generals']['Icons'][i] = config['Generals']['Icons'][i]
+                    self.conf['Generals']['Icons'][i] = config['Generals']['Icons'][i]
                 continue
-            if k == 'Themes':
+            elif k == 'Themes':
                 for t in config['Generals']['Themes']:
                     for f in config['Generals']['Themes'][t]:
                         self.updateTheme(t, f, config['Generals']['Themes'][t][f])
                 continue
+            else:
+                continue
+            '''
             if not isinstance(config['Generals'][k],dict):
                 continue
             continue_loop = False
@@ -302,11 +314,12 @@ class trayconf:
             if continue_loop:
                 continue
             self.conf['Generals'][k] = config['Generals'][k]
+            '''
         for a in config['Actions']:
-            self.conf['Actions'][a] = dict()
             if (not 'Function' in config['Actions'][a]
               or not config['Actions'][a]['Function'] in self.mainvar.template):
                 continue
+            self.conf['Actions'][a] = dict()
             fct = config['Actions'][a]['Function']
             for k in self.mainvar.template['Folder']:
                 if k in config['Actions'][a]:
@@ -316,16 +329,21 @@ class trayconf:
                 else:
                     self.conf['Actions'][a][k] = None
         for f in config['Folders']:
-            self.conf['Folders'][f] = dict()
             # self.conf['Folders']['Contain'] = []
-            # if 'Contain' in config['Folders'][f]:
-                # for a in config['Folders'][f]['Contain']:
-                    # if a in config['Actions']:
+            contain = []
+            if 'Contain' in config['Folders'][f]:
+                for a in config['Folders'][f]['Contain']:
+                    if a in self.conf['Actions']:
+                        contain.append(a)
                         # self.conf['Folders']['Contain'].append(a)
+            if not contain:
+                continue
+            self.conf['Folders'][f] = dict()
+            self.conf['Folders'][f]['Contain'] = contain
             for k in self.mainvar.template['Folder']:
                 if k in config['Folders'][f]:
-                    # if k in ['Contain']:
-                        # continue
+                    if k in ['Contain']:
+                        continue
                     # self.conf['Folders'][f][k] = _general.GetOpt(str(config['Folders'][f][k]),self.mainvar.template['Folder'][k])
                     self.conf['Folders'][f][k] = config['Folders'][f][k]
                 else:

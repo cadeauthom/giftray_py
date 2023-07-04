@@ -28,9 +28,9 @@ from . import _var
 from . import _general
 from . import _icon
 from . import _feature
-#from . import _template
-from . import _wsl
-from . import _windows
+# from . import _template
+# from . import _wsl
+# from . import _windows
 
 class giftray(object):
     def __init__(self):
@@ -343,7 +343,7 @@ class giftray(object):
     def _Restart(self):
         self.trayconf = _var.trayconf(self.mainvar)
         self.trayconf.load()
-        #self.trayconf.print()
+        # self.trayconf.print()
 
         '''
         self._conf2JSON()

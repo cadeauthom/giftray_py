@@ -30,18 +30,6 @@
         "Dark": "",
         "Light": ""
       }
-    },
-    "wsl": {
-      "Theme": null,
-      "Light": null,
-      "Dark": null,
-      "vcxsrv": "C:\\Program Files\\VcXsrv\\vcxsrv.exe",
-      "vcxsrv_timeout": null
-    },
-    "windows": {
-      "Theme": null,
-      "Light": null,
-      "Dark": null
     }
   },
   "Folders": {
@@ -86,7 +74,7 @@
   },
   "Actions": {
     "AlwaysActive": {
-      "Function": "windows.stayactive",
+      "Function": "stayactive",
       "Theme": null,
       "Light": null,
       "Dark": null,
@@ -97,7 +85,7 @@
       "Frequency": null
     },
     "AlwaysOnTop": {
-      "Function": "windows.alwaysontop",
+      "Function": "alwaysontop",
       "Theme": null,
       "Light": null,
       "Dark": null,
@@ -105,7 +93,7 @@
       "AHK": "Win + *"
     },
     "Program Files": {
-      "Function": "windows.script",
+      "Function": "script",
       "Theme": null,
       "Light": null,
       "Dark": null,
@@ -117,7 +105,7 @@
       "AsAdmin": null
     },
     "Program Files (x86)": {
-      "Function": "windows.script",
+      "Function": "script",
       "Theme": null,
       "Light": null,
       "Dark": null,
@@ -129,7 +117,7 @@
       "AsAdmin": null
     },
     "Users": {
-      "Function": "windows.script",
+      "Function": "script",
       "Theme": null,
       "Light": null,
       "Dark": null,
@@ -141,7 +129,7 @@
       "AsAdmin": null
     },
     "Windows": {
-      "Function": "windows.script",
+      "Function": "script",
       "Theme": null,
       "Light": null,
       "Dark": null,
@@ -153,7 +141,7 @@
       "AsAdmin": null
     },
     "Proxy": {
-      "Function": "wsl.cmd",
+      "Function": "wsl",
       "Theme": null,
       "Light": null,
       "Dark": null,
@@ -163,10 +151,12 @@
       "Command": "ssh -C2qTnNf annuminas -D 8080",
       "Uniq": true,
       "GUI": null,
-      "Output": null
+      "Output": null,
+      "vcxsrv": "C:\\Program Files\\VcXsrv\\vcxsrv.exe",
+      "vcxsrv_timeout": null
     },
     "Terminator": {
-      "Function": "wsl.cmd",
+      "Function": "wsl",
       "Theme": null,
       "Light": null,
       "Dark": null,
@@ -176,10 +166,12 @@
       "Command": "terminator --working-directory $folder",
       "Uniq": true,
       "GUI": true,
-      "Output": null
+      "Output": null,
+      "vcxsrv": "C:\\Program Files\\VcXsrv\\vcxsrv.exe",
+      "vcxsrv_timeout": null
     },
     "Kill Skype": {
-      "Function": "windows.script",
+      "Function": "script",
       "Theme": null,
       "Light": null,
       "Dark": null,
@@ -191,7 +183,7 @@
       "AsAdmin": true
     },
     "Kill Discord": {
-      "Function": "windows.script",
+      "Function": "script",
       "Theme": null,
       "Light": null,
       "Dark": null,
@@ -203,7 +195,7 @@
       "AsAdmin": true
     },
     "Kill DropBox": {
-      "Function": "windows.script",
+      "Function": "script",
       "Theme": null,
       "Light": null,
       "Dark": null,
@@ -215,7 +207,7 @@
       "AsAdmin": true
     },
     "Kill TeamViewer": {
-      "Function": "windows.script",
+      "Function": "script",
       "Theme": null,
       "Light": null,
       "Dark": null,
@@ -227,7 +219,7 @@
       "AsAdmin": true
     },
     "Hibernate": {
-      "Function": "windows.script",
+      "Function": "script",
       "Theme": null,
       "Light": null,
       "Dark": null,
@@ -239,7 +231,7 @@
       "AsAdmin": true
     },
     "Add Hibernate": {
-      "Function": "windows.script",
+      "Function": "script",
       "Theme": null,
       "Light": null,
       "Dark": null,
