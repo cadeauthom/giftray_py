@@ -53,7 +53,7 @@
       "Light": null,
       "Dark": null,
       "Ico": "curve-arrow-right-3",
-      "Click": true,
+      "Click": false,
       "AHK": "Ctrl + Win + Escape",
       "Contain": [
         "Kill Skype",
@@ -154,7 +154,7 @@
       "GUI": null,
       "Output": null,
       "vcxsrv": "C:\\Program Files\\VcXsrv\\vcxsrv.exe",
-      "vcxsrv_timeout": null
+      "vcxsrv_timeout": 2
     },
     "Terminator": {
       "Function": "wsl",
@@ -169,7 +169,7 @@
       "GUI": true,
       "Output": null,
       "vcxsrv": "C:\\Program Files\\VcXsrv\\vcxsrv.exe",
-      "vcxsrv_timeout": null
+      "vcxsrv_timeout": 2
     },
     "Kill Skype": {
       "Function": "script",

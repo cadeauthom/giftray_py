@@ -19,7 +19,7 @@ import importlib
 import inspect
 
 
-class type(enum.Enum):
+class gtype(enum.Enum):
     UINT        = 1
     INT         = 2
     BOOL        = 3
@@ -31,7 +31,7 @@ class type(enum.Enum):
     COLOR       = 9
     # THEME       = 10
 
-# for member in type:
+# for member in gtype:
     # globals()[member.name] = member
 
 class mainmenuconf:
@@ -74,25 +74,25 @@ class mainmenuconf:
 
 def GetOpt(val,t):
     ret = None
-    if t == type.UINT:
+    if t == gtype.UINT:
         try:
             ret = abs(int(val))
         except:
             ret = 0
-    elif t == type.INT:
+    elif t == gtype.INT:
         try:
             ret = int(val)
         except:
             ret = 0
-    elif t == type.BOOL:
+    elif t == gtype.BOOL:
         try:
-            if not val:
+            if val == None:
                 ret = True
             else:
                 ret = (str(val).title() in ['True'.title(),'On'.title(),'1'.title()])
         except:
             ret = False
-    elif t == type.STRING:
+    elif t == gtype.STRING:
         try:
             if not val:
                 ret = ''
@@ -100,7 +100,7 @@ def GetOpt(val,t):
                 ret = str(val)
         except:
             ret = ''
-    elif t == type.LOWSTRING:
+    elif t == gtype.LOWSTRING:
         try:
             if val == None:
                 ret = ''
@@ -108,7 +108,7 @@ def GetOpt(val,t):
                 ret = str(val).casefold()
         except:
             ret = ''
-    elif t == type.UPSTRING:
+    elif t == gtype.UPSTRING:
         try:
             if val == None:
                 ret = ''
@@ -116,18 +116,28 @@ def GetOpt(val,t):
                 ret = str(val).upper()
         except:
             ret = ''
-    elif t == type.LISTSTRING:
+    elif t == gtype.LISTSTRING:
+        ret = []
         try:
-            ret = re.split('\s*[,;]\s*',val)
+            for k in val:
+                a = GetOpt(k,gtype.STRING)
+                if a: 
+                    ret.append(a)
         except:
-            ret = []
-    elif t == type.PATH: #no subpath management, no icon path
+            pass
+        # 
+            # ret = re.split('\s*[,;]\s*',val)
+            # print(val,'-',ret)
+        # except:
+            # print(val,'?')
+            # ret = []
+    elif t == gtype.PATH: #no subpath management, no icon path
         ret = WindowsHandler().GetRealPath(str(val))
-    elif t == type.COLOR:
+    elif t == gtype.COLOR:
         ret = str(val).upper()
         if re.fullmatch(r"^[0-9a-fA-F]{6}$", ret) is None:
             ret = '000000'
-    # elif t == type.THEME:
+    # elif t == gtype.THEME:
         # ret = giftray.colors.GetName(str(t))
     return ret
 

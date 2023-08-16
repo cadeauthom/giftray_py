@@ -341,6 +341,7 @@ class giftray(object):
     '''
     def _Restart(self):
         self.trayconf = _var.trayconf(self.mainvar)
+        self.mainvar.setTray(self.trayconf)
         self.trayconf.load()
         # self.trayconf.print()
         self.app.setStyle(self.trayconf.getStyle())

@@ -34,6 +34,9 @@ class mainvar():
         self.modules        = []
         self.avail_modules  = dict()
         self.template       = dict()
+        self.classes        = dict()
+        self.trayconf       = None
+        self.ahk_translator = _general.ahk()
         if self.python:
             self.tempdir = './'
             self.conf    = posixpath.join('./conf' , self.name + '.json')
@@ -87,7 +90,16 @@ class mainvar():
         self.template['alwaysontop']= _feature.alwaysontop('template',[],self).configuration_type
         self.template['script']     = _feature.script     ('template',[],self).configuration_type
         self.template['Folder']     = _feature.menu       ('template',[],self).configuration_type
+        self.classes['stayactive'] = _feature.stayactive
+        self.classes['wsl']        = _feature.wsl
+        self.classes['alwaysontop']= _feature.alwaysontop
+        self.classes['script']     = _feature.script
+        #self.classes['Folder']     = _feature.menu
+
         self.ahk = _general.ahk()
+
+    def setTray(self,trayconf):
+        self.trayconf = trayconf
 
     def _checkLockFile(self):
         lockfile = posixpath.join(self.tempdir,self.name+'.lock')
@@ -133,12 +145,12 @@ class trayconf:
         self.mainvar=mainvar
         self.started = False
         #Init Internal
-        # self.internal_type = {  "LogLevel": _general.type.STRING,
-                                # "Silent": _general.type.STRING,
-                                # "Theme": _general.type.STRING,
-                                # "Light": _general.type.COLOR,
-                                # "Dark": _general.type.COLOR,
-                                # "Ico": _general.type.STRING}
+        # self.internal_type = {  "LogLevel": _general.gtype.STRING,
+                                # "Silent": _general.gtype.STRING,
+                                # "Theme": _general.gtype.STRING,
+                                # "Light": _general.gtype.COLOR,
+                                # "Dark": _general.gtype.COLOR,
+                                # "Ico": _general.gtype.STRING}
         self.internal = dict()
         self.internal['Icons'] = {
                         'Links' : {},
@@ -201,6 +213,11 @@ class trayconf:
                         'Custom' : {'Theme': '',
                                     'Dark':  '',
                                     'Light': ''}}
+        self.install = dict()
+        self.install['Folders'] = dict()
+        self.install['Actions'] = dict()
+        self.install['AHK']     = dict()
+        self.install['Errors']  = dict()
         '''
         for i in self.internal['Icons']:
             k = i
@@ -350,8 +367,8 @@ class trayconf:
               or not config['Actions'][a]['Function'] in self.mainvar.template):
                 continue
             self.conf['Actions'][a] = dict()
-            fct = config['Actions'][a]['Function']
-            for k in self.mainvar.template['Folder']:
+            self.conf['Actions'][a]['Function'] = config['Actions'][a]['Function']
+            for k in self.mainvar.template[self.conf['Actions'][a]['Function']]:
                 if k in config['Actions'][a]:
                     if k in ['Function']:
                         continue
@@ -386,13 +403,13 @@ class trayconf:
             if self.conf['Generals']['Themes'][t]['Dark']:
                 dark = _general.GetOpt(
                                 self.conf['Generals']['Themes'][t]['Dark'],
-                                _general.type.COLOR)
+                                _general.gtype.COLOR)
             else:
                 dark = None
             if self.conf['Generals']['Themes'][t]['Light']:
                 light = _general.GetOpt(
                                 self.conf['Generals']['Themes'][t]['Light'],
-                                _general.type.COLOR)
+                                _general.gtype.COLOR)
             else:
                 light = None
             if not self.getTheme(t, native=False):
@@ -406,12 +423,12 @@ class trayconf:
                     theme = self.getTheme(self.conf[type][f]['Theme'])
                 inittheme = theme
                 if self.conf[type][f]['Dark']:
-                    dark = _general.GetOpt(self.conf[type][f]['Dark'],_general.type.COLOR)
+                    dark = _general.GetOpt(self.conf[type][f]['Dark'],_general.gtype.COLOR)
                     theme += '/Dark='+dark
                 else:
                     dark = None
                 if self.conf[type][f]['Light']:
-                    light = _general.GetOpt(self.conf[type][f]['Light'],_general.type.COLOR)
+                    light = _general.GetOpt(self.conf[type][f]['Light'],_general.gtype.COLOR)
                     theme += '/Light='+light
                 else:
                     light = None
@@ -540,6 +557,70 @@ class trayconf:
         self.menu.setToolTipsVisible(True)
         # self.menu.setStyleSheet(self.qss)
 
+        for type in ['Folders','Actions']:
+            for f in self.conf[type]:
+                if type == 'Actions':
+                    cl = self.mainvar.classes[self.conf[type][f]['Function']]
+                else:
+                    cl = _feature.menu
+                new_class = cl(f,self.conf[type][f],self.mainvar)
+                if new_class.IsOK():
+                    ahk, hhk = new_class.GetHK()
+                    if len(ahk)>2 and "key" in hhk:
+                        if ahk in self.install['AHK']:
+                            new_class.AddError("Duplicated ahk " + self.ahk[ahk])
+                        else:
+                            self.install['AHK'][ahk] = new_class.show
+                if not new_class.IsOK():
+                    self.install['Errors'][new_class.show] = {"Error": "", "Class": new_class}
+                else:
+                    self.install[type][new_class.show]=new_class
+
+        to_rm = []
+        for section in self.install['Folders']:
+            self.install['Folders'][section].Check()
+            if not self.install['Folders'][section].IsOK():
+                self.install['Errors'][self.install['Folders'][section].show] = {"Error": "", "Class": self.install['Folders'][section]}
+                #print(section,' : ', self.install['Folders'][section].GetError())
+            elif self.install['Folders'][section].IsInMenu():
+                print(section, ' in menu, not sure what to do from this one')
+            #    self.menu.append(self.install['Folders'][section].show)
+            else:
+                print(section, ' lost, not sure when we can end here')
+        for f in to_rm:
+            self.install['Folders'].pop(f)
+        to_rm = []
+        for section in self.install['Actions']:
+            #print(section,' : ', self.install['Actions'][section].GetError())
+            self.install['Actions'][section].Check()
+            if not self.install['Actions'][section].IsOK():
+                to_rm.append(section)
+                self.install['Errors'][self.install['Actions'][section].show] = {"Error": "", "Class": self.install['Actions'][section]}
+            # if new_class.IsOK() and new_class.IsInMenu() and not new_class.IsChild() :
+                    # self.menu.append(new_class.show)
+        for f in to_rm:
+            self.install['Actions'].pop(f)
+
+        if 1: #Debug to print errors
+            print('Show Errors')
+            for e in self.install['Errors']:
+                if self.install['Errors'][e]['Error']:
+                    print(e,self.install['Errors'][e]['Error'])
+                else:
+                    print(e,self.install['Errors'][e]['Class'].GetError())
+        if 0: #print active configuration
+            for a in self.install['Actions']:
+                print(a)
+                for c in self.install['Actions'][a].configuration:
+                    print('\t', c,'=', self.install['Actions'][a].configuration[c].value,
+                                   '/',self.conf['Actions'][a][c])
+                print('------------')
+            for a in self.install['Folders']:
+                print(a)
+                for c in self.install['Folders'][a].configuration:
+                    print('\t', c,'=', self.install['Folders'][a].configuration[c].value,
+                                   '/',self.conf['Folders'][a][c])
+                print('------------')
         self.menu.addSeparator()
 
         # Define menu default actions

@@ -15,7 +15,7 @@ from . import _icon
 from . import _general
 
 class conffield:
-    def __init__(self, value, type=_general.type.STRING):
+    def __init__(self, value, type=_general.gtype.STRING):
         self.type = type
         self.value = _general.GetOpt(value,type)
     def _print(self):
@@ -44,19 +44,19 @@ class general:
         for i in val:
             k = i.title()
             if k == "Theme".title():
-                col = _general.GetOpt(general_conf[i],_general.type.STRING)
+                col = _general.GetOpt(general_conf[i],_general.gtype.STRING)
                 if col != self.giftray.conf_theme:
                     self.configuration["Theme"] = conffield(col)
                     self.conf["Theme".title()] = col
                     self.subconf["Theme".title()] = col
             elif k == "Dark".title():
-                dark = _general.GetOpt(general_conf[i],_general.type.STRING)
+                dark = _general.GetOpt(general_conf[i],_general.gtype.STRING)
                 if dark != self.giftray.conf_theme:
                     self.configuration["Dark"] = conffield(dark)
                     self.conf["Dark".title()] = dark
                     self.subconf["Dark".title()] = dark
             elif k == "Light".title():
-                light = _general.GetOpt(general_conf[i],_general.type.STRING)
+                light = _general.GetOpt(general_conf[i],_general.gtype.STRING)
                 if light != self.giftray.conf_theme:
                     self.configuration["light"] = conffield(light)
                     self.conf["Light".title()] = light
@@ -78,9 +78,9 @@ class general:
         self.set    = False
         self.used   = False
         self.configuration = dict()
-        self.configuration_type = { "Theme": _general.type.STRING,
-                                    "Light": _general.type.COLOR,
-                                    "Dark": _general.type.COLOR}
+        self.configuration_type = { "Theme": _general.gtype.STRING,
+                                    "Light": _general.gtype.COLOR,
+                                    "Dark": _general.gtype.COLOR}
         self._Init()
         return
 
@@ -102,10 +102,10 @@ class object:
     def __del__(self):
         return
 
-    def __init__(self,show,val,giftray):
+    def __init__(self,show,val,mainvar):
         self.allopt  = []
         self.setopt  = []
-        self.giftray = giftray
+        self.mainvar = mainvar
         self.show    = show
         self.ahk     = ""
         self.theme   = ""
@@ -114,77 +114,78 @@ class object:
         self.menu    = False
         self.hhk     = []
         self.error   = []
-        self.module  = type(self).__module__[(len(self.giftray.name)+2):]
+        #self.module  = '_feature'#type(self).__module__[(len(self.up.name)+2):]
         self.name    = type(self).__name__
         self.ico     = ""
         self.parents = []
         self.configuration = dict()
-        self.configuration["Function"] = conffield(self.module+'.'+self.name)
-        self.configuration_type = { "Function": _general.type.STRING,
-                                    "Theme": _general.type.STRING,
-                                    "Light": _general.type.COLOR,
-                                    "Dark": _general.type.COLOR,
-                                    "Ico": _general.type.STRING,
-                                    "Click": _general.type.BOOL,
-                                    "AHK": _general.type.STRING}
+        #self.configuration["Function"] = conffield(self.module+'.'+self.name)
+        self.configuration["Function"] = conffield(self.name)
+        self.configuration_type = { "Function": _general.gtype.STRING,
+                                    "Theme": _general.gtype.STRING,
+                                    "Light": _general.gtype.COLOR,
+                                    "Dark": _general.gtype.COLOR,
+                                    "Ico": _general.gtype.STRING,
+                                    "Click": _general.gtype.BOOL,
+                                    "AHK": _general.gtype.STRING}
 
         #others_general = dict()
-        if self.module in self.giftray.avail_modules:
-            self.error = self.giftray.avail_modules[self.module].GetError()
-            '''
-            general_conf = self.giftray.avail_modules[self.module].GetConf()
+        '''
+        if self.module in self.mainvar.avail_modules:
+            self.error = self.mainvar.avail_modules[self.module].GetError()
+            general_conf = self.up.avail_modules[self.module].GetConf()
             for i in general_conf:
                 k = i.title()
                 if k == "Theme".title():
-                    self.theme = _general.GetOpt(general_conf[i],_general.type.STRING)
+                    self.theme = _general.GetOpt(general_conf[i],_general.gtype.STRING)
                     self.configuration["Theme"] = conffield(self.theme)
                 elif k == "Dark".title():
-                    self.dark = _general.GetOpt(val[i],_general.type.STRING)
+                    self.dark = _general.GetOpt(val[i],_general.gtype.STRING)
                     self.configuration["Dark"] = conffield(self.dark)
                 elif k == "Light".title():
-                    self.light = _general.GetOpt(val[i],_general.type.STRING)
+                    self.light = _general.GetOpt(val[i],_general.gtype.STRING)
                     self.configuration["Dark"] = conffield(self.light)
                 else:
                     others_general[i]=general_conf[i]
-            '''
+        '''
         others = dict()
         for i in val:
             k = i.title()
             if k == "Function".title():
                 pass
             elif k == "Ico".title():
-                self.ico = _general.GetOpt(val[i],_general.type.STRING)
+                self.ico = _general.GetOpt(val[i],_general.gtype.STRING)
                 self.configuration["Ico"] = conffield(val[i])
             elif k == "Click".title():
-                self.menu = _general.GetOpt(val[i],_general.type.BOOL)
-                self.configuration["Click"] = conffield(val[i], type=_general.type.BOOL)
+                self.menu = _general.GetOpt(val[i],_general.gtype.BOOL)
+                self.configuration["Click"] = conffield(val[i], type=_general.gtype.BOOL)
             elif k == "Ahk".title():
-                self.ahk = _general.GetOpt(val[i],_general.type.STRING)
+                self.ahk = _general.GetOpt(val[i],_general.gtype.STRING)
                 self.configuration["AHK"] = conffield(val[i])
             elif k == "Theme".title():
-                self.theme = _general.GetOpt(val[i],_general.type.STRING)
+                self.theme = _general.GetOpt(val[i],_general.gtype.STRING)
                 self.configuration["Theme"] = conffield(val[i])
             elif k == "Dark".title():
-                self.dark = _general.GetOpt(val[i],_general.type.STRING)
+                self.dark = _general.GetOpt(val[i],_general.gtype.STRING)
                 self.configuration["Dark"] = conffield(val[i])
             elif k == "Light".title():
-                self.light = _general.GetOpt(val[i],_general.type.STRING)
+                self.light = _general.GetOpt(val[i],_general.gtype.STRING)
                 self.configuration["Light"] = conffield(val[i])
             else:
                 others[i]=val[i]
 
-        if not self.theme:
-            self.theme = 'other'
-        if self.dark or self.light:
-            themename = self.theme+'/'+''.join(random.choices(string.digits, k=10))
-            self.giftray.colors.copy(self.theme, themename)
-            self.theme = themename
-            self.giftray.colors.set(self.theme,self.dark,self.light)
-        if 'colors' in dir(self.giftray):
-            self.iconid = self.giftray.images.create(self.ico,self.show[0],self.theme)
+        # if not self.theme:
+            # self.theme = 'other'
+        # if self.dark or self.light:
+            # themename = self.theme+'/'+''.join(random.choices(string.digits, k=10))
+            # self.up.colors.copy(self.theme, themename)
+            # self.theme = themename
+            # self.up.colors.set(self.theme,self.dark,self.light)
+        # if 'colors' in dir(self.up):
+            # self.iconid = self.up.images.create(self.ico,self.show[0],self.theme)
 
         if self.ahk:
-            self.hhk, self.ahk, err = giftray.ahk_translator.ahk2hhk(self.ahk)
+            self.hhk, self.ahk, err = mainvar.ahk_translator.ahk2hhk(self.ahk)
             if len(err):
                 self.AddError(err)
 
@@ -201,7 +202,7 @@ class object:
         return
 
     def AddError(self,error):
-        self.giftray.logger.error(error + " in '" +self.show+"'")
+        self.mainvar.logger.error(error + " in '" +self.show+"'")
         self.error.append(self.show+': '+error)   
         return
 
@@ -248,17 +249,17 @@ class menu(object):
     def _PreInit(self,others):
         del self.configuration["Function"]
         del self.configuration_type["Function"]
-        self.configuration_type["Contain"] = _general.type.LISTSTRING
+        self.configuration_type["Contain"] = _general.gtype.LISTSTRING
         self.contain = []
         self.allopt += 'contain'
         ret_others = dict()
         for i in others:
             k = i.title()
             if k == "Contain".title():
-                self.contain = _general.GetOpt(others[i],_general.type.LISTSTRING)
+                self.contain = _general.GetOpt(others[i],_general.gtype.LISTSTRING)
             else:
                 ret_others[k] = others[k]
-        self.configuration["Contain"] = conffield(','.join(self.contain),_general.type.LISTSTRING)
+        self.configuration["Contain"] = conffield(self.contain,_general.gtype.LISTSTRING)
         return ret_others
 
     def GetContain(self):
@@ -268,18 +269,18 @@ class menu(object):
         if len(self.contain) == 0:
             self.AddError("Empty menu")
         for c in self.contain:
-            if not c in self.giftray.install:
+            if not c in self.mainvar.trayconf.install['Actions']:
                 self.AddError(c+" subaction not installed")
                 continue
-            if not self.giftray.install[c].AddParent(self.show):
+            if not self.mainvar.trayconf.install['Actions'][c].AddParent(self.show):
                 self.AddError(c+" action cannot be a subaction")
-            if not self.giftray.install[c].IsOK():
+            if not self.mainvar.trayconf.install['Actions'][c].IsOK():
                 self.AddError(c+" subaction not OK")
                 continue
-        if not self.menu:
-            for c in self.contain:
-                if not self.giftray.install[c].IsInMenu():
-                    self.AddError(c+" is not in usable in menu")
+        # if not self.menu:
+            # for c in self.contain:
+                # if not self.mainvar.trayconf.install['Actions'][c].IsInMenu():
+                    # self.AddError(c+" is not usable in menu")
         return
 
 class action(object):
@@ -300,7 +301,7 @@ class action(object):
                 out = self._Run()
             except Exception as e:
                 e_str = str(e)
-                self.giftray.logger.error("Action '" +self.show+ "' failed: "+e_str)
+                self.mainvar.logger.error("Action '" +self.show+ "' failed: "+e_str)
                 out = "Action '" +self.show+ "' failed: "+e_str
         #if out and not silent:
         #    _general.PopUp(self.show, out)
@@ -311,13 +312,13 @@ class action(object):
 
 class service(object):
     def __del__(self):
-        import ctypes, win32con
+        # import ctypes, win32con
         if self.thread.is_alive():
             self.thread.kill()
         object.__del__(self)
 
     def _PreInit(self,others):
-        self.configuration_type["Enabled"] = _general.type.BOOL
+        self.configuration_type["Enabled"] = _general.gtype.BOOL
         self.thread = _general.KThread(target=self._Run)
         self.active = False
         self.enabled = False
@@ -326,11 +327,11 @@ class service(object):
         for i in others:
             k = i.title()
             if k == "Enabled".title():
-                self.enabled = _general.GetOpt(others[i],_general.type.BOOL)
+                self.enabled = _general.GetOpt(others[i],_general.gtype.BOOL)
                 self.setopt.append('enabled'.title())
             else:
                 ret_others[i] = others[i]
-        self.configuration["Enabled"] = conffield(self.enabled,_general.type.BOOL)
+        self.configuration["Enabled"] = conffield(self.enabled,_general.gtype.BOOL)
         return ret_others
 
     def Check(self):
@@ -364,27 +365,28 @@ class service(object):
 class script(action):
     #ToDo: add Uniq option (for startx)
     def _Init(self,others):
-        self.configuration_type["Command"]=_general.type.PATH
-        self.configuration_type["Arguments"]=_general.type.STRING
-        self.configuration_type["AsAdmin"]=_general.type.BOOL
+        self.configuration_type["Command"]=_general.gtype.PATH
+        self.configuration_type["Arguments"]=_general.gtype.STRING
+        self.configuration_type["AsAdmin"]=_general.gtype.BOOL
         self.allopt += ["cmd","args","admin"]
         self.cmd = ""
         self.args = ""
         self.admin = False
+
         for i in others:
             k = i.title()
-            if k == "cmd".title():
-                self.cmd = _general.GetOpt(others[i],_general.type.STRING)
+            if k == "Command".title():
+                self.cmd = _general.GetOpt(others[i],_general.gtype.STRING)
                 self.setopt.append(k)
-                self.configuration["Command"] = conffield(self.cmd, type=_general.type.STRING)
-            elif k == "args".title():
-                self.args = _general.GetOpt(others[i],_general.type.STRING)
+                self.configuration["Command"] = conffield(self.cmd, type=_general.gtype.STRING)
+            elif k == "Arguments".title():
+                self.args = _general.GetOpt(others[i],_general.gtype.STRING)
                 self.setopt.append(k)
-                self.configuration["Arguments"] = conffield(self.args, type=_general.type.STRING)
-            elif k == "admin".title():
-                self.admin = _general.GetOpt(others[i],_general.type.BOOL)
+                self.configuration["Arguments"] = conffield(self.args, type=_general.gtype.STRING)
+            elif k == "AsAdmin".title():
+                self.admin = _general.GetOpt(others[i],_general.gtype.BOOL)
                 self.setopt.append(k)
-                self.configuration["AsAdmin"] = conffield(self.admin, type=_general.type.BOOL)
+                self.configuration["AsAdmin"] = conffield(self.admin, type=_general.gtype.BOOL)
             else:
                 self.AddError("'"+i+"' not defined")
         if not self.cmd:
@@ -412,16 +414,16 @@ class script(action):
 
 class stayactive(service):
     def _Init(self,others):
-        self.configuration_type["Frequency"]=_general.type.UINT
+        self.configuration_type["Frequency"]=_general.gtype.UINT
         self.allopt += ["frequency"]
         self.frequency = 60
         for i in others:
             k = i.title()
             if k == "frequency".title():
-                a = _general.GetOpt(others[k],_general.type.UINT)
+                a = _general.GetOpt(others[k],_general.gtype.UINT)
                 if a:
                     self.frequency = a
-                self.configuration["Frequency"] = conffield(a, type=_general.type.UINT)
+                self.configuration["Frequency"] = conffield(a, type=_general.gtype.UINT)
             else:
                 self.AddError("'"+i+"' not defined")
 
@@ -439,12 +441,13 @@ class stayactive(service):
 class alwaysontop(action):
     def __del__(self):
         currentOnTop = _general.WindowsHandler().GetAllOnTopWindowsName()
-        for hwnd in self.top_hwnd:
-            if hwnd in currentOnTop:
-                win32gui.SetWindowPos(hwnd,
-                    win32con.HWND_NOTOPMOST,
-                    0,0,0,0,
-                    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+        if hasattr(self, "top_hwnd"): 
+            for hwnd in self.top_hwnd:
+                if hwnd in currentOnTop:
+                    win32gui.SetWindowPos(hwnd,
+                        win32con.HWND_NOTOPMOST,
+                        0,0,0,0,
+                        win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
         action.__del__(self)
 
     def _Init(self,others):
@@ -522,7 +525,7 @@ class wsl(action):
             x = subprocess.Popen( x_cmd, shell=True)
             time.sleep(2)# ToDo self.vcxsrv_timeout)
             if x.poll() != None:
-                self.giftray.logger.error("Fail to start vcxsrv in '" +self.show+"' ("+' '.join(x_cmd)+")")
+                self.mainvar.logger.error("Fail to start vcxsrv in '" +self.show+"' ("+' '.join(x_cmd)+")")
                 return
         return x_nb
 
@@ -557,12 +560,12 @@ class wsl(action):
         return pathL,driveW,driveL
 
     def _Init(self,others):
-        self.configuration_type["Command"]=_general.type.STRING
-        self.configuration_type["Uniq"]=_general.type.BOOL
-        self.configuration_type["GUI"]=_general.type.BOOL
-        self.configuration_type["Output"]=_general.type.STRING
-        self.configuration_type["vcxsrv"]=_general.type.PATH
-        self.configuration_type["vcxsrv_timeout"]=_general.type.UINT
+        self.configuration_type["Command"]=_general.gtype.STRING
+        self.configuration_type["Uniq"]=_general.gtype.BOOL
+        self.configuration_type["GUI"]=_general.gtype.BOOL
+        self.configuration_type["Output"]=_general.gtype.STRING
+        self.configuration_type["vcxsrv"]=_general.gtype.PATH
+        self.configuration_type["vcxsrv_timeout"]=_general.gtype.UINT
         self.allopt         += ["cmd","uniq","gui","out"]
         self.cmd            = ""
         self.uniq           = False
@@ -579,39 +582,39 @@ class wsl(action):
         self.wsl_path = tmp
         for i in others:
             k = i.title()
-            if k == "cmd".title():
-                self.cmd = _general.GetOpt(others[i],_general.type.STRING)
+            if k == "Command".title():
+                self.cmd = _general.GetOpt(others[i],_general.gtype.STRING)
                 self.setopt.append(k)
-                self.configuration["Command"] = conffield(self.cmd, type=_general.type.STRING)
-            elif k == "gui".title():
-                self.gui = _general.GetOpt(others[i],_general.type.BOOL)
+                self.configuration["Command"] = conffield(self.cmd, type=_general.gtype.STRING)
+            elif k == "GUI".title():
+                self.gui = _general.GetOpt(others[i],_general.gtype.BOOL)
                 self.setopt.append(k)
-                self.configuration["GUI"] = conffield(self.gui, type=_general.type.BOOL)
-            elif k == "uniq".title():
-                self.uniq = _general.GetOpt(others[i],_general.type.BOOL)
+                self.configuration["GUI"] = conffield(self.gui, type=_general.gtype.BOOL)
+            elif k == "Uniq".title():
+                self.uniq = _general.GetOpt(others[i],_general.gtype.BOOL)
                 self.setopt.append(k)
-                self.configuration["Uniq"] = conffield(self.uniq, type=_general.type.BOOL)
-            elif k == "out".title():
-                self.out = _general.GetOpt(others[i],_general.type.STRING)
+                self.configuration["Uniq"] = conffield(self.uniq, type=_general.gtype.BOOL)
+            elif k == "Output".title():
+                self.out = _general.GetOpt(others[i],_general.gtype.STRING)
                 self.setopt.append(k)
-                self.configuration["Output"] = conffield(self.out, type=_general.type.STRING)
+                self.configuration["Output"] = conffield(self.out, type=_general.gtype.STRING)
             elif k == "vcxsrv".title():
-                tmp = _general.GetOpt(others[i],_general.type.PATH)
+                tmp = _general.GetOpt(others[i],_general.gtype.PATH)
                 if not tmp:
                     self.AddError("'vcxsrv' ("+others[i]+") does not exist")
                 else:
-                    self.giftray.logger.info("'vcxsrv' set to "+tmp)
+                    self.mainvar.logger.info("'vcxsrv' set to "+tmp)
                     self.vcxsrv = tmp
                     self.setopt.append(k.casefold())
                     self.allopt.append(k.casefold())
-                    self.configuration["vcxsrv"] = conffield(tmp, type=_general.type.PATH)
+                    self.configuration["vcxsrv"] = conffield(tmp, type=_general.gtype.PATH)
             elif k == "vcxsrv_timeout".title():
-                a = _general.GetOpt(others[i],_general.type.UINT)
+                a = _general.GetOpt(others[i],_general.gtype.UINT)
                 if a and a < 10:
                     confvcxsrv_timeout = a
                     self.setopt.append(k.casefold())
                     self.allopt.append(k.casefold())
-                    self.configuration["vcxsrv_timeout"] = conffield(confvcxsrv_timeout, type=_general.type.UINT)
+                    self.configuration["vcxsrv_timeout"] = conffield(confvcxsrv_timeout, type=_general.gtype.UINT)
                 else:
                     self.AddError("'vcxsrv_timeout' not in [0-10]")
             else:
