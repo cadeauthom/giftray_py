@@ -61,9 +61,11 @@ class giftray(object):
         return
 
     def __del__(self):
-        self.mainvar.removeLockFile()
-        self.app.quit()
-        self.mainvar.logger.info("Exiting")
+        if hasattr(self, "app"):
+            self.app.quit()
+        if hasattr(self, "mainvar"):
+            self.mainvar.removeLockFile()
+            self.mainvar.logger.info("Exiting")
 
     def _Restart(self):
         self.trayconf = _var.trayconf(self.mainvar)
@@ -75,6 +77,29 @@ class giftray(object):
         self.tray.setIcon(self.trayconf.getIcon('GENERIC_Tray'))
         self.app.setWindowIcon(self.trayconf.getIcon('GENERIC_Tray'))
 
+        '''
+        if hasattr(self, "ahk_thread"):
+            if self.ahk_thread.is_alive():
+                #self.ahk_thread.kill()
+                ctypes.windll.user32.PostThreadMessageW(self.ahk_thread.native_id, win32con.WM_QUIT, 0, 0)
+        self.ahk_thread         = _general.KThread(target=self._Thread4ahk)
+
+        if hasattr(self, "nb_hotkey"):
+            for i in range(self.nb_hotkey):
+                ctypes.windll.user32.UnregisterHotKey(None, i)
+        self.nb_hotkey=0
+
+        if hasattr(self, "lock"):
+            if self.lock.locked():
+                self.lock.release()
+        else:
+            self.lock = _general.Lock()
+        if hasattr(self, "ahklock"):
+            if self.ahklock.locked():
+                self.ahklock.release()
+        else:
+            self.ahklock = _general.Lock()
+        '''
         '''
         # Start ahk_thread and wait for initialisation
         self.ahklock.acquire()
