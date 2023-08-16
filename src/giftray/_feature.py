@@ -325,7 +325,10 @@ class script(action):
         out = self.cmd
         cmd = ' & { Start-Process -WindowStyle hidden "'+self.cmd+'"'
         if self.args:
-            cmd += ' -ArgumentList "' + self.args+'"'
+            args = self.args
+            if '$folder' in args:
+                args = args.replace('$folder',_general.WindowsHandler().GetCurrentPath())
+            cmd += ' -ArgumentList "' + args+'"'
             out += ' ' + self.args
         if self.admin:
             cmd += ' -Verb RunAs'
