@@ -83,11 +83,11 @@ def GetOpt(val,t):
         try:
             for k in val:
                 a = GetOpt(k,gtype.STRING)
-                if a: 
+                if a:
                     ret.append(a)
         except:
             pass
-        # 
+        #
             # ret = re.split('\s*[,;]\s*',val)
             # print(val,'-',ret)
         # except:
