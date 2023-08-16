@@ -58,33 +58,6 @@ class mainvar():
                                   format='%(asctime)s - %(levelname)s - %(message)s',
                                   datefmt='%d-%b-%y %H:%M:%S')
         self.logger = logging.getLogger(__name__)
-        '''
-        for m in self.modules:
-            mod=self.name+'._'+m
-            if not mod in sys.modules:
-                self.logger.error("Module '" +m+ "' not loaded")
-                continue
-            tmp = importlib.import_module(mod)
-            for fct, obj in inspect.getmembers(tmp):
-                if not (inspect.isclass(obj) and fct != 'main'):
-                    continue
-                if (fct == "general" ):
-                    self.avail_modules[m] = _general.Str2Class(mod,fct)(self,m)
-                    continue
-                full = m+"."+fct
-                if mod != obj.__module__:
-                    self.logger.error("Issue while loading '" +full+ "': mismatch modules name: '"+m+"'!='"+obj.__module__+"'")
-                    continue
-                if fct != obj.__name__:
-                    self.logger.error("Issue while loading '" +full+ "': mismatch feature name: '"+fct+"'!='"+obj.__name__+"'")
-                    continue
-                if not "_Run" in (dir(obj)):
-                    self.logger.error("Feature '" +full+ "' does not have '_custom_run' defined")
-                    continue
-                self.template[full] = _general.Str2Class(mod,fct)('template',[],self).configuration_type            
-            if not m in self.avail_modules:
-                self.avail_modules[m] = _feature.general(self,m)
-        '''
         self.template['stayactive'] = _feature.stayactive ('template',[],self).configuration_type
         self.template['wsl']        = _feature.wsl        ('template',[],self).configuration_type
         self.template['alwaysontop']= _feature.alwaysontop('template',[],self).configuration_type
@@ -145,12 +118,6 @@ class trayconf:
         self.mainvar=mainvar
         self.started = False
         #Init Internal
-        # self.internal_type = {  "LogLevel": _general.gtype.STRING,
-                                # "Silent": _general.gtype.STRING,
-                                # "Theme": _general.gtype.STRING,
-                                # "Light": _general.gtype.COLOR,
-                                # "Dark": _general.gtype.COLOR,
-                                # "Ico": _general.gtype.STRING}
         self.internal = dict()
         self.internal['Icons'] = {
                         'Links' : {},
@@ -218,13 +185,6 @@ class trayconf:
         self.install['Actions'] = dict()
         self.install['AHK']     = dict()
         self.install['Errors']  = dict()
-        '''
-        for i in self.internal['Icons']:
-            k = i
-            if i.startswith('GENERIC_'):
-                k = i[len('GENERIC_'):]
-            self.conf['Generals']['Icons'][k] = {}
-        '''
 
     def getGeneral(self, module, key):
         if module in self.conf['Generals'] and key in self.conf['Generals'][module]:
@@ -350,18 +310,7 @@ class trayconf:
                 continue
             else:
                 continue
-            '''
-            if not isinstance(config['Generals'][k],dict):
-                continue
-            continue_loop = False
-            for i in config['Generals'][k]:
-                if isinstance(config['Generals'][k][i], (list, dict, tuple)):
-                    continue_loop = True
-                    continue
-            if continue_loop:
-                continue
-            self.conf['Generals'][k] = config['Generals'][k]
-            '''
+
         for a in config['Actions']:
             if (not 'Function' in config['Actions'][a]
               or not config['Actions'][a]['Function'] in self.mainvar.template):
@@ -525,38 +474,7 @@ class trayconf:
             # self.qss = '\n'.join(f.readlines())
             # f.close()
 
-    def buildImage(self,image):
-        if 'Icon' in self.internal['Icons']['Images'][image]:
-            return
-        try:
-            img_str = self.internal['Icons']['Images'][image]['SVG']
-            d1 = self.internal['Themes'][self.internal['Icons']['Images'][image]['Theme']]['Dark']
-            dn = self.internal['Themes']['Native']['Dark']
-            l1 = self.internal['Themes'][self.internal['Icons']['Images'][image]['Theme']]['Light']
-            ln = self.internal['Themes']['Native']['Light']
-            if  l1 != ln:
-                img_str=img_str.replace('#'+dn,'#CompletelyFakeStringToReplaceDark')
-                img_str=img_str.replace('#'+ln,'#'+l1)
-                img_str=img_str.replace('#CompletelyFakeStringToReplaceDark','#'+d1)
-            elif d1 != dn:
-                img_str=img_str.replace('#'+dn,'#'+d1)
-            self.internal['Icons']['Images'][image]['BuilderSVG'] = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
-            self.internal['Icons']['Images'][image]['BuilderImage']= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
-            self.internal['Icons']['Images'][image]['BuilderSVG'].render(PyQt6.QtGui.QPainter(self.internal['Icons']['Images'][image]['BuilderImage']))
-            self.internal['Icons']['Images'][image]['Icon'] = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(self.internal['Icons']['Images'][image]['BuilderImage']))
-            #print(image, ' built')
-        except:
-            self.mainvar.logger.error("Image '" +image+ "' without svg or no defined")
-            self.internal['Icons']['Images'][image]['Icon'] = PyQt6.QtWidgets.QWidget().style().standardIcon(
-                            #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
-                            PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
-            #print(image, ' failed')
-
-    def buildMenu(self,fct_restart,fct_del):
-        self.menu = PyQt6.QtWidgets.QMenu()
-        self.menu.setToolTipsVisible(True)
-        # self.menu.setStyleSheet(self.qss)
-
+        #Build Folder/Action classes
         for type in ['Folders','Actions']:
             for f in self.conf[type]:
                 if type == 'Actions':
@@ -601,7 +519,8 @@ class trayconf:
         for f in to_rm:
             self.install['Actions'].pop(f)
 
-        if 1: #Debug to print errors
+        '''
+        if 0: #Debug to print errors
             print('Show Errors')
             for e in self.install['Errors']:
                 if self.install['Errors'][e]['Error']:
@@ -621,6 +540,39 @@ class trayconf:
                     print('\t', c,'=', self.install['Folders'][a].configuration[c].value,
                                    '/',self.conf['Folders'][a][c])
                 print('------------')
+        '''
+
+    def buildImage(self,image):
+        if 'Icon' in self.internal['Icons']['Images'][image]:
+            return
+        try:
+            img_str = self.internal['Icons']['Images'][image]['SVG']
+            d1 = self.internal['Themes'][self.internal['Icons']['Images'][image]['Theme']]['Dark']
+            dn = self.internal['Themes']['Native']['Dark']
+            l1 = self.internal['Themes'][self.internal['Icons']['Images'][image]['Theme']]['Light']
+            ln = self.internal['Themes']['Native']['Light']
+            if  l1 != ln:
+                img_str=img_str.replace('#'+dn,'#CompletelyFakeStringToReplaceDark')
+                img_str=img_str.replace('#'+ln,'#'+l1)
+                img_str=img_str.replace('#CompletelyFakeStringToReplaceDark','#'+d1)
+            elif d1 != dn:
+                img_str=img_str.replace('#'+dn,'#'+d1)
+            self.internal['Icons']['Images'][image]['BuilderSVG'] = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
+            self.internal['Icons']['Images'][image]['BuilderImage']= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
+            self.internal['Icons']['Images'][image]['BuilderSVG'].render(PyQt6.QtGui.QPainter(self.internal['Icons']['Images'][image]['BuilderImage']))
+            self.internal['Icons']['Images'][image]['Icon'] = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(self.internal['Icons']['Images'][image]['BuilderImage']))
+            #print(image, ' built')
+        except:
+            self.mainvar.logger.error("Image '" +image+ "' without svg or no defined")
+            self.internal['Icons']['Images'][image]['Icon'] = PyQt6.QtWidgets.QWidget().style().standardIcon(
+                            #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
+                            PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
+            #print(image, ' failed')
+
+    def buildMenu(self,fct_restart,fct_del):
+        self.menu = PyQt6.QtWidgets.QMenu()
+        self.menu.setToolTipsVisible(True)
+        # self.menu.setStyleSheet(self.qss)
         self.menu.addSeparator()
 
         # Define menu default actions

@@ -11,7 +11,6 @@ except ImportError:
 import psutil
 import time
 
-from . import _icon
 from . import _general
 
 class conffield:
@@ -20,83 +19,6 @@ class conffield:
         self.value = _general.GetOpt(value,type)
     def _print(self):
         print(self.value)
-
-'''
-class general:
-    def __init__(self,giftray,show):
-        self.giftray= giftray
-        self.show   = show.title()
-        self.Clean()
-        return
-
-    def _Init(self):
-        return
-
-    def Parse(self,val):
-        if self.set :
-            self.AddError("General configuration set several times for "+self.show)
-            return
-        if self.used :
-            self.AddError("General configuration set after being used for "+self.show)
-            return
-        self.set = True
-        others = dict()
-        for i in val:
-            k = i.title()
-            if k == "Theme".title():
-                col = _general.GetOpt(general_conf[i],_general.gtype.STRING)
-                if col != self.giftray.conf_theme:
-                    self.configuration["Theme"] = conffield(col)
-                    self.conf["Theme".title()] = col
-                    self.subconf["Theme".title()] = col
-            elif k == "Dark".title():
-                dark = _general.GetOpt(general_conf[i],_general.gtype.STRING)
-                if dark != self.giftray.conf_theme:
-                    self.configuration["Dark"] = conffield(dark)
-                    self.conf["Dark".title()] = dark
-                    self.subconf["Dark".title()] = dark
-            elif k == "Light".title():
-                light = _general.GetOpt(general_conf[i],_general.gtype.STRING)
-                if light != self.giftray.conf_theme:
-                    self.configuration["light"] = conffield(light)
-                    self.conf["Light".title()] = light
-                    self.subconf["Light".title()] = light
-            else:
-                others[i]=val[i]
-        self._Parse(others)
-        return
-
-    def _Parse(self,others):
-        for i in others:
-            self.AddError("'"+i+"' not defined")
-        return
-
-    def Clean(self):
-        self.error  = []
-        self.conf   = dict()
-        self.subconf= dict()
-        self.set    = False
-        self.used   = False
-        self.configuration = dict()
-        self.configuration_type = { "Theme": _general.gtype.STRING,
-                                    "Light": _general.gtype.COLOR,
-                                    "Dark": _general.gtype.COLOR}
-        self._Init()
-        return
-
-    def GetConf(self,partial=False):
-        self.used = True
-        if partial: return copy.copy(self.subconf)
-        return copy.copy(self.conf)
-
-    def GetError(self):
-        return copy.copy(self.error)
-
-    def AddError(self,error):
-        self.giftray.logger.error(error + " in '" +self.show+"'")
-        self.error.append(self.show+': '+error)
-        return
-'''
 
 class object:
     def __del__(self):
