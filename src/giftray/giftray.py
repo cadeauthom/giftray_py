@@ -40,11 +40,10 @@ class giftray(object):
         signal.signal(signal.SIGINT, signal_handler)
         self.mainvar = _var.mainvar()
         # Define app
-        self.app = PyQt6.QtWidgets.QApplication([])
-        self.app.setStyle('Fusion')
+        self.app = PyQt6.QtWidgets.QApplication([]) # take 50ms
         self.app.setQuitOnLastWindowClosed ( False )
         # Define tray
-        self.tray = PyQt6.QtWidgets.QSystemTrayIcon(
+        self.tray = PyQt6.QtWidgets.QSystemTrayIcon( # take 30ms
                         PyQt6.QtWidgets.QWidget().style().standardIcon( #or self.win_handler
                             PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
         self.tray.setToolTip    (self.mainvar.showname)
@@ -344,6 +343,10 @@ class giftray(object):
         self.trayconf = _var.trayconf(self.mainvar)
         self.trayconf.load()
         # self.trayconf.print()
+        self.app.setStyle(self.trayconf.getStyle())
+
+        self.tray.setIcon(self.trayconf.getIcon('GENERIC_Tray'))
+        self.app.setWindowIcon(self.trayconf.getIcon('GENERIC_Tray'))
 
         '''
         self._conf2JSON()
@@ -739,6 +742,7 @@ class giftray(object):
         self.started = True
         # print(self._PrintConf())
         '''
+        self.tray.setContextMenu(self.trayconf.buildMenu(self._Restart,self.__del__))
         return
 
     def _PrintConf(self,full=True):
@@ -950,13 +954,14 @@ class giftray(object):
 
     def _ConnectorTray(self,reason):
         if reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Trigger:
-            pass
-        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Context:
-            self.tray_menu.show()
-        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
             self._ConnectorAbout()
-        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.MiddleClick:
+        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Context:
+            self.trayconf.show()
+        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
             self.__del__()
+        elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.MiddleClick:
+            #seems not detected as midlle but as trigger
+            pass
         return
 
     def _ConnectorAction(self,feature):

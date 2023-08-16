@@ -131,6 +131,7 @@ class mainvar():
 class trayconf:
     def __init__(self,mainvar):
         self.mainvar=mainvar
+        self.started = False
         #Init Internal
         # self.internal_type = {  "LogLevel": _general.type.STRING,
                                 # "Silent": _general.type.STRING,
@@ -149,7 +150,7 @@ class trayconf:
                             'GENERIC_No-Click'     : { 'Theme': 'Default', 'SVG': '<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="decrease-circle" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><circle id="secondary" cx="12" cy="12" r="9" style="fill:#2ca9bc; stroke-width: 2;"></circle><path id="primary" d="M7.76,12h8.48M12,3a9,9,0,1,0,9,9A9,9,0,0,0,12,3Z" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path></svg>'},
                             'GENERIC_Menu'         : { 'Theme': 'Default', 'SVG': '<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="add-collection" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><rect id="secondary" x="3" y="3" width="14" height="14" rx="1" style="fill:#2ca9bc; stroke-width: 2;"></rect><path id="primary" d="M7,21H20a1,1,0,0,0,1-1V5" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path><path id="primary-2" data-name="primary" d="M7,10h6M10,7v6m7,3V4a1,1,0,0,0-1-1H4A1,1,0,0,0,3,4V16a1,1,0,0,0,1,1H16A1,1,0,0,0,17,16Z" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path></svg>'},
                             'GENERIC_About'        : { 'Theme': 'Default', 'SVG': '<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="chat-alert-left" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><path id="secondary" d="M3,11c0-4.42,4-8,9-8s9,3.58,9,8-4,8-9,8A9.87,9.87,0,0,1,9,18.52L4,21l1.19-4.77A7.5,7.5,0,0,1,3,11Z" style="fill:#2ca9bc; stroke-width: 2;"></path><path id="primary" d="M3,11c0-4.42,4-8,9-8s9,3.58,9,8-4,8-9,8A9.87,9.87,0,0,1,9,18.52L4,21l1.19-4.77A7.5,7.5,0,0,1,3,11Zm9-4v3" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path><line id="primary-upstroke" x1="12.05" y1="14.5" x2="11.95" y2="14.5" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5;"></line></svg>'},
-                            'GENERIC_Generator'    : { 'Theme': 'Default', 'SVG': '<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="edit-alt-2" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><polygon id="secondary" points="10.47 9.29 14.71 13.53 7.24 21 3 21 3 16.76 10.47 9.29" style="fill:#2ca9bc; stroke-width: 2;"></polygon><path id="primary" d="M20.41,7.83l-2.88,2.88L13.29,6.47l2.88-2.88a1,1,0,0,1,1.42,0l2.82,2.82A1,1,0,0,1,20.41,7.83ZM3,16.76V21H7.24l7.47-7.47L10.47,9.29Z" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path></svg>'},
+                            #'GENERIC_Generator'    : { 'Theme': 'Default', 'SVG': '<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="edit-alt-2" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><polygon id="secondary" points="10.47 9.29 14.71 13.53 7.24 21 3 21 3 16.76 10.47 9.29" style="fill:#2ca9bc; stroke-width: 2;"></polygon><path id="primary" d="M20.41,7.83l-2.88,2.88L13.29,6.47l2.88-2.88a1,1,0,0,1,1.42,0l2.82,2.82A1,1,0,0,1,20.41,7.83ZM3,16.76V21H7.24l7.47-7.47L10.47,9.29Z" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path></svg>'},
                             'GENERIC_Help'         : { 'Theme': 'Default', 'SVG': '<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="help" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><path id="secondary" d="M10.91,8.16,9.53,3.35A9,9,0,0,0,3.35,9.53l4.81,1.38A4,4,0,0,1,10.91,8.16ZM8.16,13.09,3.35,14.47a9,9,0,0,0,6.18,6.18l1.38-4.81A4,4,0,0,1,8.16,13.09Zm6.31-9.74L13.09,8.16a4,4,0,0,1,2.75,2.75l4.81-1.38A9,9,0,0,0,14.47,3.35Zm1.37,9.74a4,4,0,0,1-2.75,2.75l1.38,4.81a9,9,0,0,0,6.18-6.18Z" style="fill:#2ca9bc; stroke-width: 2;"></path><path id="primary" d="M20.42,14.41,16.1,13.17m4.32-3.58L16.1,10.83M3.58,9.59,7.9,10.83M3.58,14.41,7.9,13.17m1.69,7.25,1.24-4.32m2.34,0,1.24,4.32m0-16.84L13.17,7.9m-2.34,0L9.59,3.58M12,3a9,9,0,1,0,9,9A9,9,0,0,0,12,3Zm0,5a4,4,0,1,0,4,4A4,4,0,0,0,12,8Z" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path></svg>'},
                             'GENERIC_Configuration': { 'Theme': 'Default', 'SVG': '<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="settings" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><path id="secondary" d="M20,10h-.59a1,1,0,0,1-.94-.67v0a1,1,0,0,1,.2-1.14l.41-.41a1,1,0,0,0,0-1.42L17.66,4.93a1,1,0,0,0-1.42,0l-.41.41a1,1,0,0,1-1.14.2h0A1,1,0,0,1,14,4.59V4a1,1,0,0,0-1-1H11a1,1,0,0,0-1,1v.59a1,1,0,0,1-.67.94h0a1,1,0,0,1-1.14-.2l-.41-.41a1,1,0,0,0-1.42,0L4.93,6.34a1,1,0,0,0,0,1.42l.41.41a1,1,0,0,1,.2,1.14v0a1,1,0,0,1-.94.67H4a1,1,0,0,0-1,1v2a1,1,0,0,0,1,1h.59a1,1,0,0,1,.94.67v0a1,1,0,0,1-.2,1.14l-.41.41a1,1,0,0,0,0,1.42l1.41,1.41a1,1,0,0,0,1.42,0l.41-.41a1,1,0,0,1,1.14-.2h0a1,1,0,0,1,.67.94V20a1,1,0,0,0,1,1h2a1,1,0,0,0,1-1v-.59a1,1,0,0,1,.67-.94h0a1,1,0,0,1,1.14.2l.41.41a1,1,0,0,0,1.42,0l1.41-1.41a1,1,0,0,0,0-1.42l-.41-.41a1,1,0,0,1-.2-1.14v0a1,1,0,0,1,.94-.67H20a1,1,0,0,0,1-1V11A1,1,0,0,0,20,10Zm-8,5a3,3,0,1,1,3-3A3,3,0,0,1,12,15Z" style="fill:#2ca9bc; stroke-width: 2;"></path><path id="primary" d="M15,12a3,3,0,1,1-3-3A3,3,0,0,1,15,12Zm5-2h-.59a1,1,0,0,1-.94-.67v0a1,1,0,0,1,.2-1.14l.41-.41a1,1,0,0,0,0-1.42L17.66,4.93a1,1,0,0,0-1.42,0l-.41.41a1,1,0,0,1-1.14.2h0A1,1,0,0,1,14,4.59V4a1,1,0,0,0-1-1H11a1,1,0,0,0-1,1v.59a1,1,0,0,1-.67.94h0a1,1,0,0,1-1.14-.2l-.41-.41a1,1,0,0,0-1.42,0L4.93,6.34a1,1,0,0,0,0,1.42l.41.41a1,1,0,0,1,.2,1.14v0a1,1,0,0,1-.94.67H4a1,1,0,0,0-1,1v2a1,1,0,0,0,1,1h.59a1,1,0,0,1,.94.67v0a1,1,0,0,1-.2,1.14l-.41.41a1,1,0,0,0,0,1.42l1.41,1.41a1,1,0,0,0,1.42,0l.41-.41a1,1,0,0,1,1.14-.2h0a1,1,0,0,1,.67.94V20a1,1,0,0,0,1,1h2a1,1,0,0,0,1-1v-.59a1,1,0,0,1,.67-.94h0a1,1,0,0,1,1.14.2l.41.41a1,1,0,0,0,1.42,0l1.41-1.41a1,1,0,0,0,0-1.42l-.41-.41a1,1,0,0,1-.2-1.14v0a1,1,0,0,1,.94-.67H20a1,1,0,0,0,1-1V11A1,1,0,0,0,20,10Z" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path></svg>'},
                             'GENERIC_Empty'        : { 'Theme': 'Default', 'SVG': '<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="bracket-square" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><rect id="secondary" x="3" y="3" width="18" height="18" rx="1" transform="translate(24) rotate(90)" style="fill:#2ca9bc; stroke-width: 2;"></rect><path id="primary" d="M14,7h2a1,1,0,0,1,1,1v8a1,1,0,0,1-1,1H14" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path><path id="primary-2" data-name="primary" d="M10,7H8A1,1,0,0,0,7,8v8a1,1,0,0,0,1,1h2" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path><rect id="primary-3" data-name="primary" x="3" y="3" width="18" height="18" rx="1" transform="translate(24) rotate(90)" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></rect></svg>'},
@@ -163,16 +164,22 @@ class trayconf:
                         'Native':       {'Dark': '2ca9bc', 'Light': '000000'},
                         'Grey':         {'Dark': '000000', 'Light': 'AAAAAA'},
                         'DarkGrey':     {'Dark': 'AAAAAA', 'Light': '000000'},
+                        'LightGrey':    {'Dark': 'AAAAAA', 'Light': 'FFFFFF'},
                         'Black':        {'Dark': '000000', 'Light': '000000'},
                         'White':        {'Dark': 'FFFFFF', 'Light': 'AAAAAA'},
                         'DarkWhite':    {'Dark': 'FFFFFF', 'Light': '000000'},
+                        'LightWhite':   {'Dark': '000000', 'Light': 'FFFFFF'},
                         'Blue':         {'Dark': '1185E1', 'Light': '4DCFE1'},
                         'DarkBlue':     {'Dark': '1185E1', 'Light': '000000'},
+                        'LightBlue':    {'Dark': '1185E1', 'Light': 'FFFFFF'},
                         'Green':        {'Dark': '32CD32', 'Light': '7CFC00'},
                         'DarkGreen':    {'Dark': '32CD32', 'Light': '000000'},
+                        'LightGreen':   {'Dark': '32CD32', 'Light': 'FFFFFF'},
                         'Red':          {'Dark': 'FDC75B', 'Light': 'ED664C'},
                         'DarkRed':      {'Dark': 'ED664C', 'Light': '000000'},
+                        'LightRed':     {'Dark': 'ED664C', 'Light': 'FFFFFF'},
                         'DarkYellow':   {'Dark': 'FDC75B', 'Light': '000000'},
+                        'LightYellow':  {'Dark': 'FDC75B', 'Light': 'FFFFFF'},
                         'MonoWhite':    {'Dark': 'FFFFFF', 'Light': 'FFFFFF'}
                         }
         #Init Conf
@@ -182,6 +189,7 @@ class trayconf:
         self.conf['Actions'] = dict()
         self.conf['Generals']['LogLevel'] = "WARNING"
         self.conf['Generals']['Silent'] = True
+        self.conf['Generals']['Darkmode'] = False
         self.conf['Generals']['Icons'] = dict()
         self.conf['Generals']['Themes'] = {
                         'Tray'   : {'Theme': 'MonoWhite',
@@ -238,7 +246,10 @@ class trayconf:
         if n:
             return
         copy = self.getTheme(copy)
-        self.internal['Themes'][new] = self.internal['Themes'][copy]
+        self.internal['Themes'][new] = {
+                'Dark' : self.internal['Themes'][copy]['Dark'],
+                'Light': self.internal['Themes'][copy]['Light']
+                }
         if dark:
             self.internal['Themes'][new]['Dark'] = dark
         if light:
@@ -251,12 +262,28 @@ class trayconf:
         if name in self.conf['Generals']['Icons'] and path:
             self.conf['Generals']['Icons'][name] = path
 
+    def getIcon(self, name):
+        if not name in self.internal['Icons']['Images']:
+            return
+        if not 'Icon' in self.internal['Icons']['Images'][name]:
+            return
+        return self.internal['Icons']['Images'][name]['Icon']
+
     def setOpt(self, opt, value):
         if opt in self.conf['Generals']:
             self.conf['Generals'][opt] = value
 
     def print(self):
         self.write('')
+
+    def getStyle(self):
+        if self.conf['Generals']['Darkmode']:
+            return('Fusion')
+        return('Macos')
+        #self.app.setStyle('Fusion')
+        #self.app.setStyle('windows')
+        #self.app.setStyle('windowsvista')
+        #self.app.setStyle('macos')
 
     def write(self,path):
         if path:
@@ -289,6 +316,9 @@ class trayconf:
                 continue
             elif k ==  'Silent':
                 self.conf['Generals']['Silent'] = config['Generals']['Silent']
+                continue
+            elif k ==  'Darkmode':
+                self.conf['Generals']['Darkmode'] = config['Generals']['Darkmode']
                 continue
             elif k ==  'Icons':
                 for i in config['Generals']['Icons']:
@@ -469,27 +499,88 @@ class trayconf:
                                     'SVG'   : svg,
                                     'Path'  : path_svg
                                     }
-        # print(json.dumps(self.internal['Icons'], indent = 2))
         for image in self.internal['Icons']['Images']:
-            try:
-                img_str = self.internal['Icons']['Images'][image]['SVG']
-                d1 = self.internal['Themes'][self.internal['Icons']['Images'][image]['Theme']]['Dark']
-                dn = self.internal['Themes']['Native']['Dark']
-                l1 = self.internal['Themes'][self.internal['Icons']['Images'][image]['Theme']]['Light']
-                ln = self.internal['Themes']['Native']['Light']
-                if  l1 != ln:
-                    img_str=img_str.replace('#'+dn,'#CompletelyFakeStringToReplaceDark')
-                    img_str=img_str.replace('#'+ln,'#'+l1)
-                    img_str=img_str.replace('#CompletelyFakeStringToReplaceDark','#'+d1)
-                elif d1 != dn:
-                    img_str=img_str.replace('#'+dn,'#'+d1)
-                self.internal['Icons']['Images'][image]['BuilderSVG'] = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
-                self.internal['Icons']['Images'][image]['BuilderImage']= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
-                self.internal['Icons']['Images'][image]['BuilderSVG'].render(PyQt6.QtGui.QPainter(self.internal['Icons']['Images'][image]['BuilderImage']))
-                self.internal['Icons']['Images'][image]['Icon'] = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(self.internal['Icons']['Images'][image]['BuilderImage']))
-            except:
-                self.mainvar.logger.error("Image '" +image+ "' without svg or no defined")
-                self.internal['Icons']['Images'][image]['Icon'] = PyQt6.QtWidgets.QWidget().style().standardIcon(
-                                #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
-                                PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
+            self.buildImage(image)
+        self.qss = ''
+        # qss = self.mainvar.conf.replace('.json','.qss.example')
+        # if os.path.exists(qss) and os.path.isfile(qss):
+            # f = open(qss,"r")
+            # self.qss = '\n'.join(f.readlines())
+            # f.close()
 
+    def buildImage(self,image):
+        if 'Icon' in self.internal['Icons']['Images'][image]:
+            return
+        try:
+            img_str = self.internal['Icons']['Images'][image]['SVG']
+            d1 = self.internal['Themes'][self.internal['Icons']['Images'][image]['Theme']]['Dark']
+            dn = self.internal['Themes']['Native']['Dark']
+            l1 = self.internal['Themes'][self.internal['Icons']['Images'][image]['Theme']]['Light']
+            ln = self.internal['Themes']['Native']['Light']
+            if  l1 != ln:
+                img_str=img_str.replace('#'+dn,'#CompletelyFakeStringToReplaceDark')
+                img_str=img_str.replace('#'+ln,'#'+l1)
+                img_str=img_str.replace('#CompletelyFakeStringToReplaceDark','#'+d1)
+            elif d1 != dn:
+                img_str=img_str.replace('#'+dn,'#'+d1)
+            self.internal['Icons']['Images'][image]['BuilderSVG'] = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
+            self.internal['Icons']['Images'][image]['BuilderImage']= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
+            self.internal['Icons']['Images'][image]['BuilderSVG'].render(PyQt6.QtGui.QPainter(self.internal['Icons']['Images'][image]['BuilderImage']))
+            self.internal['Icons']['Images'][image]['Icon'] = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(self.internal['Icons']['Images'][image]['BuilderImage']))
+            #print(image, ' built')
+        except:
+            self.mainvar.logger.error("Image '" +image+ "' without svg or no defined")
+            self.internal['Icons']['Images'][image]['Icon'] = PyQt6.QtWidgets.QWidget().style().standardIcon(
+                            #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
+                            PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
+            #print(image, ' failed')
+
+    def buildMenu(self,fct_restart,fct_del):
+        self.menu = PyQt6.QtWidgets.QMenu()
+        self.menu.setToolTipsVisible(True)
+        # self.menu.setStyleSheet(self.qss)
+
+        self.menu.addSeparator()
+
+        # Define menu default actions
+        menu_help = PyQt6.QtWidgets.QMenu('Help',self.menu)
+        menu_help.setToolTipsVisible(True)
+        menu_help.setIcon(self.getIcon('GENERIC_Help'))
+        #ToDo generator Gui
+        #ToDo conf Gui
+        #ToDo about Gui
+        #ToDo update link
+        # act=PyQt6.QtGui.QAction('Generate HotKey',self.tray_menu)
+        # act.setIcon(self.getIcon('GENERIC_Generator'))
+        # act.setDisabled(True)
+        # #act.setStatusTip('not developed')
+        # self.tray_menu.addAction(act)
+        # act=PyQt6.QtGui.QAction('Show current configuration',self.tray_menu)
+        # act.setIcon(self.getIcon('GENERIC_Configuration'))
+        # act.setDisabled(True)
+        # self.tray_menu.addAction(act)
+        # act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
+        # act.setIcon(self.getIcon('GENERIC_About'))
+        # act.triggered.connect(self._ConnectorAbout)
+        # act.setDisabled(True)
+        # self.tray_menu.addAction(act)
+
+        act=PyQt6.QtGui.QAction('Reload configuration',menu_help)
+        act.setIcon(self.getIcon('GENERIC_Reload'))
+        act.triggered.connect(fct_restart)
+        menu_help.addAction(act)
+
+        self.menu.addMenu(menu_help)
+
+        act=PyQt6.QtGui.QAction('Exit '+self.mainvar.showname,self.menu)
+        act.setIcon(self.getIcon('GENERIC_Exit'))
+        act.triggered.connect(fct_del)
+        self.menu.addAction(act)
+
+        self.started = True
+
+        return self.menu
+
+    def show(self):
+        if self.started:
+            self.menu.show()

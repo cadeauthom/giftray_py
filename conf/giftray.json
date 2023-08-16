@@ -2,6 +2,7 @@
   "Generals": {
     "LogLevel": "DEBUG",
     "Silent": false,
+    "Darkmode": true,
     "Icons": {
       "Tray": null,
       "Errors": null,
@@ -22,8 +23,8 @@
       },
       "Default": {
         "Theme": "Native",
-        "Dark": "",
-        "Light": ""
+        "Dark": "FFFFFF",
+        "Light": "CCCCCC"
       },
       "Custom": {
         "Theme": "Native",
