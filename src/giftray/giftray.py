@@ -39,9 +39,9 @@ class giftray(object):
         self.app = PyQt6.QtWidgets.QApplication([]) # take 50ms
         self.app.setQuitOnLastWindowClosed ( False )
         # Define tray
+        self.main_ico = _var.main_ico()
         self.tray = PyQt6.QtWidgets.QSystemTrayIcon( # take 30ms
-                        PyQt6.QtWidgets.QWidget().style().standardIcon( #or self.win_handler
-                            PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion))
+                        self.main_ico.get())
         self.tray.setToolTip    (self.mainvar.showname)
         self.tray.setVisible    ( True )
         self.tray.show          ()
@@ -49,6 +49,7 @@ class giftray(object):
 
         self._Restart()
         self.mainvar.logger.info("Entering wait state")
+
         th = _general.KThread(target=self._Thread4Flush)
         th.start()
         timer = PyQt6.QtCore.QTimer()
@@ -68,6 +69,10 @@ class giftray(object):
             self.mainvar.logger.info("Exiting")
 
     def _Restart(self):
+        if hasattr(self, "trayconf"):
+            self.tray.setContextMenu(None)
+            self.tray.setIcon(self.main_ico.get())
+            del(self.trayconf)
         self.trayconf = _var.trayconf(self.mainvar)
         self.mainvar.setTray(self.trayconf)
         self.trayconf.load()
@@ -346,7 +351,8 @@ class giftray(object):
         if reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Trigger:
             self._ConnectorAbout()
         elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Context:
-            self.trayconf.show()
+            if hasattr(self, "trayconf"):
+                self.trayconf.show()
         elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
             self.__del__()
         elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.MiddleClick:
