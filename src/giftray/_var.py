@@ -139,17 +139,19 @@ class main_ico:
 
 class trayconf:
     def __del__(self):
-        for image in self.internal['Icons']['Images']:
-            del(self.internal['Icons']['Images'][image]['BuilderSVG'])
-            del(self.internal['Icons']['Images'][image]['BuilderImage'])
-            del(self.internal['Icons']['Images'][image]['Icon'])
+        # import dumper
+        # print(dumper.dump(self.install['Actions']))
         for a in self.install['Actions']:
             self.install['Actions'][a].__del__()
         for f in self.install['Folders']:
             self.install['Folders'][f].__del__()
+        for image in self.internal['Icons']['Images']:
+            del(self.internal['Icons']['Images'][image]['BuilderSVG'])
+            del(self.internal['Icons']['Images'][image]['BuilderImage'])
+            del(self.internal['Icons']['Images'][image]['Icon'])
 
     def __init__(self,mainvar):
-        self.mainvar=mainvar
+        self.mainvar = mainvar
         self.started = False
         self.locker  = _general.Lock()
         #Init Internal
@@ -853,7 +855,7 @@ class trayconf:
             duration = datetime.datetime.now() - start_time
             if th.is_alive():
                 self.mainvar.logger.debug('Kill '+show +' after '+str(duration.seconds)+' sec')
-                th.kill()
+                _general.threadKiller(th)
             else:
                 self.mainvar.logger.debug(show+ ' ran in '+str(duration.seconds)+' sec')
             #few seconds before releasing lock

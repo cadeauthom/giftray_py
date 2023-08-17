@@ -235,9 +235,7 @@ class action(object):
 class service(object):
     def __del__(self):
         # import ctypes, win32con
-        if self.thread.is_alive():
-            self.thread.kill()
-        print(self.show,'del',self.thread.is_alive())
+        _general.threadKiller(self.thread)
         object.__del__(self)
 
     def _PreInit(self,others):
@@ -265,8 +263,7 @@ class service(object):
     def Run(self):
         if self.active:
             if self.thread.is_alive():
-                self.thread.kill()
-                print(self.show,'active',self.thread.is_alive())
+                _general.threadKiller(self.thread)
                 self.thread = _general.KThread(target=self._Run)
                 out = 'stopped'
             else:
@@ -274,15 +271,17 @@ class service(object):
             self.active = False
         else:
             if self.thread.is_alive():
-                self.thread.kill()
-                print(self.show,'run',self.thread.is_alive())
+                _general.threadKiller(self.thread)
                 self.thread = _general.KThread(target=self._Run)
                 out = 'restarted'
             else:
                 out = 'started'
             self.thread.start()
             self.active = True
-        print(self.show,'run',out,self.thread.is_alive())
+            timeout = time.time() + 2
+            while not self.thread.is_alive():
+                if time.time() > timeout:
+                    break
         return out
 
     def _Run(self):

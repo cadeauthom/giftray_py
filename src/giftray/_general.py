@@ -6,6 +6,8 @@ import trace, threading
 import win32con
 import win32api
 import win32process
+import time
+import ctypes
 try:
     import win32gui
 except ImportError:
@@ -289,3 +291,18 @@ class KThread(threading.Thread):
         self.killed = True
     def getout(self):
         return self._return
+
+def threadKiller(thread):
+    if thread.is_alive():
+        thread.kill()
+    timeout = time.time() + 4
+    while thread.is_alive():
+        if time.time() > timeout:
+            break
+    if thread.is_alive():
+        ctypes.windll.user32.PostThreadMessageW(thread.native_id, win32con.WM_QUIT, 0, 0)
+    timeout = time.time() + 4
+    while thread.is_alive():
+        if time.time() > timeout:
+            break
+    #if thread.is_alive(): .... errors

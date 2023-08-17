@@ -57,50 +57,34 @@ class giftray(object):
         return
 
     def __del__(self):
-        import threading
-        if hasattr(self, "ahk_thread"):
-            if self.ahk_thread.is_alive():
-                #self.ahk_thread.kill()
-                ctypes.windll.user32.PostThreadMessageW(self.ahk_thread.native_id, win32con.WM_QUIT, 0, 0)
-        if hasattr(self, "app"):
-            self.app.quit()
+        self._Clean()
+        if hasattr(self, "th"):
+            _general.threadKiller(self.th)
         if hasattr(self, "mainvar"):
             self.mainvar.removeLockFile()
             self.mainvar.logger.info("Exiting application")
-        if hasattr(self, "trayconf"):
-            self.trayconf.__del__() 
-        if hasattr(self, "th"):
-            if self.th.is_alive():
-                self.mainvar.logger.info('Kill flusher')
-                #self.th.kill()
-                ctypes.windll.user32.PostThreadMessageW(self.ahk_thread.native_id, win32con.WM_QUIT, 0, 0)
-        for thread in threading.enumerate():
-            print(thread.name)
+        if hasattr(self, "app"):
+            self.app.quit()
 
-    def _Restart(self):
+    def _Clean(self):
+        if hasattr(self, "ahk_thread"):
+            if self.ahk_thread.is_alive():
+                _general.threadKiller(self.ahk_thread)
+            if self.ahk_thread.is_alive():
+                print('failed to kill ahk_thread')
         if hasattr(self, "trayconf"):
             self.tray.setContextMenu(None)
             self.tray.setIcon(self.main_ico.get())
+            self.trayconf.__del__()
             del(self.trayconf)
-        self.trayconf = _var.trayconf(self.mainvar)
-        self.mainvar.setTray(self.trayconf)
-        self.trayconf.load()
-        # self.trayconf.print()
-        self.app.setStyle(self.trayconf.getStyle())
-
-        self.tray.setIcon(self.trayconf.getIcon('GENERIC_Tray'))
-        self.app.setWindowIcon(self.trayconf.getIcon('GENERIC_Tray'))
-
-        if hasattr(self, "ahk_thread"):
-            if self.ahk_thread.is_alive():
-                #self.ahk_thread.kill()
-                ctypes.windll.user32.PostThreadMessageW(self.ahk_thread.native_id, win32con.WM_QUIT, 0, 0)
         if hasattr(self, "ahklock"):
             if self.ahklock.locked():
                 self.ahklock.release()
         else:
             self.ahklock = _general.Lock()
 
+    def _Restart(self):
+        self._Clean()
         self.ahk_thread = _general.KThread(target=self._Thread4ahk)
         self.trayconf = _var.trayconf(self.mainvar)
         self.mainvar.setTray(self.trayconf)
