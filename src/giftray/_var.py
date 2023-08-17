@@ -6,10 +6,13 @@ import trace, threading
 import win32con
 import win32api
 import win32process
+import datetime
 try:
     import win32gui
 except ImportError:
     import winxpgui as win32gui
+import ctypes
+import functools
 import psutil
 import enum
 import re
@@ -17,6 +20,7 @@ import json
 import logging
 import importlib
 import inspect
+import time
 import PyQt6.QtWidgets, PyQt6.QtGui, PyQt6.QtSvg
 
 from . import _general
@@ -29,8 +33,6 @@ class mainvar():
         self.name           = self.showname.casefold()
         self.python         = ( "\\python" in sys.executable )
         self.lockfile       = None
-        # self.modules        = ['wsl'.casefold(),'windows'.casefold()]
-        # self.modules        = ['feature'.casefold()]
         self.modules        = []
         self.avail_modules  = dict()
         self.template       = dict()
@@ -141,9 +143,15 @@ class trayconf:
             del(self.internal['Icons']['Images'][image]['BuilderSVG'])
             del(self.internal['Icons']['Images'][image]['BuilderImage'])
             del(self.internal['Icons']['Images'][image]['Icon'])
+        for a in self.install['Actions']:
+            self.install['Actions'][a].__del__()
+        for f in self.install['Folders']:
+            self.install['Folders'][f].__del__()
+
     def __init__(self,mainvar):
         self.mainvar=mainvar
         self.started = False
+        self.locker  = _general.Lock()
         #Init Internal
         self.internal = dict()
         self.internal['Icons'] = {
@@ -267,11 +275,14 @@ class trayconf:
             self.conf['Generals']['Icons'][name] = path
 
     def getIcon(self, name):
-        if not name in self.internal['Icons']['Images']:
-            return
-        if not 'Icon' in self.internal['Icons']['Images'][name]:
-            return
-        return self.internal['Icons']['Images'][name]['Icon']
+        if not name in self.internal['Icons']['Links']:
+            return self.internal['Icons']['Images']['GENERIC_Empty']['Icon']
+        link = self.internal['Icons']['Links'][name]
+        if not link in self.internal['Icons']['Images']:
+            return self.internal['Icons']['Images']['GENERIC_Empty']['Icon']
+        if not 'Icon' in self.internal['Icons']['Images'][link]:
+            return self.internal['Icons']['Images']['GENERIC_Empty']['Icon']
+        return self.internal['Icons']['Images'][link]['Icon']
 
     def setOpt(self, opt, value):
         if opt in self.conf['Generals']:
@@ -521,30 +532,19 @@ class trayconf:
                 else:
                     self.install[type][new_class.show]=new_class
 
-        to_rm = []
-        for section in self.install['Folders']:
-            self.install['Folders'][section].Check()
-            if not self.install['Folders'][section].IsOK():
-                self.install['Errors'][self.install['Folders'][section].show] = {"Error": "", "Class": self.install['Folders'][section]}
-                #print(section,' : ', self.install['Folders'][section].GetError())
-            elif self.install['Folders'][section].IsInMenu():
-                print(section, ' in menu, not sure what to do from this one')
-            #    self.menu.append(self.install['Folders'][section].show)
-            else:
-                print(section, ' lost, not sure when we can end here')
-        for f in to_rm:
-            self.install['Folders'].pop(f)
-        to_rm = []
-        for section in self.install['Actions']:
-            #print(section,' : ', self.install['Actions'][section].GetError())
-            self.install['Actions'][section].Check()
-            if not self.install['Actions'][section].IsOK():
-                to_rm.append(section)
-                self.install['Errors'][self.install['Actions'][section].show] = {"Error": "", "Class": self.install['Actions'][section]}
-            # if new_class.IsOK() and new_class.IsInMenu() and not new_class.IsChild() :
-                    # self.menu.append(new_class.show)
-        for f in to_rm:
-            self.install['Actions'].pop(f)
+        to_rm = {'Folders': [],'Actions': []}
+        for type in ['Folders','Actions']:
+            for section in self.install[type]:
+                self.install[type][section].Check()
+                if not self.install[type][section].IsOK():
+                    to_rm[type].append(section)
+                    self.install['Errors'][self.install[type][section].show] = {"Error": "", "Class": self.install[type][section]}
+        for type in ['Folders','Actions']:
+            for to_rm in to_rm[type]:
+                ahk, hhk = self.install[type][f].GetHK()
+                if ahk in self.install['AHK']:
+                    self.install['AHK'].pop(ahk)
+                self.install['Actions'].pop(f)
 
         '''
         if 0: #Debug to print errors
@@ -600,46 +600,269 @@ class trayconf:
         self.menu = PyQt6.QtWidgets.QMenu()
         self.menu.setToolTipsVisible(True)
         # self.menu.setStyleSheet(self.qss)
+
+        # Actions/Folders/Hidden and Errors/Default
+
+        menu_not = PyQt6.QtWidgets.QMenu('Not clickable',self.menu)
+        menu_not.setToolTipsVisible(True)
+        menu_not.setIcon(self.getIcon('No-Click'))
+
+        # Actions
+        for a in self.install['Actions']:
+            if self.install['Actions'][a].IsChild():
+                continue
+            if not self.install['Actions'][a].IsInMenu():
+                # Not clickable
+                ahk = self.install['Actions'][a].GetHK()[0]
+                if ahk:
+                    act = PyQt6.QtGui.QAction(self.getIcon(a),a,menu_not)
+                    act.setToolTip(ahk)
+                    act.setDisabled(True)
+                    #act.triggered.connect(functools.partial(self._ConnectorNothing, i))
+                    menu_not.addAction(act)
+                else:
+                    self.mainvar.logger.error('Not clickable '+ a + ' without HK')
+                continue
+            # Main menu
+            act = PyQt6.QtGui.QAction(self.getIcon(a),a,self.menu)
+            act.triggered.connect(functools.partial(self._ConnectorAction, a))
+            ahk = self.install['Actions'][a].GetHK()[0]
+            if ahk:
+                act.setToolTip(ahk)
+            if self.install['Actions'][a].IsService():
+                act.setCheckable(True)
+                if self.install['Actions'][a].enabled:
+                    #act.setChecked(True)
+                    act.activate(PyQt6.QtGui.QAction.ActionEvent.Trigger)
+            self.menu.addAction(act)
         self.menu.addSeparator()
 
-        # Define menu default actions
+        # Folders
+        for f in self.install['Folders']:
+            submenu = PyQt6.QtWidgets.QMenu(f,self.menu)
+            submenu.setToolTipsVisible(True)
+            #submenu.setIcon(self.mainmenuconf.getIcon('Menu'))
+            submenu.setIcon(self.getIcon(f))
+            if not self.install['Folders'][f].IsInMenu():
+                # All submenu action
+                #act = PyQt6.QtGui.QAction(self.images.getIcon(self.submenus[i].iconid),i,submenu)
+                act = PyQt6.QtGui.QAction(self.getIcon('GENERIC_Menu'),f,submenu)
+                ahk = self.install['Folders'][f].GetHK()[0]
+                if ahk:
+                    act.setToolTip(ahk)
+                act.triggered.connect(functools.partial(self._ConnectorAction, a))
+                submenu.addAction(act)
+                submenu.addSeparator()
+            # Sub actions
+            for c in self.install['Folders'][f].GetContain():
+                act = PyQt6.QtGui.QAction(self.getIcon(c),c,submenu)
+                ahk = self.install['Actions'][c].GetHK()[0]
+                if ahk:
+                    act.setToolTip(ahk)
+                if self.install['Actions'][c].IsInMenu():
+                    act.triggered.connect(functools.partial(self._ConnectorAction, c))
+                else:
+                    act.setDisabled(True)
+                submenu.addAction(act)
+            self.menu.addMenu(submenu)
+        self.menu.addSeparator()
+
+        # Hidden and Errors
+        # loop on modules in error
+        if len(self.install['Errors']) == 0:
+            act=PyQt6.QtGui.QAction(self.getIcon('Errors'),'Errors',self.menu)
+        else:
+            menu_err = PyQt6.QtWidgets.QMenu('Errors',self.menu)
+            menu_err.setToolTipsVisible(True)
+            menu_err.setIcon(self.getIcon('Errors'))
+            act=PyQt6.QtGui.QAction(elf.getIcon('Tray'),self.mainvar.showname,menu_err)
+        info,line = self._buildError(self.mainvar.showname, "")
+        act.setToolTip(info)
+        act.triggered.connect(functools.partial(self._ConnectorError, self.mainvar.showname, info+line))
+        if len(self.install['Errors']) == 0:# and len(self.main_error) == 0 :
+            act.setDisabled(True)
+        if len(self.install['Errors']) == 0:
+            pass
+        else:
+            menu_err.addAction(act)
+            menu_err.addSeparator()
+            for i in self.install['Errors']:
+                act=PyQt6.QtGui.QAction(self.getIcon(i),i,menu_err)
+                info,line = self._buildError(i, self.install['Errors'][i].GetError())
+                act.setToolTip(info)
+                act.triggered.connect(functools.partial(self._ConnectorError, i, info+line))
+                menu_err.addAction(act)
+
+        if not menu_not.isEmpty():
+            self.menu.addMenu(menu_not)
+        if len(self.install['Errors']) == 0:
+            self.menu.addAction(act)
+        elif not menu_err.isEmpty():
+            self.menu.addMenu(menu_err)
+        self.menu.addSeparator()
+
+        # Default
         menu_help = PyQt6.QtWidgets.QMenu('Help',self.menu)
         menu_help.setToolTipsVisible(True)
-        menu_help.setIcon(self.getIcon('GENERIC_Help'))
+        menu_help.setIcon(self.getIcon('Help'))
         #ToDo generator Gui
         #ToDo conf Gui
         #ToDo about Gui
         #ToDo update link
         # act=PyQt6.QtGui.QAction('Generate HotKey',self.tray_menu)
-        # act.setIcon(self.getIcon('GENERIC_Generator'))
+        # act.setIcon(self.getIcon('Generator'))
         # act.setDisabled(True)
         # #act.setStatusTip('not developed')
         # self.tray_menu.addAction(act)
         # act=PyQt6.QtGui.QAction('Show current configuration',self.tray_menu)
-        # act.setIcon(self.getIcon('GENERIC_Configuration'))
+        # act.setIcon(self.getIcon('Configuration'))
         # act.setDisabled(True)
         # self.tray_menu.addAction(act)
         # act=PyQt6.QtGui.QAction('About '+self.showname,self.tray_menu)
-        # act.setIcon(self.getIcon('GENERIC_About'))
+        # act.setIcon(self.getIcon('About'))
         # act.triggered.connect(self._ConnectorAbout)
         # act.setDisabled(True)
         # self.tray_menu.addAction(act)
 
         act=PyQt6.QtGui.QAction('Reload configuration',menu_help)
-        act.setIcon(self.getIcon('GENERIC_Reload'))
+        act.setIcon(self.getIcon('Reload'))
         act.triggered.connect(fct_restart)
         menu_help.addAction(act)
 
         self.menu.addMenu(menu_help)
 
         act=PyQt6.QtGui.QAction('Exit '+self.mainvar.showname,self.menu)
-        act.setIcon(self.getIcon('GENERIC_Exit'))
+        act.setIcon(self.getIcon('Exit'))
         act.triggered.connect(fct_del)
         self.menu.addAction(act)
 
         self.started = True
 
         return self.menu
+
+    def _buildError(self,name,error):
+        info = '<ul>\n'
+        l=0
+        arr=[]
+        if error:
+            arr=[error]
+        elif name == self.mainvar.showname:
+            # arr = self.main_error
+            for e in self.install['Errors']:
+                if self.install['Errors'][e]['Error']:
+                    arr+=[self.install['Errors'][e]['Error']]
+                else:
+                    arr+=self.install['Errors'][e]['Class'].GetError()
+        elif name in self.install['Folders']:
+            arr=self.install['Folders'][name].GetError()
+        elif name in self.install['Actions']:
+            arr=self.install['Actions'][name].GetError()
+        for e in arr:
+            l = max(l,len(e))
+            info += '\t<li>' + e + '</li>\n'
+        info += '</ul>\n'
+        l = 60+min(l,80)
+        line = '<p>'
+        for i in range(l): line += '&nbsp;'
+        line += '</p>'
+        return [info, line]
+
+    def _ConnectorError(self,name,info):
+        text = '<h3>'+name+' errors</h3>'
+        box = PyQt6.QtWidgets.QMessageBox()
+        #box.setTextFormat(PyQt6.QtCore.Qt.RichText)
+        box.setWindowTitle(self.mainvar.showname)
+        box.setText(text)
+        box.setInformativeText(info)
+        #box.setStandardButtons(PyQt6.QtWidgets.Ok)
+        #p = self.mainmenuconf.getIcon('Main').pixmap(20)
+        #box.setIconPixmap(p)
+        box.setWindowIcon(self.getIcon('Tray'))
+        box.exec()
+        return
+
+    def registerAHK(self):
+        nb_hotkey=0
+        to_rm = {'Folders': [],'Actions': []}
+        for ahk in self.install['AHK']:
+            if self.install['AHK'][ahk] in self.install['Folders']:
+                type = 'Folders'
+            elif self.install['AHK'][ahk] in self.install['Actions']:
+                type = 'Actions'
+            else:
+                self.mainvar.logger.error('AHK '+ahk + ' not defined in Actions or Folders')
+                #not added to to_rm to avoid searching where it comes from
+                continue
+            ahk, hhk = self.install[type][self.install['AHK'][ahk]].GetHK()
+            if not ahk:
+                continue
+            if (ctypes.windll.user32.RegisterHotKey(None, nb_hotkey+1, hhk["mod"], hhk["key"])):
+                nb_hotkey += 1
+                self.mainvar.logger.debug("Register "+ahk)
+            else:
+                to_rm[type].append(self.install['AHK'])
+                self.install['Errors'][self.install[type][self.install['AHK']].show] = {"Error": "", "Class": self.install[type][self.install['AHK']]}
+                self.install['Errors'][self.install[type][self.install['AHK']].show].AddError("Fail to register Hotkey ("+ahk+"): "+ctypes.FormatError(ctypes.GetLastError()))
+        for type in ['Folders','Actions']:
+            for to_rm in to_rm[type]:
+                ahk, hhk = self.install[type][f].GetHK()
+                if ahk in self.install['AHK']:
+                    self.install['AHK'].pop(ahk)
+                self.install['Actions'].pop(f)
+
+
+    def ConnectorAHK(self, ahk):
+        if ahk in self.install['AHK']:
+            self._ConnectorAction(self.install['AHK'][ahk])
+
+    def _ConnectorAction(self, feature):
+        if self.locker.locked():
+            if feature in self.install['Actions']:
+                self.mainvar.logger.debug('Lock locked for ' + self.install['Actions'][feature].show)
+            elif feature in self.install['Folders']:
+                self.mainvar.logger.debug('Lock locked for ' + self.install['Folders'][feature].show)
+            else:
+                self.mainvar.logger.critical('Lock locked for undefined feature' + feature)
+            return
+        a=_general.KThread(target=self._Thread4Run,args=[feature])
+        a.start()
+        return
+
+    def _Thread4Run(self,args,silent=False):
+        if (self.conf['Generals']['Silent']) or (not silent and not self.started):
+            silent = True
+        if args in self.install['Folders']:
+            outs=[]
+            for a in self.install['Folders'][args].GetContain():
+                outs.append(a+": "+self._Thread4Run(a,silent=True))
+            _general.PopUp(args, "\n".join(outs))
+            return ""
+        if not args in  self.install['Actions']:
+            return ""
+        if self.locker.acquire(timeout=1):
+            action=self.install['Actions'][args]
+            start_time = datetime.datetime.now()
+            show = action.show+start_time.strftime(" [%H%M%S]")
+            self.mainvar.logger.debug('Run '+show)
+            th = _general.KThread(target=action.Run)
+            th.start()
+            th.join(10)
+            out = th.getout()
+            if not silent:
+                _general.PopUp(args, out)
+            duration = datetime.datetime.now() - start_time
+            if th.is_alive():
+                self.mainvar.logger.debug('Kill '+show +' after '+str(duration.seconds)+' sec')
+                th.kill()
+            else:
+                self.mainvar.logger.debug(show+ ' ran in '+str(duration.seconds)+' sec')
+            #few seconds before releasing lock
+            #TODO: releasing lock time in configuration
+            if not silent:
+                time.sleep(3)
+            self.mainvar.logger.debug('Release lock')
+            if self.locker.locked(): self.locker.release()
+        return out
 
     def show(self):
         if self.started:
