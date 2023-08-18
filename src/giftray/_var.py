@@ -26,7 +26,10 @@ import PyQt6.QtWidgets, PyQt6.QtGui, PyQt6.QtSvg
 from . import _general
 from . import _feature
 
-class mainvar:
+class statics:
+    def __del__(self):
+        self._removeLockFile()
+
     def __init__(self):
         self.showname       = 'GifTray'
         self.name           = self.showname.casefold()
@@ -35,7 +38,7 @@ class mainvar:
         self.modules        = []
         self.template       = dict()
         self.classes        = dict()
-        self.trayconf       = None
+        self.dynamics       = None
         self.ahk_translator = _general.ahk()
         if self.python:
             self.tempdir = './'
@@ -71,8 +74,8 @@ class mainvar:
 
         self.ahk = _general.ahk()
 
-    def setTray(self,trayconf):
-        self.trayconf = trayconf
+    def setTray(self,dynamics):
+        self.dynamics = dynamics
 
     def _checkLockFile(self):
         lockfile = posixpath.join(self.tempdir,self.name+'.lock')
@@ -109,7 +112,7 @@ class mainvar:
             with open(self.lockfile, 'w') as file:
                 file.write(str(os.getpid()))
 
-    def removeLockFile(self):
+    def _removeLockFile(self):
         if os.path.isfile(self.lockfile):
             os.remove(self.lockfile)
 
@@ -135,7 +138,7 @@ class main_ico:
         return self.Icon
 
 
-class trayconf:
+class dynamics:
     def __del__(self):
         for a in self.install['Actions']:
             self.install['Actions'][a].__del__()
@@ -146,8 +149,9 @@ class trayconf:
             del(self.internal['Icons']['Images'][image]['BuilderImage'])
             del(self.internal['Icons']['Images'][image]['Icon'])
 
-    def __init__(self,mainvar):
-        self.mainvar = mainvar
+    def __init__(self,statics):
+        self.statics = statics
+        self.statics.dynamics = self
         self.started = False
         self.locker  = _general.Lock()
         #Init Internal
@@ -219,76 +223,12 @@ class trayconf:
         self.install['AHK']     = dict()
         self.install['Errors']  = dict()
 
-    def updateTheme(self, theme, field, value):
-        if not theme in self.conf['Generals']['Themes']:
-            return
-        if not field in self.conf['Generals']['Themes'][theme]:
-            return
-        self.conf['Generals']['Themes'][theme][field]=value
-
-    def getTheme(self, theme, native=True):
-        cf = theme.casefold()
-        for t in self.internal['Themes']:
-            if t.casefold() == cf:
-                return t
-        if native:
-            return "Native"
-        return None
-
-    def addTheme(self, new, copy, dark, light):
-        if not new:
-            return
-        n = self.getTheme(new, native=False)
-        if n:
-            return
-        copy = self.getTheme(copy)
-        self.internal['Themes'][new] = {
-                'Dark' : self.internal['Themes'][copy]['Dark'],
-                'Light': self.internal['Themes'][copy]['Light']
-                }
-        if dark:
-            self.internal['Themes'][new]['Dark'] = dark
-        if light:
-            self.internal['Themes'][new]['Light'] = light
-
-    def getIcon(self, name):
-        if not name in self.internal['Icons']['Links']:
-            return self.internal['Icons']['Images']['GENERIC_Empty']['Icon']
-        link = self.internal['Icons']['Links'][name]
-        if not link in self.internal['Icons']['Images']:
-            return self.internal['Icons']['Images']['GENERIC_Empty']['Icon']
-        if not 'Icon' in self.internal['Icons']['Images'][link]:
-            return self.internal['Icons']['Images']['GENERIC_Empty']['Icon']
-        return self.internal['Icons']['Images'][link]['Icon']
-
-    def getStyle(self):
-        if self.conf['Generals']['Darkmode']:
-            return('Fusion')
-        return('Macos')
-        #self.app.setStyle('Fusion')
-        #self.app.setStyle('windows')
-        #self.app.setStyle('windowsvista')
-        #self.app.setStyle('macos')
-
-    '''
-    def writeConf(self,path):
-        if path:
-            if os.path.exists(path):
-                shutil.move(path, path + ".bak")
-            with open(path,'w') as file:
-                json.dump(self.conf, file, indent = 2)
-        else:
-            print(json.dumps(self.conf, indent = 2))
-    '''
-
-    def load(self):
-        errors = []
+        self.install['MainErrors'] = [] #ToDo : use this one
         try:
-            with open(self.mainvar.conf,'r') as file:
+            with open(self.statics.conf,'r') as file:
                 config = json.load(file)
         except:
-            print(self.mainvar.conf)
-            return errors
+            print(self.statics.conf)
         for k in config['Generals']:
             if k == 'LogLevel':
                 LevelNamesMapping=logging.getLevelNamesMapping()
@@ -297,7 +237,7 @@ class trayconf:
                     self.conf['Generals']['LogLevel'] = levelname
                     # self.logger.setLevel(level=LevelNamesMapping[levelname])
                 else:
-                    errors.append('LogLevel->'+k+"not supported")
+                    self.install['MainErrors'].append('LogLevel->'+k+"not supported")
                 continue
             elif k ==  'Silent':
                 self.conf['Generals']['Silent'] = config['Generals']['Silent']
@@ -321,11 +261,11 @@ class trayconf:
 
         for a in config['Actions']:
             if (not 'Function' in config['Actions'][a]
-              or not config['Actions'][a]['Function'] in self.mainvar.template):
+              or not config['Actions'][a]['Function'] in self.statics.template):
                 continue
             self.conf['Actions'][a] = dict()
             self.conf['Actions'][a]['Function'] = config['Actions'][a]['Function']
-            for k in self.mainvar.template[self.conf['Actions'][a]['Function']]:
+            for k in self.statics.template[self.conf['Actions'][a]['Function']]:
                 if k in config['Actions'][a]:
                     if k in ['Function']:
                         continue
@@ -344,11 +284,11 @@ class trayconf:
                 continue
             self.conf['Folders'][f] = dict()
             self.conf['Folders'][f]['Contain'] = contain
-            for k in self.mainvar.template['Folder']:
+            for k in self.statics.template['Folder']:
                 if k in config['Folders'][f]:
                     if k in ['Contain']:
                         continue
-                    # self.conf['Folders'][f][k] = _general.GetOpt(str(config['Folders'][f][k]),self.mainvar.template['Folder'][k])
+                    # self.conf['Folders'][f][k] = _general.GetOpt(str(config['Folders'][f][k]),self.statics.template['Folder'][k])
                     self.conf['Folders'][f][k] = config['Folders'][f][k]
                 else:
                     self.conf['Folders'][f][k] = None
@@ -410,7 +350,7 @@ class trayconf:
                     arrpath = []
                     if not '\\python' in sys.executable:
                         arrpath.append(os.path.dirname(sys.executable))
-                    arrpath.append(os.path.dirname(self.mainvar.conf))
+                    arrpath.append(os.path.dirname(self.statics.conf))
                     arrpath.append(os.getcwd())
                     for psvg in psvgs:
                         if path_svg:
@@ -476,7 +416,7 @@ class trayconf:
         for image in self.internal['Icons']['Images']:
             self.buildImage(image)
         # self.qss = ''
-        # qss = self.mainvar.conf.replace('.json','.qss.example')
+        # qss = self.statics.conf.replace('.json','.qss.example')
         # if os.path.exists(qss) and os.path.isfile(qss):
             # f = open(qss,"r")
             # self.qss = '\n'.join(f.readlines())
@@ -486,10 +426,10 @@ class trayconf:
         for type in ['Folders','Actions']:
             for f in self.conf[type]:
                 if type == 'Actions':
-                    cl = self.mainvar.classes[self.conf[type][f]['Function']]
+                    cl = self.statics.classes[self.conf[type][f]['Function']]
                 else:
                     cl = _feature.menu
-                new_class = cl(f,self.conf[type][f],self.mainvar)
+                new_class = cl(f,self.conf[type][f],self.statics)
                 if new_class.IsOK():
                     ahk, hhk = new_class.GetHK()
                     if len(ahk)>2 and "key" in hhk:
@@ -539,6 +479,68 @@ class trayconf:
                 print('------------')
         '''
 
+    def updateTheme(self, theme, field, value):
+        if not theme in self.conf['Generals']['Themes']:
+            return
+        if not field in self.conf['Generals']['Themes'][theme]:
+            return
+        self.conf['Generals']['Themes'][theme][field]=value
+
+    def getTheme(self, theme, native=True):
+        cf = theme.casefold()
+        for t in self.internal['Themes']:
+            if t.casefold() == cf:
+                return t
+        if native:
+            return "Native"
+        return None
+
+    def addTheme(self, new, copy, dark, light):
+        if not new:
+            return
+        n = self.getTheme(new, native=False)
+        if n:
+            return
+        copy = self.getTheme(copy)
+        self.internal['Themes'][new] = {
+                'Dark' : self.internal['Themes'][copy]['Dark'],
+                'Light': self.internal['Themes'][copy]['Light']
+                }
+        if dark:
+            self.internal['Themes'][new]['Dark'] = dark
+        if light:
+            self.internal['Themes'][new]['Light'] = light
+
+    def getIcon(self, name):
+        if not name in self.internal['Icons']['Links']:
+            return self.internal['Icons']['Images']['GENERIC_Empty']['Icon']
+        link = self.internal['Icons']['Links'][name]
+        if not link in self.internal['Icons']['Images']:
+            return self.internal['Icons']['Images']['GENERIC_Empty']['Icon']
+        if not 'Icon' in self.internal['Icons']['Images'][link]:
+            return self.internal['Icons']['Images']['GENERIC_Empty']['Icon']
+        return self.internal['Icons']['Images'][link]['Icon']
+
+    def getStyle(self):
+        if self.conf['Generals']['Darkmode']:
+            return('Fusion')
+        return('Macos')
+        #self.app.setStyle('Fusion')
+        #self.app.setStyle('windows')
+        #self.app.setStyle('windowsvista')
+        #self.app.setStyle('macos')
+
+    '''
+    def writeConf(self,path):
+        if path:
+            if os.path.exists(path):
+                shutil.move(path, path + ".bak")
+            with open(path,'w') as file:
+                json.dump(self.conf, file, indent = 2)
+        else:
+            print(json.dumps(self.conf, indent = 2))
+    '''
+
     def buildImage(self,image):
         if 'Icon' in self.internal['Icons']['Images'][image]:
             return
@@ -560,7 +562,7 @@ class trayconf:
             self.internal['Icons']['Images'][image]['Icon'] = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(self.internal['Icons']['Images'][image]['BuilderImage']))
             #print(image, ' built')
         except:
-            self.mainvar.logger.error("Image '" +image+ "' without svg or no defined")
+            self.statics.logger.error("Image '" +image+ "' without svg or no defined")
             self.internal['Icons']['Images'][image]['Icon'] = PyQt6.QtWidgets.QWidget().style().standardIcon(
                             #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
                             PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
@@ -591,7 +593,7 @@ class trayconf:
                     #act.triggered.connect(functools.partial(self._ConnectorNothing, i))
                     menu_not.addAction(act)
                 else:
-                    self.mainvar.logger.error('Not clickable '+ a + ' without HK')
+                    self.statics.logger.error('Not clickable '+ a + ' without HK')
                 continue
             # Main menu
             act = PyQt6.QtGui.QAction(self.getIcon(a),a,self.menu)
@@ -645,10 +647,10 @@ class trayconf:
             menu_err = PyQt6.QtWidgets.QMenu('Errors',self.menu)
             menu_err.setToolTipsVisible(True)
             menu_err.setIcon(self.getIcon('Errors'))
-            act=PyQt6.QtGui.QAction(elf.getIcon('Tray'),self.mainvar.showname,menu_err)
-        info,line = self._buildError(self.mainvar.showname, "")
+            act=PyQt6.QtGui.QAction(self.getIcon('Tray'),self.statics.showname,menu_err)
+        info,line = self._buildError(self.statics.showname)
         act.setToolTip(info)
-        act.triggered.connect(functools.partial(self._ConnectorError, self.mainvar.showname, info+line))
+        act.triggered.connect(functools.partial(self._ConnectorError, self.statics.showname, info+line))
         if len(self.install['Errors']) == 0:# and len(self.main_error) == 0 :
             act.setDisabled(True)
         if len(self.install['Errors']) == 0:
@@ -658,7 +660,7 @@ class trayconf:
             menu_err.addSeparator()
             for i in self.install['Errors']:
                 act=PyQt6.QtGui.QAction(self.getIcon(i),i,menu_err)
-                info,line = self._buildError(i, self.install['Errors'][i].GetError())
+                info,line = self._buildError(i)
                 act.setToolTip(info)
                 act.triggered.connect(functools.partial(self._ConnectorError, i, info+line))
                 menu_err.addAction(act)
@@ -701,7 +703,7 @@ class trayconf:
 
         self.menu.addMenu(menu_help)
 
-        act=PyQt6.QtGui.QAction('Exit '+self.mainvar.showname,self.menu)
+        act=PyQt6.QtGui.QAction('Exit '+self.statics.showname,self.menu)
         act.setIcon(self.getIcon('Exit'))
         act.triggered.connect(fct_del)
         self.menu.addAction(act)
@@ -710,23 +712,27 @@ class trayconf:
 
         return self.menu
 
-    def _buildError(self,name,error):
+    def _buildError(self,name):
         info = '<ul>\n'
         l=0
         arr=[]
-        if error:
-            arr=[error]
-        elif name == self.mainvar.showname:
-            # arr = self.main_error
+        if name == self.statics.showname:
+            arr = self.install['MainErrors']
             for e in self.install['Errors']:
                 if self.install['Errors'][e]['Error']:
                     arr+=[self.install['Errors'][e]['Error']]
                 else:
                     arr+=self.install['Errors'][e]['Class'].GetError()
-        elif name in self.install['Folders']:
-            arr=self.install['Folders'][name].GetError()
+        elif name in self.install['Errors']:
+            if self.install['Errors'][name]['Error']:
+                arr+=[self.install['Errors'][name]['Error']]
+            else:
+                arr+=self.install['Errors'][name]['Class'].GetError()
         elif name in self.install['Actions']:
-            arr=self.install['Actions'][name].GetError()
+            if self.install['Errors'][name]['Error']:
+                arr+=[self.install['Errors'][name]['Error']]
+            else:
+                arr+=self.install['Errors'][name]['Class'].GetError()
         for e in arr:
             l = max(l,len(e))
             info += '\t<li>' + e + '</li>\n'
@@ -741,7 +747,7 @@ class trayconf:
         text = '<h3>'+name+' errors</h3>'
         box = PyQt6.QtWidgets.QMessageBox()
         #box.setTextFormat(PyQt6.QtCore.Qt.RichText)
-        box.setWindowTitle(self.mainvar.showname)
+        box.setWindowTitle(self.statics.showname)
         box.setText(text)
         box.setInformativeText(info)
         #box.setStandardButtons(PyQt6.QtWidgets.Ok)
@@ -760,7 +766,7 @@ class trayconf:
             elif self.install['AHK'][ahk] in self.install['Actions']:
                 type = 'Actions'
             else:
-                self.mainvar.logger.error('AHK '+ahk + ' not defined in Actions or Folders')
+                self.statics.logger.error('AHK '+ahk + ' not defined in Actions or Folders')
                 #not added to to_rm to avoid searching where it comes from
                 continue
             ahk, hhk = self.install[type][self.install['AHK'][ahk]].GetHK()
@@ -768,7 +774,7 @@ class trayconf:
                 continue
             if (ctypes.windll.user32.RegisterHotKey(None, nb_hotkey+1, hhk["mod"], hhk["key"])):
                 nb_hotkey += 1
-                self.mainvar.logger.debug("Register "+ahk)
+                self.statics.logger.debug("Register "+ahk)
             else:
                 to_rm[type].append(self.install['AHK'])
                 self.install['Errors'][self.install[type][self.install['AHK']].show] = {"Error": "", "Class": self.install[type][self.install['AHK']]}
@@ -788,11 +794,11 @@ class trayconf:
     def _ConnectorAction(self, feature):
         if self.locker.locked():
             if feature in self.install['Actions']:
-                self.mainvar.logger.debug('Lock locked for ' + self.install['Actions'][feature].show)
+                self.statics.logger.debug('Lock locked for ' + self.install['Actions'][feature].show)
             elif feature in self.install['Folders']:
-                self.mainvar.logger.debug('Lock locked for ' + self.install['Folders'][feature].show)
+                self.statics.logger.debug('Lock locked for ' + self.install['Folders'][feature].show)
             else:
-                self.mainvar.logger.critical('Lock locked for undefined feature' + feature)
+                self.statics.logger.critical('Lock locked for undefined feature' + feature)
             return
         a=_general.KThread(target=self._Thread4Run,args=[feature])
         a.start()
@@ -813,7 +819,7 @@ class trayconf:
             action=self.install['Actions'][args]
             start_time = datetime.datetime.now()
             show = action.show+start_time.strftime(" [%H%M%S]")
-            self.mainvar.logger.debug('Run '+show)
+            self.statics.logger.debug('Run '+show)
             th = _general.KThread(target=action.Run)
             th.start()
             th.join(10)
@@ -822,15 +828,15 @@ class trayconf:
                 _general.PopUp(args, out)
             duration = datetime.datetime.now() - start_time
             if th.is_alive():
-                self.mainvar.logger.debug('Kill '+show +' after '+str(duration.seconds)+' sec')
+                self.statics.logger.debug('Kill '+show +' after '+str(duration.seconds)+' sec')
                 _general.threadKiller(th)
             else:
-                self.mainvar.logger.debug(show+ ' ran in '+str(duration.seconds)+' sec')
+                self.statics.logger.debug(show+ ' ran in '+str(duration.seconds)+' sec')
             #few seconds before releasing lock
             #TODO: releasing lock time in configuration
             if not silent:
                 time.sleep(3)
-            self.mainvar.logger.debug('Release lock')
+            self.statics.logger.debug('Release lock')
             print('Release lock')
             if self.locker.locked(): self.locker.release()
         return out

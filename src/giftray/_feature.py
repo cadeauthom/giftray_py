@@ -24,8 +24,8 @@ class singleobject:
     def __del__(self):
         return
 
-    def __init__(self,show,val,mainvar):
-        self.mainvar = mainvar
+    def __init__(self,show,val,statics):
+        self.statics = statics
         self.show    = show
         self.ahk     = ""
         self.theme   = ""
@@ -86,7 +86,7 @@ class singleobject:
             # self.iconid = self.up.images.create(self.ico,self.show[0],self.theme)
 
         if self.ahk:
-            self.hhk, self.ahk, err = mainvar.ahk_translator.ahk2hhk(self.ahk)
+            self.hhk, self.ahk, err = statics.ahk_translator.ahk2hhk(self.ahk)
             if len(err):
                 self.AddError(err)
 
@@ -103,7 +103,7 @@ class singleobject:
         return
 
     def AddError(self,error):
-        self.mainvar.logger.error(error + " in '" +self.show+"'")
+        self.statics.logger.error(error + " in '" +self.show+"'")
         self.error.append(self.show+': '+error)   
         return
 
@@ -164,17 +164,17 @@ class menu(singleobject):
         if len(self.contain) == 0:
             self.AddError("Empty menu")
         for c in self.contain:
-            if not c in self.mainvar.trayconf.install['Actions']:
+            if not c in self.statics.dynamics.install['Actions']:
                 self.AddError(c+" subaction not installed")
                 continue
-            if not self.mainvar.trayconf.install['Actions'][c].AddParent(self.show):
+            if not self.statics.dynamics.install['Actions'][c].AddParent(self.show):
                 self.AddError(c+" action cannot be a subaction")
-            if not self.mainvar.trayconf.install['Actions'][c].IsOK():
+            if not self.statics.dynamics.install['Actions'][c].IsOK():
                 self.AddError(c+" subaction not OK")
                 continue
         # if not self.menu:
             # for c in self.contain:
-                # if not self.mainvar.trayconf.install['Actions'][c].IsInMenu():
+                # if not self.statics.dynamics.install['Actions'][c].IsInMenu():
                     # self.AddError(c+" is not usable in menu")
         return
 
@@ -196,7 +196,7 @@ class action(singleobject):
                 out = self._Run()
             except Exception as e:
                 e_str = str(e)
-                self.mainvar.logger.error("Action '" +self.show+ "' failed: "+e_str)
+                self.statics.logger.error("Action '" +self.show+ "' failed: "+e_str)
                 out = "Action '" +self.show+ "' failed: "+e_str
         #if out and not silent:
         #    _general.PopUp(self.show, out)
@@ -418,7 +418,7 @@ class wsl(action):
             x = subprocess.Popen( x_cmd, shell=True)
             time.sleep(2)# ToDo self.vcxsrv_timeout)
             if x.poll() != None:
-                self.mainvar.logger.error("Fail to start vcxsrv in '" +self.show+"' ("+' '.join(x_cmd)+")")
+                self.statics.logger.error("Fail to start vcxsrv in '" +self.show+"' ("+' '.join(x_cmd)+")")
                 return
         return x_nb
 
@@ -491,7 +491,7 @@ class wsl(action):
                 if not tmp:
                     self.AddError("'vcxsrv' ("+others[i]+") does not exist")
                 else:
-                    self.mainvar.logger.info("'vcxsrv' set to "+tmp)
+                    self.statics.logger.info("'vcxsrv' set to "+tmp)
                     self.vcxsrv = tmp
                     self.configuration["vcxsrv"] = conffield(tmp, type=_general.gtype.PATH)
             elif k == "vcxsrv_timeout".title():
