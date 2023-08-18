@@ -652,7 +652,7 @@ class trayconf:
                 ahk = self.install['Folders'][f].GetHK()[0]
                 if ahk:
                     act.setToolTip(ahk)
-                act.triggered.connect(functools.partial(self._ConnectorAction, a))
+                act.triggered.connect(functools.partial(self._ConnectorAction, f))
                 submenu.addAction(act)
                 submenu.addSeparator()
             # Sub actions
