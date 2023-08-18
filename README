@@ -35,15 +35,11 @@ tail -f giftray.log
 #set/unset startup
 #get conf examples
 
-#ico => menu, but still menu opt
-
 #Windows
 #    = script
 #       + env var
 #       + folder
-#       - kill process/service (several)
-#       - VM stop VMs
-#       - mount Vera
+#       + confirmation box
 #    = Reload Driver (reload mic - regedit)
 #    = Move windows
 #Sound (mute mic/sound, volume)

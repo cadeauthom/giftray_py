@@ -1,0 +1,25 @@
+[GIFTRAY GENERAL]
+#native, black, grey, white, blue, red, green, monowhite
+#darkgrey, darkwhite, darkblue, darkred, darkgreen, darkyellow
+#MainTheme       = monowhite
+#Theme           = native
+#CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
+LogLevel        = DEBUG
+Silent          = Off
+#Dark            = AA6600
+#MainDark        = FFFFFF
+#MainLight       = FFFFFF
+
+[GIFTRAY NATIVE]
+#Light           = F7F7FF
+#Dark            = C49991
+#Theme           = native
+#Main            = gift
+#No-Click        = decrease-circle
+#Menu            = add-collection
+#Errors          = warning-alt
+#Generator       = edit-alt-2
+#Configuration   = settings
+#About           = chat-alert-left
+#Reload          = exchange-5.svg
+#Exit            = sign-out

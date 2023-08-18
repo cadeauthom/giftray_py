@@ -1,16 +1,111 @@
 import os
 import sys
+import posixpath
 import shutil
 import trace, threading
 import win32con
 import win32api
 import win32process
+import time
+import ctypes
 try:
     import win32gui
 except ImportError:
     import winxpgui as win32gui
+import psutil
+import enum
+import re
+import json
+import logging
+import importlib
+import inspect
 
-class WindowsHandler():
+
+class gtype(enum.Enum):
+    UINT        = 1
+    INT         = 2
+    BOOL        = 3
+    STRING      = 4
+    LOWSTRING   = 5
+    UPSTRING    = 6
+    LISTSTRING  = 7
+    PATH        = 8
+    COLOR       = 9
+    # THEME       = 10
+
+# for member in gtype:
+    # globals()[member.name] = member
+
+def GetOpt(val,t):
+    ret = None
+    if t == gtype.UINT:
+        try:
+            ret = abs(int(val))
+        except:
+            ret = 0
+    elif t == gtype.INT:
+        try:
+            ret = int(val)
+        except:
+            ret = 0
+    elif t == gtype.BOOL:
+        try:
+            if val == None:
+                ret = True
+            else:
+                ret = (str(val).title() in ['True'.title(),'On'.title(),'1'.title()])
+        except:
+            ret = False
+    elif t == gtype.STRING:
+        try:
+            if not val:
+                ret = ''
+            else:
+                ret = str(val)
+        except:
+            ret = ''
+    elif t == gtype.LOWSTRING:
+        try:
+            if val == None:
+                ret = ''
+            else:
+                ret = str(val).casefold()
+        except:
+            ret = ''
+    elif t == gtype.UPSTRING:
+        try:
+            if val == None:
+                ret = ''
+            else:
+                ret = str(val).upper()
+        except:
+            ret = ''
+    elif t == gtype.LISTSTRING:
+        ret = []
+        try:
+            for k in val:
+                a = GetOpt(k,gtype.STRING)
+                if a:
+                    ret.append(a)
+        except:
+            pass
+        #
+            # ret = re.split('\s*[,;]\s*',val)
+            # print(val,'-',ret)
+        # except:
+            # print(val,'?')
+            # ret = []
+    elif t == gtype.PATH: #no subpath management, no icon path
+        ret = WindowsHandler().GetRealPath(str(val))
+    elif t == gtype.COLOR:
+        ret = str(val).upper()
+        if re.fullmatch(r"^[0-9a-fA-F]{6}$", ret) is None:
+            ret = '000000'
+    # elif t == gtype.THEME:
+        # ret = giftray.colors.GetName(str(t))
+    return ret
+
+class WindowsHandler:
     def __init__(self):
         self.global_array = []
 
@@ -65,15 +160,12 @@ class WindowsHandler():
             return app
         return shutil.which(app)
 
-def Str2Class(module,feat):
-    return getattr(sys.modules[module], feat)
-
 def PopUp(title, msg):
     def callback (hwnd, hwnds):
         _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
         if found_pid == pid:
             # if win32gui.GetWindowText(hwnd) == "QTrayIconMessageWindow":
-            if win32gui.GetClassName(hwnd) == "Qt642TrayIconMessageWindowClass":
+            if "TrayIconMessageWindowClass" in win32gui.GetClassName(hwnd):
                 hwnds.append (hwnd)
         return True
     hwnds = []
@@ -88,21 +180,7 @@ def PopUp(title, msg):
     #(hwnd, id, win32gui.NIF_*, CallbackMessage, hicon, Tooltip text (opt), Balloon tooltip text (opt), Timeout (ms), title (opt),  win32gui.NIIF_*)
     return
 
-def IsAlreadyRunning():
-    ''' TODO
-    prebuild fct ? google will help
-    or:
-    get PID
-    if lock file
-        read it
-        search this PID
-        if running: quit
-    write lock file
-    class __del__ destroy lock
-    '''
-    return
-
-class ahk():
+class ahk:
     def __init__(self):
         self.ahk_mods = {}
         self.ahk_keys = {}
@@ -186,17 +264,17 @@ class KThread(threading.Thread):
         A subclass of threading.Thread, with a kill()method."""
     def __init__(self, *args, **keywords):
         threading.Thread.__init__(self, *args, **keywords)
+        self._return = ""
         self.killed = False
-    def start(self):
-        """Start the thread."""
-        self.__run_backup = self.run
-        self.run = self.__run
-        threading.Thread.start(self)
-    def __run(self):
-        """Hacked run function, which installs thetrace."""
+    def run(self):
         sys.settrace(self.globaltrace)
-        self.__run_backup()
-        self.run = self.__run_backup
+        try:
+            if self._target is not None:
+                self._return = self._target(*self._args, **self._kwargs)
+        finally:
+            # Avoid a refcycle if the thread is running a function with
+            # an argument that has a member that points to the thread.
+            del self._target, self._args, self._kwargs
     def globaltrace(self, frame, why, arg):
         if why == 'call':
             return self.localtrace
@@ -208,3 +286,20 @@ class KThread(threading.Thread):
         return self.localtrace
     def kill(self):
         self.killed = True
+    def getout(self):
+        return self._return
+
+def threadKiller(thread):
+    if thread.is_alive():
+        thread.kill()
+    timeout = time.time() + 1
+    while thread.is_alive():
+        if time.time() > timeout:
+            break
+    if thread.is_alive():
+        ctypes.windll.user32.PostThreadMessageW(thread.native_id, win32con.WM_QUIT, 0, 0)
+    timeout = time.time() + 1
+    while thread.is_alive():
+        if time.time() > timeout:
+            break
+    #if thread.is_alive(): .... errors

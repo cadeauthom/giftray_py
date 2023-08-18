@@ -1,4 +1,5 @@
 [AlwaysOnTop]
 	function= windows.alwaysontop
-	ico     = False
+	click   = False
 	ahk     = Win + *
+	ico     = push-pin

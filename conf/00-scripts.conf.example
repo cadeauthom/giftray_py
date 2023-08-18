@@ -1,0 +1,12 @@
+#[Folder]
+#	function = windows.script
+#	cmd = C:\Program Files\
+#	args =
+#	click = true
+
+#[Powershell admin]
+#	function = windows.script
+#	cmd = cmd.exe
+#	args = /C Powershell
+#	click = true
+#	admin = true

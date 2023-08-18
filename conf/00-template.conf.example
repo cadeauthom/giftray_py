@@ -1,4 +1,5 @@
 [Nothing]
-    function= template.template
-    ico     = default_empty.ico
+    function= example.nothing
+    ico     = check-circle
+    click   = true
     #ahk     = Ctrl + Win + Maj + y

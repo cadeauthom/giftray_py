@@ -1,10 +1,11 @@
-[WSL]
+[WSL General]
     vcxsrv  = C:\Program Files\VcXsrv\vcxsrv.exe
     #color   = green
 
 [Proxy]
     function= wsl.cmd
-    ico     = wsl_proxy.ico
+    ico     = cloudy
+    click   = true
     #color   = red
     cmd     = ssh -C2qTnNf annuminas -D 8080
     #out     =
@@ -13,7 +14,8 @@
 
 [Terminator]
     function= wsl.cmd
-    ico     = wsl_terminator.ico
+    ico     = terminal
+    click   = true
     cmd     = terminator --working-directory $folder
     gui     = True
     ahk     = Ctrl + Win + Maj + T

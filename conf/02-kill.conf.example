@@ -1,0 +1,42 @@
+[Stop Communication]
+    contain = Kill Skype, Kill Discord
+    click   = True
+    ahk     = Ctrl + Win + Escape
+    ico = curve-arrow-right-3
+
+[Kill Skype]
+    function = windows.script
+    cmd = taskkill.exe
+    args = /f /T /im skype.exe
+    click = false
+    admin = false
+    ico = skype
+
+[Kill Discord]
+    function = windows.script
+    cmd = taskkill.exe
+    args = /f /T /im Discord.exe
+    click = false
+    admin = false
+    ico = discord
+
+[Reduce Network]
+    contain = Kill DropBox, Kill TeamViewer
+    click   = True
+    ico     = take-off
+
+[Kill DropBox]
+    function = windows.script
+    cmd      = taskkill.exe
+    args     = /f /T /im dropbox.exe
+    click    = false
+    admin    = false
+    ico      = dropbox
+
+[Kill TeamViewer]
+    function = windows.script
+    cmd      = net.exe
+    args     = stop TeamViewer /y
+    click    = false
+    admin    = true
+    ico      = teamviewer

@@ -15,78 +15,143 @@
 	You should have received a copy of the GNU General Public License     \
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.\
 
+############### Project setting
+PROJECT 	= GifTray
+#can be 0, 1 or 2
+ICONB		= 0
+#can be blue, black, red or green
+COLOR 		= blue
+
+############### Commands setting
 PATH_CONVERT	= /usr/bin/convert
 #32
 FLAGS_CONVERT_ICO= -define icon:auto-resize=16,32,48,256 -background none svg:-
 PATH_PYTHON     != wslpath "`where.exe python3`"
 #/mnt/c/Users/$(USER)/AppData/Local/Microsoft/WindowsApps/python3.exe
-FLAGS_PYTHON    = #--console
+#FLAGS_PYTHON    = --console
+FLAGS_PYTHON    = 
 PATH_UPX	= V:\git\perso\py.git\upx-3.96-win64
 
-PROJECT 	= giftray
-CAPPROJECT 	= GifTray
-DEFAULT_COLOR 	= blue
+############### Path setting
+BUILD	        = build
+DIST	        = dist
+SRC		= src
+SRC_SVG		= svg
+SRC_CONF	= conf
+BUILD_SVG	= $(BUILD)/svg
+BUILD_CONF	= $(BUILD)/conf
+BUILD_EXE	= $(BUILD)/exe
+BUILD_SRC	= $(BUILD)/src
 
-PATH_BUILD	= build
-PATH_DIST	= dist
-PATH_SVG 	= svg
-PATH_ICO 	= $(PATH_BUILD)/icons
-PATH_CONF 	= $(PATH_BUILD)/conf
+#VERSION_MAIN	= $(shell git describe --tags)
+VERSION_TAG_COM = $(shell git rev-list --tags --max-count=1)
+VERSION_MAIN	= $(shell git describe --tags $(VERSION_TAG_COM))
+VERSION_COMMITS	= $(shell git rev-list $(VERSION_MAIN)..HEAD --count)
+VERSION_STAGES	= $(shell git status -s | egrep -c "^\w")
+VERSION_DIFFS	= $(shell git status -s | egrep -c "^.\w")
+VERSION_DATE	= $(shell date +%s)
+VERSION		= $(VERSION_MAIN).$(VERSION_COMMITS).$(VERSION_STAGES).$(VERSION_DIFFS).$(VERSION_DATE)
 
-EXEC		= $(PATH_DIST)/$(CAPPROJECT).msi
-ICO		= $(PATH_ICO)/$(PROJECT).ico
-SVG		= $(wildcard $(PATH_SVG)/*.svg)
-PY		= $(wildcard src/*.py) $(wildcard src/$(PROJECT)/*.py)
-CFG		= src/setup.cfg
-CONF    = $(PATH_CONF)/$(PROJECT).conf
-CONFS   = $(wildcard conf/*.conf) $(wildcard conf/*.conf.example)
-SVG_PNG = $(wildcard $(PATH_SVG)/$(PROJECT)-*.svg)
-ICOS_BLUE   	= $(patsubst $(PATH_SVG)/%.svg, $(PATH_ICO)/blue/%.ico, $(SVG))
-ICOS_BLACK  	= $(patsubst $(PATH_SVG)/%.svg, $(PATH_ICO)/black/%.ico,$(SVG))
-ICOS_RED    	= $(patsubst $(PATH_SVG)/%.svg, $(PATH_ICO)/red/%.ico,  $(SVG))
-ICOS_GREEN  	= $(patsubst $(PATH_SVG)/%.svg, $(PATH_ICO)/green/%.ico,$(SVG))
+############### Variable Definition
+LOWPROJECT 	= $(shell echo $(PROJECT) | tr '[:upper:]' '[:lower:]')
 
-all: ico exec
+SVGS		= $(wildcard $(SRC_SVG)/*/*.svg)
+SVG		= $(SRC_SVG)/$(LOWPROJECT)-$(ICONB).svg
+CONF		= $(wildcard $(SRC_CONF)/*.example) $(SRC_CONF)/list_key.txt
 
-exec: $(EXEC)
+HTML_PY		= $(SRC)/svg2html.py
+PY		= $(SRC)/$(PROJECT).py
+PY_LIBS		= $(wildcard $(SRC)/$(LOWPROJECT)/*.py)
+SETUP		= $(SRC)/setup.py
+#CFG		= $(SRC)/setup.cfg
 
-ico: $(ICOS_BLUE) $(ICOS_BLACK) $(ICOS_RED) $(ICOS_GREEN) $(ICO)
+IN_PY		= $(SETUP) $(PY) $(PY_LIBS)
+OUT_HTML_PY	= $(patsubst $(SRC)/%, $(BUILD_SRC)/%, $(HTML_PY))
+OUT_PY		= $(patsubst $(SRC)/%, $(BUILD_SRC)/%, $(IN_PY))
+OUT_SVGS	= $(patsubst $(SRC_SVG)/%, $(BUILD_SVG)/%, $(SVGS))
+OUT_CONF	= $(patsubst $(SRC_CONF)/%, $(BUILD_CONF)/%, $(CONF))
+OUT_ICO 	= $(BUILD)/$(LOWPROJECT).ico
+OUT_HTML_SVGS	= $(BUILD)/list_SVGs.html
+OUT_EXEC	= $(DIST)/$(PROJECT).$(VERSION).msi
 
-$(ICO):
-	cp $(PATH_ICO)/blue/$(PROJECT)-0.ico $@
-	
-$(CONF): $(CONFS)
-	mkdir -p $(@D)
-	cp conf/* $(@D)/
+############### Commands from variables
+ifndef COLOR
+	COLOR = blue
+endif
+CMD_START = cat
+ifeq ($(COLOR),red)
+	CMD_START = sed -e s/1185E0/ED664C/g -e s/4DCFE0/FDC75B/g
+endif
+ifeq ($(COLOR),black)
+	CMD_START = sed -e s/1185E0/5a5a5a/g -e s/4DCFE0/aaaaaa/g
+endif
+ifeq ($(COLOR),green)
+	CMD_START = sed -e s/1185E0/32CD32/g -e s/4DCFE0/7CFC00/g
+endif
 
-$(EXEC): $(ICO) $(SRCS) $(PY) $(CFG) $(CONF)
-	mkdir -p $(@D)
-	cd src; \
-	$(PATH_PYTHON) setup.py \
-		build_exe --build-exe ../$(PATH_BUILD)/exe \
-		bdist_msi --bdist-dir ../$(PATH_BUILD)/exe --dist-dir ../$(PATH_DIST) -k --target-name $(notdir $@)
+############### Actions of makefile
+all: svg conf ico exec
 
-$(PATH_ICO)/blue/%.ico: $(PATH_SVG)/%.svg
-	mkdir -p $(@D)
-	cat $< \
-	    | $(PATH_CONVERT) $(FLAGS_CONVERT_ICO)  $@
+exec: $(OUT_EXEC)
 
-$(PATH_ICO)/black/%.ico: $(PATH_SVG)/%.svg
-	mkdir -p $(@D)
-	sed -e s/1185E0/5a5a5a/g -e s/4DCFE0/aaaaaa/g $< \
-	    | $(PATH_CONVERT) $(FLAGS_CONVERT_ICO) $@
+svg: $(OUT_SVGS) $(OUT_HTML_SVGS)
 
-$(PATH_ICO)/red/%.ico: $(PATH_SVG)/%.svg
-	mkdir -p $(@D)
-	sed -e s/1185E0/ED664C/g -e s/4DCFE0/FDC75B/g $< \
-	    | $(PATH_CONVERT) $(FLAGS_CONVERT_ICO) $@
+conf: $(OUT_CONF)
 
-$(PATH_ICO)/green/%.ico: $(PATH_SVG)/%.svg
-	mkdir -p $(@D)
-	sed -e s/1185E0/32CD32/g -e s/4DCFE0/7CFC00/g $< \
-	    | $(PATH_CONVERT) $(FLAGS_CONVERT_ICO) $@
+ico: $(OUT_ICO)
 
+# use this one to force the rebuild of colored icon
+color:
+	$(MAKE) -B ico
+
+############### Actual actions
+$(BUILD_SVG)/%: $(SRC_SVG)/%
+	@mkdir -p $(@D)
+	cp $< $@
+
+$(OUT_HTML_SVGS): $(HTML_PY) $(OUT_SVGS) $(OUT_HTML_PY)
+	@mkdir -p $(@D)
+	cd $(@D); \
+	$(PATH_PYTHON) $< -d $(BUILD_SVG:$(BUILD)/%=%) -o $(@F)
+
+$(BUILD_CONF)/%: $(SRC_CONF)/%
+	@mkdir -p $(@D)
+	cp $< $@
+
+$(OUT_ICO): $(SVG)
+	@mkdir -p $(@D)
+	$(CMD_START) $< | $(PATH_CONVERT) $(FLAGS_CONVERT_ICO) $@
+
+$(BUILD_SRC)/%: $(SRC)/%
+	@mkdir -p $(@D)
+	cp $< $@
+
+$(OUT_EXEC): $(OUT_PY) $(SVG) $(SVGS) $(CONF)
+	@mkdir -p $(@D)
+	cd $(BUILD_SRC); \
+	$(PATH_PYTHON) $(<F) 				\
+		--setup-project=$(PROJECT)		\
+		--setup-script=$(notdir $(PY))		\
+		--setup-icon=../$(OUT_ICO:$(BUILD)/%=%)	\
+		--setup-version=$(VERSION)		\
+		--setup-include=$(LOWPROJECT)		\
+		--setup-include-files=../$(BUILD_SVG:$(BUILD)/%=%)	\
+		--setup-include-files=../$(BUILD_CONF:$(BUILD)/%=%)	\
+		--setup-include-files=../$(OUT_ICO:$(BUILD)/%=%)	\
+		--setup-include-files=../$(OUT_HTML_SVGS:$(BUILD)/%=%)	\
+		bdist_msi			\
+		          --dist-dir ../../$(@D)\
+			  -k			\
+			  --target-name $(@F)
+		#build_exe --build-exe ../$(BUILD_EXE) \
+		#bdist_msi --bdist-dir ../$(BUILD_EXE) \
+		#          --dist-dir ../$(@D)       \
+		#	  -k                          \
+		#	  --target-name $(@F)
+
+############### Usual builin actions
+.PHONY: clean mrproper
 mrproper: clean
-	rm -rf dist
+	rm -rf $(DIST)
 clean:
-	rm -rf build
+	rm -rf $(BUILD)
