@@ -105,7 +105,7 @@ def GetOpt(val,t):
         # ret = giftray.colors.GetName(str(t))
     return ret
 
-class WindowsHandler():
+class WindowsHandler:
     def __init__(self):
         self.global_array = []
 
@@ -160,9 +160,6 @@ class WindowsHandler():
             return app
         return shutil.which(app)
 
-def Str2Class(module,feat):
-    return getattr(sys.modules[module], feat)
-
 def PopUp(title, msg):
     def callback (hwnd, hwnds):
         _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
@@ -183,7 +180,7 @@ def PopUp(title, msg):
     #(hwnd, id, win32gui.NIF_*, CallbackMessage, hicon, Tooltip text (opt), Balloon tooltip text (opt), Timeout (ms), title (opt),  win32gui.NIIF_*)
     return
 
-class ahk():
+class ahk:
     def __init__(self):
         self.ahk_mods = {}
         self.ahk_keys = {}
@@ -295,13 +292,13 @@ class KThread(threading.Thread):
 def threadKiller(thread):
     if thread.is_alive():
         thread.kill()
-    timeout = time.time() + 4
+    timeout = time.time() + 1
     while thread.is_alive():
         if time.time() > timeout:
             break
     if thread.is_alive():
         ctypes.windll.user32.PostThreadMessageW(thread.native_id, win32con.WM_QUIT, 0, 0)
-    timeout = time.time() + 4
+    timeout = time.time() + 1
     while thread.is_alive():
         if time.time() > timeout:
             break
