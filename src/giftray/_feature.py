@@ -17,16 +17,14 @@ class conffield:
     def __init__(self, value, type=_general.gtype.STRING):
         self.type = type
         self.value = _general.GetOpt(value,type)
-    def _print(self):
-        print(self.value)
+    #def _print(self):
+    #    print(self.value)
 
-class object:
+class singleobject:
     def __del__(self):
         return
 
     def __init__(self,show,val,mainvar):
-        self.allopt  = []
-        self.setopt  = []
         self.mainvar = mainvar
         self.show    = show
         self.ahk     = ""
@@ -51,25 +49,6 @@ class object:
                                     "Click": _general.gtype.BOOL,
                                     "AHK": _general.gtype.STRING}
 
-        #others_general = dict()
-        '''
-        if self.module in self.mainvar.avail_modules:
-            self.error = self.mainvar.avail_modules[self.module].GetError()
-            general_conf = self.up.avail_modules[self.module].GetConf()
-            for i in general_conf:
-                k = i.title()
-                if k == "Theme".title():
-                    self.theme = _general.GetOpt(general_conf[i],_general.gtype.STRING)
-                    self.configuration["Theme"] = conffield(self.theme)
-                elif k == "Dark".title():
-                    self.dark = _general.GetOpt(val[i],_general.gtype.STRING)
-                    self.configuration["Dark"] = conffield(self.dark)
-                elif k == "Light".title():
-                    self.light = _general.GetOpt(val[i],_general.gtype.STRING)
-                    self.configuration["Dark"] = conffield(self.light)
-                else:
-                    others_general[i]=general_conf[i]
-        '''
         others = dict()
         for i in val:
             k = i.title()
@@ -158,22 +137,16 @@ class object:
 
     def GetError(self):
         return copy.copy(self.error)
-        
-    def GetOpt(self,sub=False):
-        if sub:
-            return copy.copy(self.setopt)
-        return copy.copy(self.allopt)
 
-class menu(object):
+class menu(singleobject):
     def __del__(self):
-        object.__del__(self)
+        singleobject.__del__(self)
 
     def _PreInit(self,others):
         del self.configuration["Function"]
         del self.configuration_type["Function"]
         self.configuration_type["Contain"] = _general.gtype.LISTSTRING
         self.contain = []
-        self.allopt += 'contain'
         ret_others = dict()
         for i in others:
             k = i.title()
@@ -205,9 +178,9 @@ class menu(object):
                     # self.AddError(c+" is not usable in menu")
         return
 
-class action(object):
+class action(singleobject):
     def __del__(self):
-        object.__del__(self)
+        singleobject.__del__(self)
 
     def Check(self):
         if self.IsOK():
@@ -232,24 +205,22 @@ class action(object):
     def _Run(self):
         return
 
-class service(object):
+class service(singleobject):
     def __del__(self):
         # import ctypes, win32con
         _general.threadKiller(self.thread)
-        object.__del__(self)
+        singleobject.__del__(self)
 
     def _PreInit(self,others):
         self.configuration_type["Enabled"] = _general.gtype.BOOL
         self.thread = _general.KThread(target=self._Run)
         self.active = False
         self.enabled = False
-        self.allopt += ['enabled']
         ret_others = dict()
         for i in others:
             k = i.title()
             if k == "Enabled".title():
                 self.enabled = _general.GetOpt(others[i],_general.gtype.BOOL)
-                self.setopt.append('enabled'.title())
             else:
                 ret_others[i] = others[i]
         self.configuration["Enabled"] = conffield(self.enabled,_general.gtype.BOOL)
@@ -293,7 +264,6 @@ class script(action):
         self.configuration_type["Command"]=_general.gtype.PATH
         self.configuration_type["Arguments"]=_general.gtype.STRING
         self.configuration_type["AsAdmin"]=_general.gtype.BOOL
-        self.allopt += ["cmd","args","admin"]
         self.cmd = ""
         self.args = ""
         self.admin = False
@@ -302,15 +272,12 @@ class script(action):
             k = i.title()
             if k == "Command".title():
                 self.cmd = _general.GetOpt(others[i],_general.gtype.STRING)
-                self.setopt.append(k)
                 self.configuration["Command"] = conffield(self.cmd, type=_general.gtype.STRING)
             elif k == "Arguments".title():
                 self.args = _general.GetOpt(others[i],_general.gtype.STRING)
-                self.setopt.append(k)
                 self.configuration["Arguments"] = conffield(self.args, type=_general.gtype.STRING)
             elif k == "AsAdmin".title():
                 self.admin = _general.GetOpt(others[i],_general.gtype.BOOL)
-                self.setopt.append(k)
                 self.configuration["AsAdmin"] = conffield(self.admin, type=_general.gtype.BOOL)
             else:
                 self.AddError("'"+i+"' not defined")
@@ -343,7 +310,6 @@ class script(action):
 class stayactive(service):
     def _Init(self,others):
         self.configuration_type["Frequency"]=_general.gtype.UINT
-        self.allopt += ["frequency"]
         self.frequency = 60
         for i in others:
             k = i.title()
@@ -380,7 +346,6 @@ class alwaysontop(action):
 
     def _Init(self,others):
         self.configuration_type.pop("Click")
-        self.allopt += []
         self.top_hwnd = set()
         self.menu = False
         for i in others:
@@ -494,7 +459,6 @@ class wsl(action):
         self.configuration_type["Output"]=_general.gtype.STRING
         self.configuration_type["vcxsrv"]=_general.gtype.PATH
         self.configuration_type["vcxsrv_timeout"]=_general.gtype.UINT
-        self.allopt         += ["cmd","uniq","gui","out"]
         self.cmd            = ""
         self.uniq           = False
         self.out            = ""
@@ -512,19 +476,15 @@ class wsl(action):
             k = i.title()
             if k == "Command".title():
                 self.cmd = _general.GetOpt(others[i],_general.gtype.STRING)
-                self.setopt.append(k)
                 self.configuration["Command"] = conffield(self.cmd, type=_general.gtype.STRING)
             elif k == "GUI".title():
                 self.gui = _general.GetOpt(others[i],_general.gtype.BOOL)
-                self.setopt.append(k)
                 self.configuration["GUI"] = conffield(self.gui, type=_general.gtype.BOOL)
             elif k == "Uniq".title():
                 self.uniq = _general.GetOpt(others[i],_general.gtype.BOOL)
-                self.setopt.append(k)
                 self.configuration["Uniq"] = conffield(self.uniq, type=_general.gtype.BOOL)
             elif k == "Output".title():
                 self.out = _general.GetOpt(others[i],_general.gtype.STRING)
-                self.setopt.append(k)
                 self.configuration["Output"] = conffield(self.out, type=_general.gtype.STRING)
             elif k == "vcxsrv".title():
                 tmp = _general.GetOpt(others[i],_general.gtype.PATH)
@@ -533,15 +493,11 @@ class wsl(action):
                 else:
                     self.mainvar.logger.info("'vcxsrv' set to "+tmp)
                     self.vcxsrv = tmp
-                    self.setopt.append(k.casefold())
-                    self.allopt.append(k.casefold())
                     self.configuration["vcxsrv"] = conffield(tmp, type=_general.gtype.PATH)
             elif k == "vcxsrv_timeout".title():
                 a = _general.GetOpt(others[i],_general.gtype.UINT)
                 if a and a < 10:
                     confvcxsrv_timeout = a
-                    self.setopt.append(k.casefold())
-                    self.allopt.append(k.casefold())
                     self.configuration["vcxsrv_timeout"] = conffield(confvcxsrv_timeout, type=_general.gtype.UINT)
                 else:
                     self.AddError("'vcxsrv_timeout' not in [0-10]")

@@ -27,7 +27,7 @@ from . import _var
 from . import _general
 from . import _feature
 
-class giftray(object):
+class giftray():
     def __init__(self):
         def signal_handler(signum, frame):
             self.__del__()
@@ -48,8 +48,8 @@ class giftray(object):
 
         self._Restart()
         self.mainvar.logger.info("Entering wait state")
-        self.th = _general.KThread(target=self._Thread4Flush)
-        self.th.start()
+        self.flush_thread = _general.KThread(target=self._Thread4Flush)
+        self.flush_thread.start()
         timer = PyQt6.QtCore.QTimer()
         timer.start(500)  # You may change this if you wish.
         timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
@@ -58,8 +58,8 @@ class giftray(object):
 
     def __del__(self):
         self._Clean()
-        if hasattr(self, "th"):
-            _general.threadKiller(self.th)
+        if hasattr(self, "flush_thread"):
+            _general.threadKiller(self.flush_thread)
         if hasattr(self, "mainvar"):
             self.mainvar.removeLockFile()
             self.mainvar.logger.info("Exiting application")
@@ -73,9 +73,9 @@ class giftray(object):
             if self.ahk_thread.is_alive():
                 print('failed to kill ahk_thread')
         if hasattr(self, "trayconf"):
+            self.trayconf.locker.acquire(timeout=5)
             self.tray.setContextMenu(None)
             self.tray.setIcon(self.main_ico.get())
-            self.trayconf.__del__()
             del(self.trayconf)
         if hasattr(self, "ahklock"):
             if self.ahklock.locked():

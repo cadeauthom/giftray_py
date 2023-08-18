@@ -26,15 +26,13 @@ import PyQt6.QtWidgets, PyQt6.QtGui, PyQt6.QtSvg
 from . import _general
 from . import _feature
 
-
-class mainvar():
+class mainvar:
     def __init__(self):
         self.showname       = 'GifTray'
         self.name           = self.showname.casefold()
         self.python         = ( "\\python" in sys.executable )
         self.lockfile       = None
         self.modules        = []
-        self.avail_modules  = dict()
         self.template       = dict()
         self.classes        = dict()
         self.trayconf       = None
@@ -139,8 +137,6 @@ class main_ico:
 
 class trayconf:
     def __del__(self):
-        # import dumper
-        # print(dumper.dump(self.install['Actions']))
         for a in self.install['Actions']:
             self.install['Actions'][a].__del__()
         for f in self.install['Folders']:
@@ -223,20 +219,6 @@ class trayconf:
         self.install['AHK']     = dict()
         self.install['Errors']  = dict()
 
-    def getGeneral(self, module, key):
-        if module in self.conf['Generals'] and key in self.conf['Generals'][module]:
-            return self.conf['Generals'][module][key]
-        return None
-
-    def addConf(self, type, name, args):
-        if not type or not name or not args:
-            return
-        if not type in self.conf:
-            return
-        if name in self.conf[type]:
-            print("Update")
-        self.conf[type][name] = args
-
     def updateTheme(self, theme, field, value):
         if not theme in self.conf['Generals']['Themes']:
             return
@@ -269,13 +251,6 @@ class trayconf:
         if light:
             self.internal['Themes'][new]['Light'] = light
 
-    def isInTray(self, section):
-        return (section in self.conf['Folders']) or (section in self.conf['Actions'])
-
-    def setIco(self, name, path):
-        if name in self.conf['Generals']['Icons'] and path:
-            self.conf['Generals']['Icons'][name] = path
-
     def getIcon(self, name):
         if not name in self.internal['Icons']['Links']:
             return self.internal['Icons']['Images']['GENERIC_Empty']['Icon']
@@ -286,13 +261,6 @@ class trayconf:
             return self.internal['Icons']['Images']['GENERIC_Empty']['Icon']
         return self.internal['Icons']['Images'][link]['Icon']
 
-    def setOpt(self, opt, value):
-        if opt in self.conf['Generals']:
-            self.conf['Generals'][opt] = value
-
-    def print(self):
-        self.write('')
-
     def getStyle(self):
         if self.conf['Generals']['Darkmode']:
             return('Fusion')
@@ -302,7 +270,8 @@ class trayconf:
         #self.app.setStyle('windowsvista')
         #self.app.setStyle('macos')
 
-    def write(self,path):
+    '''
+    def writeConf(self,path):
         if path:
             if os.path.exists(path):
                 shutil.move(path, path + ".bak")
@@ -310,8 +279,7 @@ class trayconf:
                 json.dump(self.conf, file, indent = 2)
         else:
             print(json.dumps(self.conf, indent = 2))
-        # json_object = json.dumps(self.internal, indent = 2)
-        # print(json_object)
+    '''
 
     def load(self):
         errors = []
@@ -863,6 +831,7 @@ class trayconf:
             if not silent:
                 time.sleep(3)
             self.mainvar.logger.debug('Release lock')
+            print('Release lock')
             if self.locker.locked(): self.locker.release()
         return out
 
