@@ -145,9 +145,12 @@ class dynamics:
         for f in self.install['Folders']:
             self.install['Folders'][f].__del__()
         for image in self.internal['Icons']['Images']:
-            del(self.internal['Icons']['Images'][image]['BuilderSVG'])
-            del(self.internal['Icons']['Images'][image]['BuilderImage'])
-            del(self.internal['Icons']['Images'][image]['Icon'])
+            if 'BuilderSVG' in self.internal['Icons']['Images'][image]:
+                del(self.internal['Icons']['Images'][image]['BuilderSVG'])
+            if 'BuilderImage' in self.internal['Icons']['Images'][image]:
+                del(self.internal['Icons']['Images'][image]['BuilderImage'])
+            if 'Icon' in self.internal['Icons']['Images'][image]:
+                del(self.internal['Icons']['Images'][image]['Icon'])
 
     def __init__(self,statics):
         self.statics = statics
@@ -837,7 +840,6 @@ class dynamics:
             if not silent:
                 time.sleep(3)
             self.statics.logger.debug('Release lock')
-            print('Release lock')
             if self.locker.locked(): self.locker.release()
         return out
 

@@ -53,6 +53,17 @@ class giftray():
         timer = PyQt6.QtCore.QTimer()
         timer.start(500)  # You may change this if you wish.
         timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
+
+        '''
+        c=0
+        while True:
+            m=int(psutil.Process().memory_info().rss/1024/1024)
+            g=m/1024
+            if (c%100000 == 0):
+                print('(%8u) %8uMb - % 6.2fGb' % (c,m,g))
+            c+=1
+        '''
+
         self.app.exec()
         return
 
@@ -76,6 +87,7 @@ class giftray():
             self.dynamics.locker.acquire(timeout=5)
             self.tray.setContextMenu(None)
             self.tray.setIcon(self.main_ico.get())
+            self.dynamics.__del__()
             del(self.dynamics)
         if hasattr(self, "ahklock"):
             if self.ahklock.locked():
