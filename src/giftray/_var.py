@@ -231,70 +231,73 @@ class dynamics:
             with open(self.statics.conf,'r') as file:
                 config = json.load(file)
         except:
-            print(self.statics.conf)
-        for k in config['Generals']:
-            if k == 'LogLevel':
-                LevelNamesMapping=logging.getLevelNamesMapping()
-                levelname = config['Generals']['LogLevel']
-                if levelname in LevelNamesMapping:
-                    self.conf['Generals']['LogLevel'] = levelname
-                    # self.logger.setLevel(level=LevelNamesMapping[levelname])
+            self.install['MainErrors'].append(self.statics.conf + ' does not contain any configuration')
+            config={}
+        if 'Generals' in config:            
+            for k in config['Generals']:
+                if k == 'LogLevel':
+                    LevelNamesMapping=logging.getLevelNamesMapping()
+                    levelname = config['Generals']['LogLevel']
+                    if levelname in LevelNamesMapping:
+                        self.conf['Generals']['LogLevel'] = levelname
+                        # self.logger.setLevel(level=LevelNamesMapping[levelname])
+                    else:
+                        self.install['MainErrors'].append('LogLevel->'+k+"not supported")
+                    continue
+                elif k ==  'Silent':
+                    self.conf['Generals']['Silent'] = config['Generals']['Silent']
+                    continue
+                elif k ==  'Darkmode':
+                    self.conf['Generals']['Darkmode'] = config['Generals']['Darkmode']
+                    continue
+                elif k ==  'Icons':
+                    for i in config['Generals']['Icons']:
+                        # if i in self.conf['Generals']['Icons']:
+                            # self.conf['Generals']['Icons'][i] = config['Generals']['Icons'][i]
+                        self.conf['Generals']['Icons'][i] = config['Generals']['Icons'][i]
+                    continue
+                elif k == 'Themes':
+                    for t in config['Generals']['Themes']:
+                        for f in config['Generals']['Themes'][t]:
+                            self.updateTheme(t, f, config['Generals']['Themes'][t][f])
+                    continue
                 else:
-                    self.install['MainErrors'].append('LogLevel->'+k+"not supported")
-                continue
-            elif k ==  'Silent':
-                self.conf['Generals']['Silent'] = config['Generals']['Silent']
-                continue
-            elif k ==  'Darkmode':
-                self.conf['Generals']['Darkmode'] = config['Generals']['Darkmode']
-                continue
-            elif k ==  'Icons':
-                for i in config['Generals']['Icons']:
-                    # if i in self.conf['Generals']['Icons']:
-                        # self.conf['Generals']['Icons'][i] = config['Generals']['Icons'][i]
-                    self.conf['Generals']['Icons'][i] = config['Generals']['Icons'][i]
-                continue
-            elif k == 'Themes':
-                for t in config['Generals']['Themes']:
-                    for f in config['Generals']['Themes'][t]:
-                        self.updateTheme(t, f, config['Generals']['Themes'][t][f])
-                continue
-            else:
-                continue
-
-        for a in config['Actions']:
-            if (not 'Function' in config['Actions'][a]
-              or not config['Actions'][a]['Function'] in self.statics.template):
-                continue
-            self.conf['Actions'][a] = dict()
-            self.conf['Actions'][a]['Function'] = config['Actions'][a]['Function']
-            for k in self.statics.template[self.conf['Actions'][a]['Function']]:
-                if k in config['Actions'][a]:
-                    if k in ['Function']:
-                        continue
-                    self.conf['Actions'][a][k] = config['Actions'][a][k]
-                else:
-                    self.conf['Actions'][a][k] = None
-        for f in config['Folders']:
-            # self.conf['Folders']['Contain'] = []
-            contain = []
-            if 'Contain' in config['Folders'][f]:
-                for a in config['Folders'][f]['Contain']:
-                    if a in self.conf['Actions']:
-                        contain.append(a)
-                        # self.conf['Folders']['Contain'].append(a)
-            if not contain:
-                continue
-            self.conf['Folders'][f] = dict()
-            self.conf['Folders'][f]['Contain'] = contain
-            for k in self.statics.template['Folder']:
-                if k in config['Folders'][f]:
-                    if k in ['Contain']:
-                        continue
-                    # self.conf['Folders'][f][k] = _general.GetOpt(str(config['Folders'][f][k]),self.statics.template['Folder'][k])
-                    self.conf['Folders'][f][k] = config['Folders'][f][k]
-                else:
-                    self.conf['Folders'][f][k] = None
+                    continue
+        if 'Actions' in config:
+            for a in config['Actions']:
+                if (not 'Function' in config['Actions'][a]
+                  or not config['Actions'][a]['Function'] in self.statics.template):
+                    continue
+                self.conf['Actions'][a] = dict()
+                self.conf['Actions'][a]['Function'] = config['Actions'][a]['Function']
+                for k in self.statics.template[self.conf['Actions'][a]['Function']]:
+                    if k in config['Actions'][a]:
+                        if k in ['Function']:
+                            continue
+                        self.conf['Actions'][a][k] = config['Actions'][a][k]
+                    else:
+                        self.conf['Actions'][a][k] = None
+        if 'Folders' in config:
+            for f in config['Folders']:
+                # self.conf['Folders']['Contain'] = []
+                contain = []
+                if 'Contain' in config['Folders'][f]:
+                    for a in config['Folders'][f]['Contain']:
+                        if a in self.conf['Actions']:
+                            contain.append(a)
+                            # self.conf['Folders']['Contain'].append(a)
+                if not contain:
+                    continue
+                self.conf['Folders'][f] = dict()
+                self.conf['Folders'][f]['Contain'] = contain
+                for k in self.statics.template['Folder']:
+                    if k in config['Folders'][f]:
+                        if k in ['Contain']:
+                            continue
+                        # self.conf['Folders'][f][k] = _general.GetOpt(str(config['Folders'][f][k]),self.statics.template['Folder'][k])
+                        self.conf['Folders'][f][k] = config['Folders'][f][k]
+                    else:
+                        self.conf['Folders'][f][k] = None
         # Build default themes
         if not self.getTheme(self.conf['Generals']['Themes']['Custom']['Theme'], native=False):
             self.updateTheme('Custom', 'Theme', self.conf['Generals']['Themes']['Default']['Theme'])
@@ -654,7 +657,7 @@ class dynamics:
         info,line = self._buildError(self.statics.showname)
         act.setToolTip(info)
         act.triggered.connect(functools.partial(self._ConnectorError, self.statics.showname, info+line))
-        if len(self.install['Errors']) == 0:# and len(self.main_error) == 0 :
+        if len(self.install['Errors']) == 0 and len(self.install['MainErrors']) == 0 :
             act.setDisabled(True)
         if len(self.install['Errors']) == 0:
             pass
