@@ -40,11 +40,13 @@ class statics:
         self.dynamics       = None
         self.icon = dict()
         self.icon['SVG'] = '<?xml version="1.0" encoding="iso-8859-1"?><svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 456.098 456.098" style="enable-background:new 0 0 456.098 456.098;" xml:space="preserve"><path style="fill:#000000;" d="M309.029,0c-41.273,0-66.873,31.347-80.98,58.514C213.943,31.347,188.343,0,147.069,0 c-31.347,0-56.424,26.122-56.424,57.992c0,32.392,25.078,59.037,56.424,59.037V85.682c-13.584,0-25.078-12.539-25.078-27.69 c0-14.629,11.494-26.645,25.078-26.645c47.02,0,65.829,72.62,65.829,73.143l15.151-3.657l15.151,3.657 c0-0.522,18.808-73.143,65.829-73.143c13.584,0,25.078,12.016,25.078,26.645c0,15.151-11.494,27.69-25.078,27.69v31.347 c31.347,0,56.424-26.645,56.424-59.037C365.453,26.122,340.375,0,309.029,0z"/><rect x="243.722" y="101.355" style="fill:#000000;" width="31.347" height="339.069"/><rect x="181.029" y="101.355" style="fill:#000000;" width="31.347" height="339.069"/><path style="fill:#2ca9bc;" d="M430.237,85.682H25.861c-8.882,0-15.673,6.792-15.673,15.673v99.788 c0,8.882,6.792,15.673,15.673,15.673h10.971v223.608c0,8.882,6.792,15.673,15.673,15.673h351.086 c8.882,0,15.673-6.792,15.673-15.673V216.816h10.971c8.882,0,15.673-6.792,15.673-15.673v-99.788 C445.91,92.473,439.118,85.682,430.237,85.682z M41.535,117.029h373.029v68.441H41.535V117.029z M387.918,424.751H68.18V216.816 h319.739V424.751z"/></svg>'
-        self.icon['Themes'] = dict()
-        self.icon['Themes']['1'] = {'Dark': '32CD32', 'Light': '7CFC00'}
-        self.icon['Themes']['n'] = {'Dark': '2ca9bc', 'Light': '000000'}
-        dn = self.icon['Themes']['n']['Dark']
-        ln = self.icon['Themes']['n']['Light']
+        self.icon['Themes'] = { '0': {'Dark': '32CD32', 'Light': '7CFC00'},
+                                '1': {'Dark': '1185E1', 'Light': '4DCFE1'},
+                                '2': {'Dark': 'FDC75B', 'Light': 'ED664C'}
+                              }
+        # self.icon['Count'] = 0
+        dn = '2ca9bc'
+        ln = '000000'
         for k in self.icon['Themes']:
             if k == 'n':
                 continue
@@ -62,12 +64,15 @@ class statics:
                 self.icon['Themes'][k]['BuilderImage']= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
                 self.icon['Themes'][k]['BuilderSVG'].render(PyQt6.QtGui.QPainter(self.icon['Themes'][k]['BuilderImage']))
                 self.icon['Themes'][k]['Icon'] = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(self.icon['Themes'][k]['BuilderImage']))
+                self.icon['Themes'][k]['Pixmap'] = PyQt6.QtGui.QPixmap(self.icon['Themes'][k]['BuilderImage']).scaled(PyQt6.QtCore.QSize(36,36))
+
             except:
                 if not 'Icon' in self.icon['Themes']['1']:
-                    self.icon['Themes']['1']['Icon'] = PyQt6.QtWidgets.QWidget().style().standardIcon(
+                    self.icon['Themes']['0']['Icon'] = PyQt6.QtWidgets.QWidget().style().standardIcon(
                                 #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
                                 PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
 
+        self.about_widget   = myAbout(self)
         self.ahk_translator = _general.ahk()
         if self.python:
             self.tempdir = './'
@@ -146,17 +151,26 @@ class statics:
             os.remove(self.lockfile)
 
     def getIcon(self):
-        return self.icon['Themes']['1']['Icon']
+        return self.icon['Themes']['0']['Icon']
 
     def getAbout(self):
-        ret = PyQt6.QtWidgets.QWidget()
+        return self.about_widget
+
+class myAbout(PyQt6.QtWidgets.QWidget):
+    def __init__(self,statics):
+        super().__init__()
+        self.statics = statics
+        self.icontimer = PyQt6.QtCore.QTimer()
+        self.icontimer.timeout.connect(self._about_loop_image)
+        #ret = PyQt6.QtWidgets.QWidget()
         full =  PyQt6.QtWidgets.QVBoxLayout()
 
-        group_me = PyQt6.QtWidgets.QGroupBox(self.showname)
+        group_me = PyQt6.QtWidgets.QGroupBox(self.statics.showname)
         layout_me =  PyQt6.QtWidgets.QHBoxLayout()
 
         self.image_me = PyQt6.QtWidgets.QLabel()
-        self.image_me.setPixmap(PyQt6.QtGui.QPixmap(self.icon['Themes']['1']['BuilderImage']).scaled(PyQt6.QtCore.QSize(36,36)))
+        if 'Pixmap' in self.statics.icon['Themes']['0']:
+            self.image_me.setPixmap(self.statics.icon['Themes']['0']['Pixmap'])
         self.image_me.setAlignment(PyQt6.QtCore.Qt.AlignmentFlag.AlignRight)
         text_me= PyQt6.QtWidgets.QLabel("<ul><li>Hello World</li><li>Hello World</li></ul>")
         layout_me.addWidget(self.image_me)
@@ -164,16 +178,21 @@ class statics:
         group_me.setLayout(layout_me)
         full.addWidget(group_me)
 
-        ret.setLayout(full)
-
-        #me_text.setAlignment(PyQt6.QtCore.Qt.AlignmentFlag.AlignCenter)
-        return ret
+        self.setLayout(full)
 
     def _about_loop_image(self):
-        print('plop')
-        self.image_me.setPixmap(PyQt6.QtGui.QPixmap(self.icon['Themes']['n']['BuilderImage']).scaled(PyQt6.QtCore.QSize(36,36)))
+        self.id = (self.id+1)%len(self.statics.icon['Themes'])
+        id = str(self.id)
+        if 'Pixmap' in self.statics.icon['Themes'][id]:
+            self.image_me.setPixmap(self.statics.icon['Themes'][id]['Pixmap'])
 
-
+    def showEvent(self,event):
+        super().showEvent(event)
+        self.id = 0
+        self.icontimer.start(1*1000)
+    def hideEvent(self,event):
+        super().hideEvent(event)
+        self.icontimer.stop()
 
 class dynamics:
     def __del__(self):
