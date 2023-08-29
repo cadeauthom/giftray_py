@@ -33,14 +33,17 @@ class giftray():
             self.__del__()
         # Register our signal handler with `SIGINT`(CTRL + C)
         signal.signal(signal.SIGINT, signal_handler)
-        self.statics = _var.statics()
         # Define app
         self.app = PyQt6.QtWidgets.QApplication([]) # take 50ms
         self.app.setQuitOnLastWindowClosed ( False )
+        self.statics = _var.statics()
+        self.disambiguateTimer = PyQt6.QtCore.QTimer()
+        self.disambiguateTimer.setSingleShot(True)
+        self.disambiguateTimer.timeout.connect(self._ConnectorAbout)
         # Define tray
-        self.main_ico = _var.main_ico()
+        #self.main_ico = _var.main_ico()
         self.tray = PyQt6.QtWidgets.QSystemTrayIcon( # take 30ms
-                        self.main_ico.get())
+                        self.statics.getIcon())
         self.tray.setToolTip    (self.statics.showname)
         self.tray.setVisible    ( True )
         self.tray.show          ()
@@ -86,8 +89,9 @@ class giftray():
         if hasattr(self, "dynamics"):
             self.dynamics.locker.acquire(timeout=5)
             self.tray.setContextMenu(None)
-            self.tray.setIcon(self.main_ico.get())
+            self.tray.setIcon(self.statics.getIcon())
             self.dynamics.__del__()
+        if hasattr(self, "dynamics"):
             del(self.dynamics)
         if hasattr(self, "ahklock"):
             if self.ahklock.locked():
@@ -147,11 +151,13 @@ class giftray():
 
     def _ConnectorTray(self,reason):
         if reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Trigger:
-            self._ConnectorAbout()
+            self.disambiguateTimer.start(self.app.doubleClickInterval())
         elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.Context:
             if hasattr(self, "dynamics"):
                 self.dynamics.show()
         elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick:
+            self.disambiguateTimer.stop()
+            self.mainWin.hide()
             self.__del__()
         elif reason == PyQt6.QtWidgets.QSystemTrayIcon.ActivationReason.MiddleClick:
             #seems not detected as midlle but as trigger

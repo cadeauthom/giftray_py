@@ -2,7 +2,6 @@ import os
 import sys
 import posixpath
 import shutil
-import trace, threading
 import win32con
 import win32api
 import win32process
@@ -39,6 +38,36 @@ class statics:
         self.template       = dict()
         self.classes        = dict()
         self.dynamics       = None
+        self.icon = dict()
+        self.icon['SVG'] = '<?xml version="1.0" encoding="iso-8859-1"?><svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 456.098 456.098" style="enable-background:new 0 0 456.098 456.098;" xml:space="preserve"><path style="fill:#000000;" d="M309.029,0c-41.273,0-66.873,31.347-80.98,58.514C213.943,31.347,188.343,0,147.069,0 c-31.347,0-56.424,26.122-56.424,57.992c0,32.392,25.078,59.037,56.424,59.037V85.682c-13.584,0-25.078-12.539-25.078-27.69 c0-14.629,11.494-26.645,25.078-26.645c47.02,0,65.829,72.62,65.829,73.143l15.151-3.657l15.151,3.657 c0-0.522,18.808-73.143,65.829-73.143c13.584,0,25.078,12.016,25.078,26.645c0,15.151-11.494,27.69-25.078,27.69v31.347 c31.347,0,56.424-26.645,56.424-59.037C365.453,26.122,340.375,0,309.029,0z"/><rect x="243.722" y="101.355" style="fill:#000000;" width="31.347" height="339.069"/><rect x="181.029" y="101.355" style="fill:#000000;" width="31.347" height="339.069"/><path style="fill:#2ca9bc;" d="M430.237,85.682H25.861c-8.882,0-15.673,6.792-15.673,15.673v99.788 c0,8.882,6.792,15.673,15.673,15.673h10.971v223.608c0,8.882,6.792,15.673,15.673,15.673h351.086 c8.882,0,15.673-6.792,15.673-15.673V216.816h10.971c8.882,0,15.673-6.792,15.673-15.673v-99.788 C445.91,92.473,439.118,85.682,430.237,85.682z M41.535,117.029h373.029v68.441H41.535V117.029z M387.918,424.751H68.18V216.816 h319.739V424.751z"/></svg>'
+        self.icon['Themes'] = dict()
+        self.icon['Themes']['1'] = {'Dark': '32CD32', 'Light': '7CFC00'}
+        self.icon['Themes']['n'] = {'Dark': '2ca9bc', 'Light': '000000'}
+        dn = self.icon['Themes']['n']['Dark']
+        ln = self.icon['Themes']['n']['Light']
+        for k in self.icon['Themes']:
+            if k == 'n':
+                continue
+            try:
+                img_str = self.icon['SVG']
+                d1 = self.icon['Themes'][k]['Dark']
+                l1 = self.icon['Themes'][k]['Light']
+                if  l1 != ln:
+                    img_str=img_str.replace('#'+dn,'#CompletelyFakeStringToReplaceDark')
+                    img_str=img_str.replace('#'+ln,'#'+l1)
+                    img_str=img_str.replace('#CompletelyFakeStringToReplaceDark','#'+d1)
+                elif d1 != dn:
+                    img_str=img_str.replace('#'+dn,'#'+d1)
+                self.icon['Themes'][k]['BuilderSVG'] = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(img_str.encode()))
+                self.icon['Themes'][k]['BuilderImage']= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
+                self.icon['Themes'][k]['BuilderSVG'].render(PyQt6.QtGui.QPainter(self.icon['Themes'][k]['BuilderImage']))
+                self.icon['Themes'][k]['Icon'] = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(self.icon['Themes'][k]['BuilderImage']))
+            except:
+                if not 'Icon' in self.icon['Themes']['1']:
+                    self.icon['Themes']['1']['Icon'] = PyQt6.QtWidgets.QWidget().style().standardIcon(
+                                #PyQt6.QtWidgets.QStyle.StandardPixmap.SP_TitleBarContextHelpButton) #too dark
+                                PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
+
         self.ahk_translator = _general.ahk()
         if self.python:
             self.tempdir = './'
@@ -116,26 +145,9 @@ class statics:
         if os.path.isfile(self.lockfile):
             os.remove(self.lockfile)
 
-class main_ico:
-    def __init__(self):
-        self.svg = '<?xml version="1.0" encoding="iso-8859-1"?><svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 456.098 456.098" style="enable-background:new 0 0 456.098 456.098;" xml:space="preserve"><path style="fill:#000000;" d="M309.029,0c-41.273,0-66.873,31.347-80.98,58.514C213.943,31.347,188.343,0,147.069,0 c-31.347,0-56.424,26.122-56.424,57.992c0,32.392,25.078,59.037,56.424,59.037V85.682c-13.584,0-25.078-12.539-25.078-27.69 c0-14.629,11.494-26.645,25.078-26.645c47.02,0,65.829,72.62,65.829,73.143l15.151-3.657l15.151,3.657 c0-0.522,18.808-73.143,65.829-73.143c13.584,0,25.078,12.016,25.078,26.645c0,15.151-11.494,27.69-25.078,27.69v31.347 c31.347,0,56.424-26.645,56.424-59.037C365.453,26.122,340.375,0,309.029,0z"/><rect x="243.722" y="101.355" style="fill:#000000;" width="31.347" height="339.069"/><rect x="181.029" y="101.355" style="fill:#000000;" width="31.347" height="339.069"/><path style="fill:#2ca9bc;" d="M430.237,85.682H25.861c-8.882,0-15.673,6.792-15.673,15.673v99.788 c0,8.882,6.792,15.673,15.673,15.673h10.971v223.608c0,8.882,6.792,15.673,15.673,15.673h351.086 c8.882,0,15.673-6.792,15.673-15.673V216.816h10.971c8.882,0,15.673-6.792,15.673-15.673v-99.788 C445.91,92.473,439.118,85.682,430.237,85.682z M41.535,117.029h373.029v68.441H41.535V117.029z M387.918,424.751H68.18V216.816 h319.739V424.751z"/></svg>'
-        self.d1 = '32CD32'
-        self.l1 = '7CFC00'
-        self.dn = '2ca9bc'
-        self.ln = '000000'
-    def get(self):
-        if not hasattr(self, "Icon"):
-            if  self.l1 != self.ln:
-                self.svg=self.svg.replace('#'+self.dn,'#CompletelyFakeStringToReplaceDark')
-                self.svg=self.svg.replace('#'+self.ln,'#'+self.l1)
-                self.svg=self.svg.replace('#CompletelyFakeStringToReplaceDark','#'+self.d1)
-            elif self.d1 != self.dn:
-                self.svg=self.svg.replace('#'+self.dn,'#'+self.d1)
-            self.BuilderSVG = PyQt6.QtSvg.QSvgRenderer(PyQt6.QtCore.QByteArray(self.svg.encode()))
-            self.BuilderImage= PyQt6.QtGui.QImage(256,256, PyQt6.QtGui.QImage.Format.Format_ARGB32)
-            self.BuilderSVG.render(PyQt6.QtGui.QPainter(self.BuilderImage))
-            self.Icon = PyQt6.QtGui.QIcon(PyQt6.QtGui.QPixmap.fromImage(self.BuilderImage))
-        return self.Icon
+    def getIcon(self):
+        return self.icon['Themes']['1']['Icon']
+
 
 
 class dynamics:
@@ -162,7 +174,7 @@ class dynamics:
         self.internal['Icons'] = {
                         'Links' : {},
                         'Images': {
-                            'GENERIC_Tray'         : { 'Theme': 'Tray',    'SVG': main_ico().svg},
+                            'GENERIC_Tray'         : { 'Theme': 'Tray',    'SVG': self.statics.icon['SVG']},
                             'GENERIC_Errors'       : { 'Theme': 'Default', 'SVG': '<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="warning-alt" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><path id="secondary" d="M10.25,4.19,2.63,18a2,2,0,0,0,1.75,3H19.62a2,2,0,0,0,1.75-3L13.75,4.19A2,2,0,0,0,10.25,4.19Z" style="fill:#2ca9bc; stroke-width: 2;"></path><line id="primary-upstroke" x1="12.05" y1="17" x2="11.95" y2="17" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5;"></line><path id="primary" d="M12,9v4M10.25,4.19,2.63,18a2,2,0,0,0,1.75,3H19.62a2,2,0,0,0,1.75-3L13.75,4.19A2,2,0,0,0,10.25,4.19Z" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path></svg>'},
                             'GENERIC_Exit'         : { 'Theme': 'Default', 'SVG': '<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="sign-out" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><path id="secondary" d="M14.56,18.35,13,17.05a1,1,0,0,1-.11-1.41L14.34,14H7V10h7.34L12.93,8.36A1,1,0,0,1,13,7l1.52-1.3A1,1,0,0,1,16,5.76l4.79,5.59a1,1,0,0,1,0,1.3L16,18.24A1,1,0,0,1,14.56,18.35Z" style="fill:#2ca9bc; stroke-width: 2;"></path><path id="primary" d="M7,20H4a1,1,0,0,1-1-1V5A1,1,0,0,1,4,4H7" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path><path id="primary-2" data-name="primary" d="M14.56,18.35,13,17.05a1,1,0,0,1-.11-1.41L14.34,14H7V10h7.34L12.93,8.36A1,1,0,0,1,13,7l1.52-1.3A1,1,0,0,1,16,5.76l4.79,5.59a1,1,0,0,1,0,1.3L16,18.24A1,1,0,0,1,14.56,18.35Z" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path></svg>'},
                             'GENERIC_Reload'       : { 'Theme': 'Default', 'SVG': '<?xml version="1.0" encoding="utf-8"?><svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" id="exchange-5" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line"><path id="secondary" d="M7,3a4,4,0,1,0,4,4A4,4,0,0,0,7,3ZM17,21a4,4,0,1,0-4-4A4,4,0,0,0,17,21Z" style="fill:#2ca9bc; stroke-width: 2;"></path><path id="primary" d="M14.57,4.43a8,8,0,0,1,3.09,1.91,8.13,8.13,0,0,1,2,3.3" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path><polyline id="primary-2" data-name="primary" points="17.85 8.81 19.66 9.65 20.5 7.84" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline><path id="primary-3" data-name="primary" d="M4.35,14.36a8.13,8.13,0,0,0,2,3.3,8,8,0,0,0,3.09,1.91" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path><polyline id="primary-4" data-name="primary" points="6.15 15.19 4.34 14.35 3.5 16.16" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline><path id="primary-5" data-name="primary" d="M7,3a4,4,0,1,0,4,4A4,4,0,0,0,7,3ZM17,21a4,4,0,1,0-4-4A4,4,0,0,0,17,21Z" style="fill: none; stroke:#000000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path></svg>'},
