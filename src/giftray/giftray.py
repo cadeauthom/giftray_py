@@ -36,6 +36,7 @@ class giftray():
         # Define app
         self.app = PyQt6.QtWidgets.QApplication([]) # take 50ms
         self.app.setQuitOnLastWindowClosed ( False )
+        self.mainWin = PyQt6.QtWidgets.QMainWindow()
         self.statics = _var.statics()
         self.disambiguateTimer = PyQt6.QtCore.QTimer()
         self.disambiguateTimer.setSingleShot(True)
@@ -165,5 +166,22 @@ class giftray():
         return
 
     def _ConnectorAbout(self):
+        if not self.mainWin.centralWidget():
+            timer = PyQt6.QtCore.QTimer()
+            # self.mainWin.resize(500, 500)
+            if hasattr(self, "statics"):
+                timer.timeout.connect(self.statics._about_loop_image)
+                #PyQt6.QtWidgets.QWidget(
+                self.mainWin.setWindowTitle('About ' + self.statics.showname)
+                if hasattr(self, "dynamics"):
+                    self.mainWin.setWindowIcon(self.dynamics.getIcon('Tray'))
+                else:
+                    self.mainWin.setWindowIcon(self.statics.getIcon())
+                self.mainWin.setCentralWidget(self.statics.getAbout())
+        if self.mainWin.isVisible():
+            self.mainWin.hide()
+        else:
+            self.mainWin.show()
+            timer.start(5*1000)
         return
 

@@ -148,6 +148,31 @@ class statics:
     def getIcon(self):
         return self.icon['Themes']['1']['Icon']
 
+    def getAbout(self):
+        ret = PyQt6.QtWidgets.QWidget()
+        full =  PyQt6.QtWidgets.QVBoxLayout()
+
+        group_me = PyQt6.QtWidgets.QGroupBox(self.showname)
+        layout_me =  PyQt6.QtWidgets.QHBoxLayout()
+
+        self.image_me = PyQt6.QtWidgets.QLabel()
+        self.image_me.setPixmap(PyQt6.QtGui.QPixmap(self.icon['Themes']['1']['BuilderImage']).scaled(PyQt6.QtCore.QSize(36,36)))
+        self.image_me.setAlignment(PyQt6.QtCore.Qt.AlignmentFlag.AlignRight)
+        text_me= PyQt6.QtWidgets.QLabel("<ul><li>Hello World</li><li>Hello World</li></ul>")
+        layout_me.addWidget(self.image_me)
+        layout_me.addWidget(text_me)
+        group_me.setLayout(layout_me)
+        full.addWidget(group_me)
+
+        ret.setLayout(full)
+
+        #me_text.setAlignment(PyQt6.QtCore.Qt.AlignmentFlag.AlignCenter)
+        return ret
+
+    def _about_loop_image(self):
+        print('plop')
+        self.image_me.setPixmap(PyQt6.QtGui.QPixmap(self.icon['Themes']['n']['BuilderImage']).scaled(PyQt6.QtCore.QSize(36,36)))
+
 
 
 class dynamics:
