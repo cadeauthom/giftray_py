@@ -196,14 +196,14 @@ class ahk:
         ahk = ""
         if (not hhk["mod"]) or (not hhk["key"]):
             return ahk
-        if hhk["mod"] & self.ahk_mods["MOD_CONTROL"]:
-            ahk += "Ctrl + "
         if hhk["mod"] & self.ahk_mods["MOD_WIN"]:
-            ahk += "Win + "
+            ahk += "Meta+"
+        if hhk["mod"] & self.ahk_mods["MOD_CONTROL"]:
+            ahk += "Ctrl+"
         if hhk["mod"] & self.ahk_mods["MOD_SHIFT"]:
-            ahk += "Shift + "
+            ahk += "Shift+"
         if hhk["mod"] & self.ahk_mods["MOD_ALT"]:
-            ahk += "Alt + "
+            ahk += "Alt+"
         if hhk["key"] in self.ahk_keys:
             #remove "VK_"
             ahk += self.ahk_keys[hhk["key"]][3:]
@@ -227,7 +227,7 @@ class ahk:
             if mod in ['CTRL',"LCTRL","RCTRL","CONTROL","LCONTROL","RCONTROL"]:
                 nb_m += 1
                 hhk["mod"] |= self.ahk_mods["MOD_CONTROL"]
-            elif mod in ['WIN','LWIN','RWIN','WINDOWS','LWINDOWS','RWINDOWS']:
+            elif mod in ['WIN','LWIN','RWIN','WINDOWS','LWINDOWS','RWINDOWS','META']:
                 nb_m += 1
                 hhk["mod"] |= self.ahk_mods["MOD_WIN"]
             elif mod in ['ALT','LALT','RALT']:

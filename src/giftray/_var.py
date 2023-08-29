@@ -606,7 +606,8 @@ class dynamics:
             act.triggered.connect(functools.partial(self._ConnectorAction, a))
             ahk = self.install['Actions'][a].GetHK()[0]
             if ahk:
-                act.setToolTip(ahk)
+                # act.setToolTip(ahk)
+                act.setShortcut(ahk)
             if self.install['Actions'][a].IsService():
                 act.setCheckable(True)
                 if self.install['Actions'][a].enabled:
@@ -627,7 +628,8 @@ class dynamics:
                 act = PyQt6.QtGui.QAction(self.getIcon('GENERIC_Menu'),f,submenu)
                 ahk = self.install['Folders'][f].GetHK()[0]
                 if ahk:
-                    act.setToolTip(ahk)
+                    # act.setToolTip(ahk)
+                    act.setShortcut(ahk)
                 act.triggered.connect(functools.partial(self._ConnectorAction, f))
                 submenu.addAction(act)
                 submenu.addSeparator()
@@ -636,7 +638,8 @@ class dynamics:
                 act = PyQt6.QtGui.QAction(self.getIcon(c),c,submenu)
                 ahk = self.install['Actions'][c].GetHK()[0]
                 if ahk:
-                    act.setToolTip(ahk)
+                    # act.setToolTip(ahk)
+                    act.setShortcut(ahk)
                 if self.install['Actions'][c].IsInMenu():
                     act.triggered.connect(functools.partial(self._ConnectorAction, c))
                 else:
