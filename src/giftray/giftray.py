@@ -168,6 +168,8 @@ class giftray():
 
     def _ConnectorAbout(self):
         if not self.mainWin.centralWidget():
+            self.mainWin.setFixedHeight(int(100*2.5))
+            self.mainWin.setFixedWidth(400)
             # self.mainWin.resize(500, 500)
             if hasattr(self, "statics"):
                 #PyQt6.QtWidgets.QWidget(
