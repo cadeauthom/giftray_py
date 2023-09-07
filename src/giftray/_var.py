@@ -564,11 +564,13 @@ class dynamics:
                     to_rm[type].append(section)
                     self.install['Errors'][self.install[type][section].show] = {"Error": "", "Class": self.install[type][section]}
         for type in ['Folders','Actions']:
-            for to_rm in to_rm[type]:
+            for f in to_rm[type]:
+                if not f in self.install[type]:
+                    continue
                 ahk, hhk = self.install[type][f].GetHK()
                 if ahk in self.install['AHK']:
                     self.install['AHK'].pop(ahk)
-                self.install['Actions'].pop(f)
+                self.install[type].pop(f)
 
         '''
         if 0: #Debug to print errors
@@ -893,11 +895,17 @@ class dynamics:
                 nb_hotkey += 1
                 self.statics.logger.debug("Register "+ahk)
             else:
-                to_rm[type].append(self.install['AHK'])
-                self.install['Errors'][self.install[type][self.install['AHK']].show] = {"Error": "", "Class": self.install[type][self.install['AHK']]}
-                self.install['Errors'][self.install[type][self.install['AHK']].show].AddError("Fail to register Hotkey ("+ahk+"): "+ctypes.FormatError(ctypes.GetLastError()))
+                to_rm[type].append(self.install['AHK'][ahk])
+                self.install['Errors'][self.install[type][self.install['AHK'][ahk]].show] = {
+                                    "Error": "",
+                                    "Class": self.install[type][self.install['AHK'][ahk]]
+                                    }
+                self.install[type][self.install['AHK'][ahk]].AddError(
+                                    "Fail to register Hotkey ("+ahk+"): "+
+                                    ctypes.FormatError(ctypes.GetLastError())
+                                    )
         for type in ['Folders','Actions']:
-            for to_rm in to_rm[type]:
+            for f in to_rm[type]:
                 ahk, hhk = self.install[type][f].GetHK()
                 if ahk in self.install['AHK']:
                     self.install['AHK'].pop(ahk)
