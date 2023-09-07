@@ -383,7 +383,11 @@ class alwaysontop(action):
                 return('(Already) UnTop '+name)
         if hwnd in currentOnTop:
             # already TopMost (don't touch)
-            return('OnTop of '+name+'managed outside of '+self.show)
+            win32gui.SetWindowPos(hwnd,
+                win32con.HWND_NOTOPMOST,
+                0,0,0,0,
+                win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+            return('UnTop of '+name+' (forced)')# managed outside of '+self.show)
         # NoTopMost the window
         win32gui.SetWindowPos(hwnd,
             win32con.HWND_TOPMOST,
