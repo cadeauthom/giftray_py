@@ -3,7 +3,6 @@
     "LogLevel": "DEBUG",
     "Silent": false,
     "Darkmode": true,
-    "AHK": "Ctrl + Win + G",
     "Icons": {
       "Tray": null,
       "Errors": null,
@@ -41,7 +40,7 @@
       "Dark": null,
       "Ico": "curve-arrow-right-3",
       "Click": false,
-      "Key": "Escape",
+      "AHK": "Ctrl + Win + Escape",
       "Contain": [
         "Kill Skype",
         "Kill Discord"
@@ -53,7 +52,7 @@
       "Dark": null,
       "Ico": "take-off",
       "Click": true,
-      "Key": null,
+      "AHK": null,
       "Contain": [
         "Kill DropBox",
         "Kill TeamViewer",
@@ -70,7 +69,7 @@
       "Dark": null,
       "Ico": "terminal",
       "Click": true,
-      "Key": "T",
+      "AHK": "Ctrl + Win + T",
       "Command": "terminator --working-directory $folder",
       "Uniq": true,
       "GUI": true,
@@ -85,7 +84,7 @@
       "Dark": null,
       "Ico": "cursor-2",
       "Click": true,
-      "Key": null,
+      "AHK": null,
       "Enabled": true,
       "Frequency": null
     },
@@ -96,7 +95,7 @@
       "Dark": null,
       "Ico": "cloudy",
       "Click": true,
-      "Key": "P",
+      "AHK": "Ctrl + Win + P",
       "Command": "ssh -C2qTnNf annuminas -D 8080",
       "Uniq": true,
       "GUI": null,
@@ -111,7 +110,7 @@
       "Dark": null,
       "Ico": "skype",
       "Click": false,
-      "Key": null,
+      "AHK": null,
       "Command": "taskkill.exe",
       "Arguments": "/f /T /im skype.exe",
       "AsAdmin": true
@@ -123,7 +122,7 @@
       "Dark": null,
       "Ico": "discord",
       "Click": false,
-      "Key": null,
+      "AHK": null,
       "Command": "taskkill.exe",
       "Arguments": "/f /T /im Discord.exe",
       "AsAdmin": true
@@ -135,7 +134,7 @@
       "Dark": null,
       "Ico": "dropbox",
       "Click": false,
-      "Key": null,
+      "AHK": null,
       "Command": "taskkill.exe",
       "Arguments": "/f /T /im dropbox.exe",
       "AsAdmin": true
@@ -147,7 +146,7 @@
       "Dark": null,
       "Ico": "teamviewer",
       "Click": false,
-      "Key": null,
+      "AHK": null,
       "Command": "net.exe",
       "Arguments": "stop TeamViewer /y",
       "AsAdmin": true
@@ -159,7 +158,7 @@
       "Dark": null,
       "Ico": null,
       "Click": false,
-      "Key": null,
+      "AHK": null,
       "Command": "net.exe",
       "Arguments": "stop CrashPlanService /y",
       "AsAdmin": true
@@ -171,8 +170,8 @@
       "Dark": null,
       "Ico": null,
       "Click": false,
-      "Key": null,
-      "Command": "C:/Users/tcadeau/AppData/Local/Microsoft/OneDrive/OneDrive.exe",
+      "AHK": null,
+      "Command": "OneDrive.ex",
       "Arguments": "/shutdown",
       "AsAdmin": false
     },
@@ -183,9 +182,9 @@
       "Dark": null,
       "Ico": null,
       "Click": true,
-      "Key": "M",
-      "Command": "C:\\Program Files\\VeraCrypt\\veracrypt.exe",
-      "Arguments": "/v C:\\Volumes\\SSD\\data.vc /l V /q /securedesktop",
+      "AHK": "Win + ²",
+      "Command": "C:\Program Files\VeraCrypt\veracrypt.exe",
+      "Arguments": "/v C:\Volumes\SSD\data.vc /l V /q /securedesktop",
       "AsAdmin": false
     },
     "Umount":{
@@ -195,8 +194,8 @@
       "Dark": null,
       "Ico": null,
       "Click": true,
-      "Key": "U",
-      "Command": "C:\\Program Files\\VeraCrypt\\veracrypt.exe",
+      "AHK": "Ctrl + Win + ²",
+      "Command": "C:\Program Files\VeraCrypt\veracrypt.exe",
       "Arguments": "/q /d",
       "AsAdmin": false
     },
@@ -206,7 +205,7 @@
       "Light": null,
       "Dark": null,
       "Ico": "cursor-2",
-      "Key": "*"
+      "AHK": "Win + *"
     },
     "Hibernate": {
       "Function": "script",
@@ -215,7 +214,7 @@
       "Dark": null,
       "Ico": "sign-out-alt-2",
       "Click": true,
-      "Key": null,
+      "AHK": null,
       "Command": "shutdown.exe",
       "Arguments": "/h",
       "AsAdmin": true
@@ -227,7 +226,7 @@
       "Dark": null,
       "Ico": "sign-out-4",
       "Click": true,
-      "Key": null,
+      "AHK": null,
       "Command": "powercfg.exe",
       "Arguments": "/hibernate on",
       "AsAdmin": true

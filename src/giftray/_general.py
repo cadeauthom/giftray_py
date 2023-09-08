@@ -213,6 +213,15 @@ class ahk:
             ahk += chr(win32api.MapVirtualKey(hhk["key"],MAPVK_VK_TO_CHAR)).lower()
         return ahk
 
+    def getKey(self,key):
+        if "VK_"+key in self.ahk_keys:
+            return self.ahk_keys["VK_"+key.upper()]
+        elif len(key)==1:
+            k=win32api.VkKeyScan(key.lower())
+            k = k & 0xFF
+            return k
+        return None
+
     def ahk2hhk(self,ahk):
         hhk = {}
         nb_k=0

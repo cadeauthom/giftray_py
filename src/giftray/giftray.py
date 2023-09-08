@@ -11,6 +11,7 @@ import shutil
 #import win32api         # package pywin32
 import win32con
 import configparser
+import keyboard
 try:
     import win32gui
 except ImportError:
@@ -136,8 +137,28 @@ class giftray():
                 ahk = self.statics.ahk_translator.hhk2ahk(
                                     { "mod" : msg.lParam & 0b1111111111111111,
                                       "key" : msg.lParam >> 16})
-                if ahk in self.dynamics.install['AHK']:
-                    self.dynamics.ConnectorAHK(ahk)
+                if ahk == self.dynamics.conf["Generals"]['AHK']:
+                    for k in self.dynamics.install['Key']:
+                        # print(k,' ->',self.statics.ahk_translator.getKey(k))
+                        keyboard.on_press_key(k, lambda event: self.dynamics.ConnectorAHK(event.scan_code),suppress=True)
+                    time.sleep(2)
+                    self.dynamics.cleanPress()
+                    '''
+                    arr=[]
+                    event = keyboard.read_event(suppress=True)  # Lire un événement clavier sans l'afficher
+                    while event.event_type == 'up':
+                        arr.append(event.scan_code)
+                        print(event.to_json(), keyboard.is_pressed(event.scan_code))
+                        event = keyboard.read_event(suppress=True)  # Lire un événement clavier sans l'afficher
+                    if event.name in self.dynamics.install['Key']:
+                        print(event.name, ' : ', self.dynamics.install['Key'][event.name])
+                    else:
+                        print('nope; ', event.to_json())
+                    for i in arr:
+                        print(keyboard.is_pressed(event.scan_code))
+                        keyboard.release(i)
+                        print(keyboard.is_pressed(event.scan_code))
+                    '''
             ctypes.windll.user32.TranslateMessage(ctypes.byref(msg))
             ctypes.windll.user32.DispatchMessageA(ctypes.byref(msg))
         self.statics.logger.info("Ending ahk thread")

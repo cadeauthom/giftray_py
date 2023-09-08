@@ -20,6 +20,7 @@ import logging
 import importlib
 import inspect
 import time
+import keyboard
 import PyQt6.QtWidgets, PyQt6.QtGui, PyQt6.QtSvg
 
 from . import _general
@@ -51,8 +52,8 @@ class statics:
         dn = '2ca9bc'
         ln = '000000'
         for k in self.icon['Themes']:
-            if k == 'n':
-                continue
+            # if k == 'n':
+                # continue
             try:
                 img_str = self.icon['SVG']
                 d1 = self.icon['Themes'][k]['Dark']
@@ -115,7 +116,7 @@ class statics:
         self.classes['script']     = _feature.script
         #self.classes['Folder']     = _feature.menu
 
-        self.ahk = _general.ahk()
+        # self.ahk = _general.ahk()
 
     def setTray(self,dynamics):
         self.dynamics = dynamics
@@ -317,6 +318,7 @@ class dynamics:
         self.conf['Generals']['LogLevel'] = "WARNING"
         self.conf['Generals']['Silent'] = True
         self.conf['Generals']['Darkmode'] = False
+        self.conf['Generals']['AHK']=""
         self.conf['Generals']['Icons'] = dict()
         self.conf['Generals']['Themes'] = {
                         'Tray'   : {'Theme': 'MonoWhite',
@@ -331,7 +333,8 @@ class dynamics:
         self.install = dict()
         self.install['Folders'] = dict()
         self.install['Actions'] = dict()
-        self.install['AHK']     = dict()
+        # self.install['AHK']     = dict()
+        self.install['Key']     = dict()
         self.install['Errors']  = dict()
 
         self.install['MainErrors'] = [] #ToDo : use this one
@@ -357,6 +360,9 @@ class dynamics:
                     continue
                 elif k ==  'Darkmode':
                     self.conf['Generals']['Darkmode'] = config['Generals']['Darkmode']
+                    continue
+                elif k ==  'AHK':
+                    self.conf['Generals']['AHK'] = config['Generals']['AHK']
                     continue
                 elif k ==  'Icons':
                     for i in config['Generals']['Icons']:
@@ -545,12 +551,18 @@ class dynamics:
                     cl = _feature.menu
                 new_class = cl(f,self.conf[type][f],self.statics)
                 if new_class.IsOK():
-                    ahk, hhk = new_class.GetHK()
-                    if len(ahk)>2 and "key" in hhk:
-                        if ahk in self.install['AHK']:
-                            new_class.AddError("Duplicated ahk " + self.ahk[ahk])
+                    key = new_class.GetHK()
+                    if key:
+                        if key in self.install['Key']:
+                            new_class.AddError("Duplicated key " + self.key[key])
                         else:
-                            self.install['AHK'][ahk] = new_class.show
+                            self.install['Key'][key] = new_class.show
+                    # ahk, hhk = new_class.GetHK()
+                    # if len(ahk)>2 and "key" in hhk:
+                        # if ahk in self.install['AHK']:
+                            # new_class.AddError("Duplicated ahk " + self.ahk[ahk])
+                        # else:
+                            # self.install['AHK'][ahk] = new_class.show
                 if not new_class.IsOK():
                     self.install['Errors'][new_class.show] = {"Error": "", "Class": new_class}
                 else:
@@ -567,9 +579,12 @@ class dynamics:
             for f in to_rm[type]:
                 if not f in self.install[type]:
                     continue
-                ahk, hhk = self.install[type][f].GetHK()
-                if ahk in self.install['AHK']:
-                    self.install['AHK'].pop(ahk)
+                key = self.install[type][f].GetHK()
+                if key and key in self.install['Key']:
+                    self.install['Key'].pop(key)
+                # ahk, hhk = self.install[type][f].GetHK()
+                # if ahk in self.install['AHK']:
+                    # self.install['AHK'].pop(ahk)
                 self.install[type].pop(f)
 
         '''
@@ -701,10 +716,12 @@ class dynamics:
                 continue
             if not self.install['Actions'][a].IsInMenu():
                 # Not clickable
-                ahk = self.install['Actions'][a].GetHK()[0]
-                if ahk:
+                key = self.install['Actions'][a].GetHK()
+                # ahk = self.install['Actions'][a].GetHK()[0]
+                # if ahk:
+                if key:
                     act = PyQt6.QtGui.QAction(self.getIcon(a),a,menu_not)
-                    act.setToolTip(ahk)
+                    # act.setToolTip(ahk)
                     act.setDisabled(True)
                     #act.triggered.connect(functools.partial(self._ConnectorNothing, i))
                     menu_not.addAction(act)
@@ -714,10 +731,13 @@ class dynamics:
             # Main menu
             act = PyQt6.QtGui.QAction(self.getIcon(a),a,self.menu)
             act.triggered.connect(functools.partial(self._ConnectorAction, a))
-            ahk = self.install['Actions'][a].GetHK()[0]
-            if ahk:
+            # ahk = self.install['Actions'][a].GetHK()[0]
+            key = self.install['Actions'][a].GetHK()
+            # if ahk:
+            if key:
                 # act.setToolTip(ahk)
-                act.setShortcut(ahk)
+                act.setShortcut(key)
+                # act.setShortcut(ahk)
             if self.install['Actions'][a].IsService():
                 act.setCheckable(True)
                 if self.install['Actions'][a].enabled:
@@ -736,20 +756,26 @@ class dynamics:
                 # All submenu action
                 #act = PyQt6.QtGui.QAction(self.images.getIcon(self.submenus[i].iconid),i,submenu)
                 act = PyQt6.QtGui.QAction(self.getIcon('GENERIC_Menu'),f,submenu)
-                ahk = self.install['Folders'][f].GetHK()[0]
-                if ahk:
+                # ahk = self.install['Actions'][a].GetHK()[0]
+                key = self.install['Actions'][a].GetHK()
+                # if ahk:
+                if key:
                     # act.setToolTip(ahk)
-                    act.setShortcut(ahk)
+                    act.setShortcut(key)
+                    # act.setShortcut(ahk)
                 act.triggered.connect(functools.partial(self._ConnectorAction, f))
                 submenu.addAction(act)
                 submenu.addSeparator()
             # Sub actions
             for c in self.install['Folders'][f].GetContain():
                 act = PyQt6.QtGui.QAction(self.getIcon(c),c,submenu)
-                ahk = self.install['Actions'][c].GetHK()[0]
-                if ahk:
+                # ahk = self.install['Actions'][a].GetHK()[0]
+                key = self.install['Actions'][a].GetHK()
+                # if ahk:
+                if key:
                     # act.setToolTip(ahk)
-                    act.setShortcut(ahk)
+                    act.setShortcut(key)
+                    # act.setShortcut(ahk)
                 if self.install['Actions'][c].IsInMenu():
                     act.triggered.connect(functools.partial(self._ConnectorAction, c))
                 else:
@@ -877,6 +903,22 @@ class dynamics:
         return
 
     def registerAHK(self):
+        hhk, ahk, err = self.statics.ahk_translator.ahk2hhk(self.conf['Generals']['AHK'])
+        self.conf['Generals']['AHK'] = ahk
+        if err:
+            self.install['MainErrors'].append('Fail to generate AHK:' + err)
+            return
+        if not ahk:
+            return
+        if (ctypes.windll.user32.RegisterHotKey(None, 0, hhk["mod"], hhk["key"])):
+            self.statics.logger.debug("Register "+ahk)
+        else:
+            sself.install['MainErrors'].append(
+                                "Fail to register Hotkey ("+ahk+"): "+
+                                ctypes.FormatError(ctypes.GetLastError())
+                                )
+        return
+        '''
         nb_hotkey=0
         to_rm = {'Folders': [],'Actions': []}
         for ahk in self.install['AHK']:
@@ -910,11 +952,27 @@ class dynamics:
                 if ahk in self.install['AHK']:
                     self.install['AHK'].pop(ahk)
                 self.install['Actions'].pop(f)
+        '''
 
 
-    def ConnectorAHK(self, ahk):
-        if ahk in self.install['AHK']:
-            self._ConnectorAction(self.install['AHK'][ahk])
+    # def ConnectorAHK(self, ahk):
+        # if ahk in self.install['AHK']:
+            # self._ConnectorAction(self.install['AHK'][ahk])
+    def ConnectorAHK(self, event):
+        self.cleanPress()
+        MAPVK_VSC_TO_VK=1
+        MAPVK_VK_TO_CHAR=2
+        code = win32api.MapVirtualKey(event,MAPVK_VSC_TO_VK)
+        key = chr(win32api.MapVirtualKey(code,MAPVK_VK_TO_CHAR)).upper()
+        if key in self.install['Key']:
+            self._ConnectorAction(self.install['Key'][key])
+
+    def cleanPress(self):
+        for k in self.install['Key']:
+            try:
+                keyboard.unblock_key(k)
+            except:
+                pass
 
     def _ConnectorAction(self, feature):
         if self.locker.locked():

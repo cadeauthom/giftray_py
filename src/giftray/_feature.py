@@ -27,12 +27,13 @@ class singleobject:
     def __init__(self,show,val,statics):
         self.statics = statics
         self.show    = show
-        self.ahk     = ""
+        #self.ahk     = ""
         self.theme   = ""
         self.dark    = ""
         self.light   = ""
         self.menu    = False
-        self.hhk     = []
+        #self.hhk     = []
+        self.key     = ""
         self.error   = []
         #self.module  = '_feature'#type(self).__module__[(len(self.up.name)+2):]
         self.name    = type(self).__name__
@@ -47,7 +48,8 @@ class singleobject:
                                     "Dark": _general.gtype.COLOR,
                                     "Ico": _general.gtype.STRING,
                                     "Click": _general.gtype.BOOL,
-                                    "AHK": _general.gtype.STRING}
+                                     "Key": _general.gtype.STRING}
+                                    # "AHK": _general.gtype.STRING}
 
         others = dict()
         for i in val:
@@ -60,9 +62,12 @@ class singleobject:
             elif k == "Click".title():
                 self.menu = _general.GetOpt(val[i],_general.gtype.BOOL)
                 self.configuration["Click"] = conffield(val[i], type=_general.gtype.BOOL)
-            elif k == "Ahk".title():
-                self.ahk = _general.GetOpt(val[i],_general.gtype.STRING)
-                self.configuration["AHK"] = conffield(val[i])
+            # elif k == "Ahk".title():
+                # self.ahk = _general.GetOpt(val[i],_general.gtype.STRING)
+                # self.configuration["AHK"] = conffield(val[i])
+            elif k == 'Key'.title():
+                self.key = _general.GetOpt(val[i],_general.gtype.STRING).upper()
+                self.configuration["Key"] = conffield(val[i]) 
             elif k == "Theme".title():
                 self.theme = _general.GetOpt(val[i],_general.gtype.STRING)
                 self.configuration["Theme"] = conffield(val[i])
@@ -85,10 +90,12 @@ class singleobject:
         # if 'colors' in dir(self.up):
             # self.iconid = self.up.images.create(self.ico,self.show[0],self.theme)
 
-        if self.ahk:
-            self.hhk, self.ahk, err = statics.ahk_translator.ahk2hhk(self.ahk)
-            if len(err):
-                self.AddError(err)
+        # if self.key:
+            # print(self.key)
+        # if self.ahk:
+            # self.hhk, self.ahk, err = statics.ahk_translator.ahk2hhk(self.ahk)
+            # if len(err):
+                # self.AddError(err)
 
         others = self._PreInit(others)
         #self._Init(others,others_general)
@@ -133,7 +140,8 @@ class singleobject:
         return p in self.parents
 
     def GetHK(self):
-        return self.ahk, self.hhk
+        return self.key
+        # return self.ahk, self.hhk
 
     def GetError(self):
         return copy.copy(self.error)
@@ -184,7 +192,8 @@ class action(singleobject):
 
     def Check(self):
         if self.IsOK():
-            if not self.hhk and not self.menu and not self.IsChild():
+            # if not self.hhk and not self.menu and not self.IsChild():
+            if not self.key and not self.menu and not self.IsChild():
                 self.AddError("Nor in (sub)menu or shortcut")
         return
 
@@ -227,7 +236,8 @@ class service(singleobject):
         return ret_others
 
     def Check(self):
-        if not self.hhk and not self.menu:
+        # if not self.hhk and not self.menu:
+        if not self.key and not self.menu:
             self.AddError("Nor in menu or shortcut")
         return 
 
