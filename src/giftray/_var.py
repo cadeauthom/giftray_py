@@ -963,7 +963,10 @@ class dynamics:
         MAPVK_VSC_TO_VK=1
         MAPVK_VK_TO_CHAR=2
         code = win32api.MapVirtualKey(event,MAPVK_VSC_TO_VK)
-        key = chr(win32api.MapVirtualKey(code,MAPVK_VK_TO_CHAR)).upper()
+        # key = chr(win32api.MapVirtualKey(code,MAPVK_VK_TO_CHAR)).upper()
+        # if not len(key):
+        key = self.statics.ahk_translator.getKey(code)
+        print(key)
         if key in self.install['Key']:
             self._ConnectorAction(self.install['Key'][key])
 
