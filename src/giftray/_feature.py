@@ -473,12 +473,14 @@ class wsl(action):
         self.configuration_type["Output"]=_general.gtype.STRING
         self.configuration_type["vcxsrv"]=_general.gtype.PATH
         self.configuration_type["vcxsrv_timeout"]=_general.gtype.UINT
+        self.configuration_type["Distribution"]=_general.gtype.STRING
         self.cmd            = ""
         self.uniq           = False
         self.out            = ""
         self.gui            = False
         self.vcxsrv         = ""
         self.vcxsrv_timeout = 2
+        self.distribution   = ""
         confvcxsrv_timeout = 0
         confvcxsrv     = ""
         tmp = _general.WindowsHandler().GetRealPath( "wsl.exe" )
@@ -515,6 +517,9 @@ class wsl(action):
                     self.configuration["vcxsrv_timeout"] = conffield(confvcxsrv_timeout, type=_general.gtype.UINT)
                 else:
                     self.AddError("'vcxsrv_timeout' not in [0-10]")
+            elif k == "Distribution".title():
+                self.distribution = _general.GetOpt(others[i],_general.gtype.STRING)
+                self.configuration["Distribution"] = conffield(self.distribution, type=_general.gtype.STRING)
             else:
                 self.AddError("'"+i+"' not defined")
         if confvcxsrv_timeout:
@@ -567,6 +572,9 @@ class wsl(action):
             if not x_nb:
                 return "Fail to start vcxsrv"
             main_cmd = 'DISPLAY=localhost' + x_nb + ' ' + main_cmd
-        wsl_cmd = [self.wsl_path, 'bash', '-c', main_cmd]
+        wsl_cmd = [self.wsl_path]
+        if self.distribution:
+            wsl_cmd += ['--distribution', self.distribution]
+        wsl_cmd += ['bash', '-c', main_cmd]
         exit_code = subprocess.Popen(wsl_cmd, shell=True)
         return 'Run : '+ self.cmd
