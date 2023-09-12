@@ -913,7 +913,7 @@ class dynamics:
         if (ctypes.windll.user32.RegisterHotKey(None, 0, hhk["mod"], hhk["key"])):
             self.statics.logger.debug("Register "+ahk)
         else:
-            sself.install['MainErrors'].append(
+            self.install['MainErrors'].append(
                                 "Fail to register Hotkey ("+ahk+"): "+
                                 ctypes.FormatError(ctypes.GetLastError())
                                 )
