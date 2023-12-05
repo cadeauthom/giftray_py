@@ -505,7 +505,9 @@ class wsl(action):
             elif k == "vcxsrv".title():
                 tmp = _general.GetOpt(others[i],_general.gtype.PATH)
                 if not tmp:
-                    self.AddError("'vcxsrv' ("+others[i]+") does not exist")
+                    #ToDo: change no vcxsrv behavior
+                    tmp = False
+                    # self.AddError("'vcxsrv' ("+others[i]+") does not exist")
                 else:
                     self.statics.logger.info("'vcxsrv' set to "+tmp)
                     self.vcxsrv = tmp

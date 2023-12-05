@@ -63,14 +63,26 @@
     }
   },
   "Actions": {
-    "Terminator": {
-      "Function": "wsl",
+    "OracleLinux": {
+      "Function": "script",
       "Theme": null,
       "Light": null,
       "Dark": null,
       "Ico": "terminal",
       "Click": true,
       "Key": "T",
+      "Command": "cmd.exe",
+      "Arguments": "/c wt.exe -p OracleLinux_9_1",
+      "AsAdmin": false
+    },
+    "Terminator": {
+      "Function": "Set_as_Error(wsl)",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "terminal",
+      "Click": true,
+      "Key": null,
       "Command": "terminator --working-directory $folder",
       "Uniq": false,
       "GUI": false,
@@ -97,13 +109,14 @@
       "Dark": null,
       "Ico": "cloudy",
       "Click": true,
-      "Key": "1",
+      "Key": "P",
       "Command": "ssh -C2qTnNf annuminas -D 8080",
       "Uniq": true,
       "GUI": false,
       "Output": null,
       "Distribution": "OracleLinux_9_1",
-      "vcxsrv": "C:\\Program Files\\VcXsrv\\vcxsrv.exe",
+      "_comment_vcxsrv": "C:\\Program Files\\VcXsrv\\vcxsrv.exe",
+      "vcxsrv": "skype.exe",
       "vcxsrv_timeout": 2
     },
     "Kill Skype": {
@@ -116,7 +129,7 @@
       "Key": null,
       "Command": "taskkill.exe",
       "Arguments": "/f /T /im skype.exe",
-      "AsAdmin": true
+      "AsAdmin": false
     },
     "Kill Discord": {
       "Function": "script",
@@ -178,7 +191,7 @@
       "Arguments": "/shutdown",
       "AsAdmin": false
     },
-    "Mount V":{
+    "_comment_Mount V":{
       "Function": "script",
       "Theme": null,
       "Light": null,
@@ -190,7 +203,7 @@
       "Arguments": "/v C:\\Volumes\\SSD\\data.vc /l V /q /securedesktop",
       "AsAdmin": false
     },
-    "Umount":{
+    "_comment_Umount":{
       "Function": "script",
       "Theme": null,
       "Light": null,

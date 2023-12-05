@@ -341,11 +341,14 @@ class dynamics:
         try:
             with open(self.statics.conf,'r') as file:
                 config = json.load(file)
-        except:
-            self.install['MainErrors'].append(self.statics.conf + ' does not contain any configuration')
+        except Exception as error:
+            # handle the exception
+            self.install['MainErrors'].append(self.statics.conf + ' opening: ' + str(error))
             config={}
         if 'Generals' in config:            
             for k in config['Generals']:
+                if k.casefold().startswith('_comment_'):
+                    continue
                 if k == 'LogLevel':
                     LevelNamesMapping=logging.getLevelNamesMapping()
                     levelname = config['Generals']['LogLevel']
@@ -379,6 +382,8 @@ class dynamics:
                     continue
         if 'Actions' in config:
             for a in config['Actions']:
+                if a.casefold().startswith('_comment_'):
+                    continue
                 if (not 'Function' in config['Actions'][a]
                   or not config['Actions'][a]['Function'] in self.statics.template):
                     continue
@@ -393,6 +398,8 @@ class dynamics:
                         self.conf['Actions'][a][k] = None
         if 'Folders' in config:
             for f in config['Folders']:
+                if f.casefold().startswith('_comment_'):
+                    continue
                 # self.conf['Folders']['Contain'] = []
                 contain = []
                 if 'Contain' in config['Folders'][f]:
