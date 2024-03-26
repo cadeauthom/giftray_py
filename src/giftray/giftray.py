@@ -117,7 +117,7 @@ class giftray():
         self.ahk_thread.start()
         if self.ahklock.acquire(timeout=10):
             self.ahklock.release()
-            self.tray.setContextMenu(self.dynamics.buildMenu(self._Restart,self.__del__))
+            self.tray.setContextMenu(self.dynamics.buildMenu(self._Restart,self._ConnectorShortCut,self.__del__))
 
         return
 
@@ -206,3 +206,7 @@ class giftray():
             self.mainWin.show()
         return
 
+    def _ConnectorShortCut(self):
+        sc = PyQt6.QtWidgets.QMainWindow()
+        sc.setCentralWidget(self.dynamics.getShortCut())
+        sc.show()

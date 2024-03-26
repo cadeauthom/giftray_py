@@ -699,7 +699,7 @@ class dynamics:
                             PyQt6.QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion) #too dark
             #print(image, ' failed')
 
-    def buildMenu(self,fct_restart,fct_del):
+    def buildMenu(self,fct_restart,fct_shortcut,fct_del):
         self.menu = PyQt6.QtWidgets.QMenu()
         self.menu.setToolTipsVisible(True)
         # self.menu.setStyleSheet(self.qss)
@@ -819,9 +819,6 @@ class dynamics:
         self.menu.addSeparator()
 
         # Default
-        menu_help = PyQt6.QtWidgets.QMenu('Help',self.menu)
-        menu_help.setToolTipsVisible(True)
-        menu_help.setIcon(self.getIcon('Help'))
         #ToDo generator Gui
         #ToDo conf Gui
         #ToDo about Gui
@@ -841,12 +838,15 @@ class dynamics:
         # act.setDisabled(True)
         # self.tray_menu.addAction(act)
 
-        act=PyQt6.QtGui.QAction('Reload configuration',menu_help)
+        act=PyQt6.QtGui.QAction('Reload configuration',self.menu)
         act.setIcon(self.getIcon('Reload'))
         act.triggered.connect(fct_restart)
-        menu_help.addAction(act)
+        self.menu.addAction(act)
 
-        self.menu.addMenu(menu_help)
+        act=PyQt6.QtGui.QAction('Help',self.menu)
+        act.setIcon(self.getIcon('Help'))
+        act.triggered.connect(fct_shortcut)
+        self.menu.addAction(act)
 
         act=PyQt6.QtGui.QAction('Exit '+self.statics.showname,self.menu)
         act.setIcon(self.getIcon('Exit'))
@@ -854,6 +854,8 @@ class dynamics:
         self.menu.addAction(act)
 
         self.started = True
+
+        self.shortcut_widget = self._CreateShortCutWin()
 
         return self.menu
 
@@ -1022,6 +1024,21 @@ class dynamics:
             self.statics.logger.debug('Release lock')
             if self.locker.locked(): self.locker.release()
         return out
+
+    def getShortCut(self):
+        return self.shortcut_widget
+
+    def _CreateShortCutWin(self):
+        scWin = PyQt6.QtWidgets.QWidget()
+        full =  PyQt6.QtWidgets.QVBoxLayout()
+        group_main = PyQt6.QtWidgets.QGroupBox("Main ShortCut")
+        layout_main=  PyQt6.QtWidgets.QHBoxLayout()
+        label_main = PyQt6.QtWidgets.QLabel("<ul><li>Hello World</li><li>Hello World</li></ul>")
+
+        layout_main.addWidget(label_main)
+        group_main.setLayout(layout_main)
+        full.addWidget(group_main)
+        return scWin
 
     def show(self):
         if self.started:
