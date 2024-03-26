@@ -1,8 +1,9 @@
 import os
 import sys
-import posixpath
+# import posixpath
 import shutil
-import trace, threading
+import threading
+# import trace
 import win32con
 import win32api
 import win32process
@@ -12,14 +13,13 @@ try:
     import win32gui
 except ImportError:
     import winxpgui as win32gui
-import psutil
+# import psutil
 import enum
 import re
-import json
-import logging
-import importlib
-import inspect
-
+# import json
+# import logging
+# import importlib
+# import inspect
 
 class gtype(enum.Enum):
     UINT        = 1
