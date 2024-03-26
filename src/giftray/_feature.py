@@ -1,9 +1,11 @@
-import os
-import sys
+# import os
+# import sys
 import copy
 import subprocess
 import win32con
+import win32api
 import win32process
+import ctypes
 try:
     import winxpgui as win32gui
 except ImportError:
@@ -332,14 +334,52 @@ class stayactive(service):
                 self.AddError("'"+i+"' not defined")
 
     def _Run(self):
-        import clicknium
-        a,b = clicknium.mouse.position()
+        # import clicknium
+        # a,b = clicknium.mouse.position()
+        # while True:
+            # for i in range(self.frequency): time.sleep(1)
+            # x,y = clicknium.mouse.position()
+            # if x==a and y==b:
+              # clicknium.mouse.move(a,b)
+            # a,b = clicknium.mouse.position()
+        def _move(dif):
+            import screeninfo
+            import pyautogui
+            #Press shift
+            pyautogui.press("shift")
+            #move from 1
+            pos = pyautogui.position()
+            sc = None
+            for s in screeninfo.get_monitors():
+                if ( pos.x >= s.x and
+                     pos.y >= s.y and
+                     pos.x <= s.x + s.width and
+                     pos.y <= s.y + s.height):
+                    sc = s
+                    break
+            if not sc:
+                return
+            pyautogui.move(0,0)
+            to=None
+            for d in [[dif,dif],[dif,-dif],[-dif,-dif],[-dif,dif],
+                      [dif,0  ],[0  ,-dif],[-dif,0   ],[0   ,dif]]:
+                x = pos.x+d[0]
+                y = pos.y+d[1]
+                if ( x >= sc.x and
+                     y >= sc.y and
+                     x <= sc.x + sc.width and
+                     y <= sc.y + sc.height):
+                    pyautogui.move( d[0],d[1])
+                    pyautogui.move(-d[0],-d[1])
+                    return
+            return
         while True:
-            for i in range(self.frequency): time.sleep(1)
-            x,y = clicknium.mouse.position()
-            if x==a and y==b:
-              clicknium.mouse.move(a,b)
-            a,b = clicknium.mouse.position()
+            #self.frequency=10
+            for i in range(int(self.frequency / 2)): time.sleep(1)
+            if (self.frequency-0.1) < ((win32api.GetTickCount() - win32api.GetLastInputInfo()) / 1000.0):
+                #print (self.frequency-0.1,(win32api.GetTickCount() - win32api.GetLastInputInfo()) / 1000.0)
+                #_move(1)
+                ctypes.windll.user32.mouse_event(0x0001, 0, 0, 0, 0) # MOUSEEVENTF_MOVE, x+0, y+0, dwData if wheel, dwExtraInfo
         return
 
 class alwaysontop(action):
@@ -473,12 +513,14 @@ class wsl(action):
         self.configuration_type["Output"]=_general.gtype.STRING
         self.configuration_type["vcxsrv"]=_general.gtype.PATH
         self.configuration_type["vcxsrv_timeout"]=_general.gtype.UINT
+        self.configuration_type["Distribution"]=_general.gtype.STRING
         self.cmd            = ""
         self.uniq           = False
         self.out            = ""
         self.gui            = False
         self.vcxsrv         = ""
         self.vcxsrv_timeout = 2
+        self.distribution   = ""
         confvcxsrv_timeout = 0
         confvcxsrv     = ""
         tmp = _general.WindowsHandler().GetRealPath( "wsl.exe" )
@@ -503,7 +545,9 @@ class wsl(action):
             elif k == "vcxsrv".title():
                 tmp = _general.GetOpt(others[i],_general.gtype.PATH)
                 if not tmp:
-                    self.AddError("'vcxsrv' ("+others[i]+") does not exist")
+                    #ToDo: change no vcxsrv behavior
+                    tmp = False
+                    # self.AddError("'vcxsrv' ("+others[i]+") does not exist")
                 else:
                     self.statics.logger.info("'vcxsrv' set to "+tmp)
                     self.vcxsrv = tmp
@@ -515,6 +559,9 @@ class wsl(action):
                     self.configuration["vcxsrv_timeout"] = conffield(confvcxsrv_timeout, type=_general.gtype.UINT)
                 else:
                     self.AddError("'vcxsrv_timeout' not in [0-10]")
+            elif k == "Distribution".title():
+                self.distribution = _general.GetOpt(others[i],_general.gtype.STRING)
+                self.configuration["Distribution"] = conffield(self.distribution, type=_general.gtype.STRING)
             else:
                 self.AddError("'"+i+"' not defined")
         if confvcxsrv_timeout:
@@ -567,6 +614,9 @@ class wsl(action):
             if not x_nb:
                 return "Fail to start vcxsrv"
             main_cmd = 'DISPLAY=localhost' + x_nb + ' ' + main_cmd
-        wsl_cmd = [self.wsl_path, 'bash', '-c', main_cmd]
+        wsl_cmd = [self.wsl_path]
+        if self.distribution:
+            wsl_cmd += ['--distribution', self.distribution]
+        wsl_cmd += ['bash', '-c', main_cmd]
         exit_code = subprocess.Popen(wsl_cmd, shell=True)
         return 'Run : '+ self.cmd

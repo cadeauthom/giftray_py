@@ -1,8 +1,9 @@
 import os
 import sys
-import posixpath
+# import posixpath
 import shutil
-import trace, threading
+import threading
+# import trace
 import win32con
 import win32api
 import win32process
@@ -12,14 +13,13 @@ try:
     import win32gui
 except ImportError:
     import winxpgui as win32gui
-import psutil
+# import psutil
 import enum
 import re
-import json
-import logging
-import importlib
-import inspect
-
+# import json
+# import logging
+# import importlib
+# import inspect
 
 class gtype(enum.Enum):
     UINT        = 1
@@ -213,13 +213,18 @@ class ahk:
             ahk += chr(win32api.MapVirtualKey(hhk["key"],MAPVK_VK_TO_CHAR)).lower()
         return ahk
 
-    def getKey(self,key):
+    def getKey(self,k):
+        print(k)
+        key=str(k)
         if "VK_"+key in self.ahk_keys:
             return self.ahk_keys["VK_"+key.upper()]
         elif len(key)==1:
+            #chr(win32api.MapVirtualKey(code,MAPVK_VK_TO_CHAR)).upper()
             k=win32api.VkKeyScan(key.lower())
             k = k & 0xFF
             return k
+        elif k in self.ahk_keys:
+            return self.ahk_keys[k][3:]
         return None
 
     def ahk2hhk(self,ahk):

@@ -1,24 +1,24 @@
 import os
 import sys
 import posixpath
-import shutil
-import win32con
+# import shutil
+# import win32con
 import win32api
-import win32process
+# import win32process
 import datetime
-try:
-    import win32gui
-except ImportError:
-    import winxpgui as win32gui
+# try:
+    # import win32gui
+# except ImportError:
+    # import winxpgui as win32gui
 import ctypes
 import functools
 import psutil
-import enum
-import re
+# import enum
+# import re
 import json
 import logging
-import importlib
-import inspect
+# import importlib
+# import inspect
 import time
 import keyboard
 import PyQt6.QtWidgets, PyQt6.QtGui, PyQt6.QtSvg
@@ -88,7 +88,7 @@ class statics:
             self.tempdir = './'
             self.conf    = posixpath.join('./conf' , self.name + '.json')
         else:
-            for k in ['TMP','TEMP','USERPROFILE']:
+            for k in ['USERPROFILE','TMP','TEMP']:
                 self.tempdir = os.getenv(k)
                 if self.tempdir:
                     break
@@ -341,11 +341,14 @@ class dynamics:
         try:
             with open(self.statics.conf,'r') as file:
                 config = json.load(file)
-        except:
-            self.install['MainErrors'].append(self.statics.conf + ' does not contain any configuration')
+        except Exception as error:
+            # handle the exception
+            self.install['MainErrors'].append(self.statics.conf + ' opening: ' + str(error))
             config={}
         if 'Generals' in config:            
             for k in config['Generals']:
+                if k.casefold().startswith('_comment_'):
+                    continue
                 if k == 'LogLevel':
                     LevelNamesMapping=logging.getLevelNamesMapping()
                     levelname = config['Generals']['LogLevel']
@@ -379,6 +382,8 @@ class dynamics:
                     continue
         if 'Actions' in config:
             for a in config['Actions']:
+                if a.casefold().startswith('_comment_'):
+                    continue
                 if (not 'Function' in config['Actions'][a]
                   or not config['Actions'][a]['Function'] in self.statics.template):
                     continue
@@ -393,6 +398,8 @@ class dynamics:
                         self.conf['Actions'][a][k] = None
         if 'Folders' in config:
             for f in config['Folders']:
+                if f.casefold().startswith('_comment_'):
+                    continue
                 # self.conf['Folders']['Contain'] = []
                 contain = []
                 if 'Contain' in config['Folders'][f]:
@@ -915,7 +922,7 @@ class dynamics:
         if (ctypes.windll.user32.RegisterHotKey(None, 0, hhk["mod"], hhk["key"])):
             self.statics.logger.debug("Register "+ahk)
         else:
-            sself.install['MainErrors'].append(
+            self.install['MainErrors'].append(
                                 "Fail to register Hotkey ("+ahk+"): "+
                                 ctypes.FormatError(ctypes.GetLastError())
                                 )
@@ -965,7 +972,10 @@ class dynamics:
         MAPVK_VSC_TO_VK=1
         MAPVK_VK_TO_CHAR=2
         code = win32api.MapVirtualKey(event,MAPVK_VSC_TO_VK)
-        key = chr(win32api.MapVirtualKey(code,MAPVK_VK_TO_CHAR)).upper()
+        # key = chr(win32api.MapVirtualKey(code,MAPVK_VK_TO_CHAR)).upper()
+        # if not len(key):
+        key = self.statics.ahk_translator.getKey(code)
+        print(key)
         if key in self.install['Key']:
             self._ConnectorAction(self.install['Key'][key])
 
