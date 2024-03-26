@@ -88,7 +88,7 @@ class statics:
             self.tempdir = './'
             self.conf    = posixpath.join('./conf' , self.name + '.json')
         else:
-            for k in ['TMP','TEMP','USERPROFILE']:
+            for k in ['USERPROFILE','TMP','TEMP']:
                 self.tempdir = os.getenv(k)
                 if self.tempdir:
                     break
