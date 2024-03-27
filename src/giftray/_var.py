@@ -399,8 +399,11 @@ class dynamics:
             for a in config['Actions']:
                 if a.casefold().startswith('_comment_'):
                     continue
-                if (not 'Function' in config['Actions'][a]
-                  or not config['Actions'][a]['Function'] in self.statics.template):
+                if (not 'Function' in config['Actions'][a]):
+                    self.install['MainErrors'].append(a + ' does not have defined action')
+                    continue
+                if (not config['Actions'][a]['Function'] in self.statics.template):
+                    self.install['MainErrors'].append(a + ' has an undefined action: '+config['Actions'][a]['Function'])
                     continue
                 self.conf['Actions'][a] = dict()
                 self.conf['Actions'][a]['Function'] = config['Actions'][a]['Function']
@@ -411,6 +414,14 @@ class dynamics:
                         self.conf['Actions'][a][k] = config['Actions'][a][k]
                     else:
                         self.conf['Actions'][a][k] = None
+                for k in config['Actions'][a]:
+                    if k in ['Function']:
+                        continue
+                    if k.casefold().startswith('_comment_'):
+                        continue
+                    if k in self.conf['Actions'][a]:
+                        continue
+                    self.install['MainErrors'].append(a + ' has an undefined option: '+k)
         if 'Folders' in config:
             for f in config['Folders']:
                 if f.casefold().startswith('_comment_'):
@@ -419,10 +430,16 @@ class dynamics:
                 contain = []
                 if 'Contain' in config['Folders'][f]:
                     for a in config['Folders'][f]['Contain']:
+                        if a.casefold().startswith('_comment_'):
+                            continue
                         if a in self.conf['Actions']:
                             contain.append(a)
                             # self.conf['Folders']['Contain'].append(a)
+                else:
+                    self.install['MainErrors'].append(f + ' does not have contained action')
+                    continue
                 if not contain:
+                    self.install['MainErrors'].append(f + ' has an incorrect contain option: '+config['Folders'][f]['Contain'])
                     continue
                 self.conf['Folders'][f] = dict()
                 self.conf['Folders'][f]['Contain'] = contain
@@ -434,6 +451,14 @@ class dynamics:
                         self.conf['Folders'][f][k] = config['Folders'][f][k]
                     else:
                         self.conf['Folders'][f][k] = None
+                for k in config['Folders'][f]:
+                    if k in ['Contain']:
+                        continue
+                    if k.casefold().startswith('_comment_'):
+                        continue
+                    if k in self.conf['Folders'][f]:
+                        continue
+                    self.install['MainErrors'].append(f + ' has an undefined option: '+k)
         # Build default themes
         if not self.getTheme(self.conf['Generals']['Themes']['Custom']['Theme'], native=False):
             self.updateTheme('Custom', 'Theme', self.conf['Generals']['Themes']['Default']['Theme'])
