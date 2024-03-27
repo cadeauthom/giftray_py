@@ -57,7 +57,6 @@
       "Contain": [
         "Kill DropBox",
         "Kill TeamViewer",
-        "Kill OneDrive",
         "Kill CrashPlan"
       ]
     }
@@ -75,7 +74,7 @@
       "Arguments": "/c wt.exe -p OracleLinux_9_1",
       "AsAdmin": false
     },
-    "Terminator": {
+    "_comment_Terminator": {
       "Function": "Set_as_Error(wsl)",
       "Theme": null,
       "Light": null,
@@ -85,7 +84,6 @@
       "Key": null,
       "Command": "terminator --working-directory $folder",
       "Uniq": false,
-      "GUI": false,
       "Output": null,
       "Distribution": "OracleLinux_9_1",
       "vcxsrv": "C:\\Program Files\\VcXsrv\\vcxsrv.exe",
@@ -112,12 +110,10 @@
       "Key": "P",
       "Command": "ssh -C2qTnNf annuminas -D 8080",
       "Uniq": true,
-      "GUI": false,
       "Output": null,
       "Distribution": "OracleLinux_9_1",
       "_comment_vcxsrv": "C:\\Program Files\\VcXsrv\\vcxsrv.exe",
-      "vcxsrv": "skype.exe",
-      "vcxsrv_timeout": 2
+      "_comment_vcxsrv_timeout": 2
     },
     "Kill Skype": {
       "Function": "script",
@@ -179,7 +175,7 @@
       "Arguments": "stop CrashPlanService /y",
       "AsAdmin": true
     },
-    "Kill OneDrive": {
+    "_comment_Kill OneDrive": {
       "Function": "script",
       "Theme": null,
       "Light": null,
