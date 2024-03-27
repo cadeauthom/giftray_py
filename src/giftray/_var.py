@@ -975,9 +975,13 @@ class dynamics:
         # key = chr(win32api.MapVirtualKey(code,MAPVK_VK_TO_CHAR)).upper()
         # if not len(key):
         key = self.statics.ahk_translator.getKey(code)
-        print(key)
-        if key in self.install['Key']:
+        if not key:
+            self.statics.logger.error('Fail to find key for: '+code)
+        elif key in self.install['Key']:
             self._ConnectorAction(self.install['Key'][key])
+        else:
+            self.statics.logger.error('No action set for key: '+key)
+
 
     def cleanPress(self):
         for k in self.install['Key']:

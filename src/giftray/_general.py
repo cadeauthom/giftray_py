@@ -214,18 +214,20 @@ class ahk:
         return ahk
 
     def getKey(self,k):
-        print(k)
         key=str(k)
         if "VK_"+key in self.ahk_keys:
             return self.ahk_keys["VK_"+key.upper()]
-        elif len(key)==1:
-            #chr(win32api.MapVirtualKey(code,MAPVK_VK_TO_CHAR)).upper()
+        if len(key)==1:
             k=win32api.VkKeyScan(key.lower())
             k = k & 0xFF
             return k
-        elif k in self.ahk_keys:
+        if k in self.ahk_keys:
             return self.ahk_keys[k][3:]
-        return None
+        try:
+            MAPVK_VK_TO_CHAR=2
+            return chr(win32api.MapVirtualKey(k,MAPVK_VK_TO_CHAR)).upper()
+        except:
+            return None
 
     def ahk2hhk(self,ahk):
         hhk = {}
