@@ -46,7 +46,7 @@ description = PROJECT
 [build_exe]
 #zip_include_packages = encodings,PySide6
 excludes = colorama,curses,distutils,email,html,http,idna,lib2to3,pip,pydoc_data,pywin32_system32,test,unittest,wheel,xml,xmlrpc
-packages = clicknium,PyQt6.QtGui,PyQt6.QtWidgets,configparser,copy,ctypes,datetime,functools,inspect,io,logging,natsort,notifypy,os,posixpath,psutil,re,shutil,signal,subprocess,sys,threading,time,trace,win32api,win32con,win32gui,win32process,winxpgui
+packages = PyQt6.QtGui,PyQt6.QtWidgets,copy,ctypes,datetime,enum,functools,json,logging,os,posixpath,psutil,re,shutil,signal,subprocess,sys,threading,time,win32api,win32con,win32gui,win32process,winxpgui
 includes = INCLUDES
 include_files = INCLUDEFILES
 optimize = 2
