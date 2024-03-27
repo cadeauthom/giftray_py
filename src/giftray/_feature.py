@@ -447,35 +447,6 @@ class alwaysontop(action):
         return "Set OnTop to " + name
 
 class wsl(action):
-    #ToDo: put startx in a script action
-    def _StartX(self):
-        x_running   = False
-        x_nb        = 0
-        all_nb      = []
-        vcxsrv = self.vcxsrv
-        for proc in psutil.process_iter(['exe','cmdline','status']):
-            if vcxsrv != proc.info['exe']:
-                continue
-            for arg in proc.info['cmdline']:
-                if arg.startswith(':'):
-                    last_nb = int(arg[1:])
-            if proc.info['status'] == 'running':
-                x_nb = last_nb
-                x_running = True
-                break
-            all_nb.append(last_nb)
-            while x_nb in all_nb :
-                x_nb += 1
-        x_nb = ":"+str(x_nb)
-        if not x_running:
-            x_cmd = [vcxsrv, x_nb, "-ac","-terminate","-lesspointer","-multiwindow","-clipboard","-wgl","-dpi","auto"]
-            x = subprocess.Popen( x_cmd, shell=True)
-            time.sleep(2)# ToDo self.vcxsrv_timeout)
-            if x.poll() != None:
-                self.statics.logger.error("Fail to start vcxsrv in '" +self.show+"' ("+' '.join(x_cmd)+")")
-                return
-        return x_nb
-
     def _Path_Win2Lin(self,pathW):
         driveL = ""
         driveW = ""
@@ -509,20 +480,12 @@ class wsl(action):
     def _Init(self,others):
         self.configuration_type["Command"]=_general.gtype.STRING
         self.configuration_type["Uniq"]=_general.gtype.BOOL
-        self.configuration_type["GUI"]=_general.gtype.BOOL
         self.configuration_type["Output"]=_general.gtype.STRING
-        self.configuration_type["vcxsrv"]=_general.gtype.PATH
-        self.configuration_type["vcxsrv_timeout"]=_general.gtype.UINT
         self.configuration_type["Distribution"]=_general.gtype.STRING
         self.cmd            = ""
         self.uniq           = False
         self.out            = ""
-        self.gui            = False
-        self.vcxsrv         = ""
-        self.vcxsrv_timeout = 2
         self.distribution   = ""
-        confvcxsrv_timeout = 0
-        confvcxsrv     = ""
         tmp = _general.WindowsHandler().GetRealPath( "wsl.exe" )
         if not tmp:
             self.AddError("'wsl.exe' not found")
@@ -533,53 +496,21 @@ class wsl(action):
             if k == "Command".title():
                 self.cmd = _general.GetOpt(others[i],_general.gtype.STRING)
                 self.configuration["Command"] = conffield(self.cmd, type=_general.gtype.STRING)
-            elif k == "GUI".title():
-                self.gui = _general.GetOpt(others[i],_general.gtype.BOOL)
-                self.configuration["GUI"] = conffield(self.gui, type=_general.gtype.BOOL)
             elif k == "Uniq".title():
                 self.uniq = _general.GetOpt(others[i],_general.gtype.BOOL)
                 self.configuration["Uniq"] = conffield(self.uniq, type=_general.gtype.BOOL)
             elif k == "Output".title():
                 self.out = _general.GetOpt(others[i],_general.gtype.STRING)
                 self.configuration["Output"] = conffield(self.out, type=_general.gtype.STRING)
-            elif k == "vcxsrv".title():
-                tmp = _general.GetOpt(others[i],_general.gtype.PATH)
-                if not tmp:
-                    #ToDo: change no vcxsrv behavior
-                    tmp = False
-                    # self.AddError("'vcxsrv' ("+others[i]+") does not exist")
-                else:
-                    self.statics.logger.info("'vcxsrv' set to "+tmp)
-                    self.vcxsrv = tmp
-                    self.configuration["vcxsrv"] = conffield(tmp, type=_general.gtype.PATH)
-            elif k == "vcxsrv_timeout".title():
-                a = _general.GetOpt(others[i],_general.gtype.UINT)
-                if a and a < 10:
-                    confvcxsrv_timeout = a
-                    self.configuration["vcxsrv_timeout"] = conffield(confvcxsrv_timeout, type=_general.gtype.UINT)
-                else:
-                    self.AddError("'vcxsrv_timeout' not in [0-10]")
             elif k == "Distribution".title():
                 self.distribution = _general.GetOpt(others[i],_general.gtype.STRING)
                 self.configuration["Distribution"] = conffield(self.distribution, type=_general.gtype.STRING)
             else:
                 self.AddError("'"+i+"' not defined")
-        if confvcxsrv_timeout:
-            self.vcxsrv_timeout = confvcxsrv_timeout
-        # elif "vcxsrv_timeout" in others_general:
-        #     self.vcxsrv_timeout = others_general["vcxsrv_timeout"]
-        if self.vcxsrv:
-            pass
-        # elif "vcxsrv" in others_general:
-        #     self.vcxsrv = others_general["vcxsrv"]
-        else:
-            self.AddError("'vcxsrv' path not defined")
         # if "wsl_path" in others_general:
         #     self.wsl_path = others_general["wsl_path"]
         if not self.cmd:
             self.AddError("cmd not set in '" +self.show+"'")
-        if self.gui:
-            self.uniq = False
         return
 
     def _Run(self):
@@ -609,11 +540,6 @@ class wsl(action):
             main_cmd = 'ps aux | grep "'+main_cmd+'" |grep -v grep >/dev/null|| '+main_cmd
         if self.out:
             main_cmd += ' > ' + self.out
-        if self.gui:
-            x_nb = self._StartX()
-            if not x_nb:
-                return "Fail to start vcxsrv"
-            main_cmd = 'DISPLAY=localhost' + x_nb + ' ' + main_cmd
         wsl_cmd = [self.wsl_path]
         if self.distribution:
             wsl_cmd += ['--distribution', self.distribution]
