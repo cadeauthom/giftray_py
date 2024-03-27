@@ -92,7 +92,7 @@ class statics:
         self.ahk_translator = _general.ahk()
         if self.python:
             self.tempdir = './'
-            self.conf    = posixpath.join('./conf' , self.name + '.json')
+            self.config  = posixpath.join('./conf' , self.name + '.json')
         else:
             for k in ['USERPROFILE','TMP','TEMP']:
                 self.tempdir = os.getenv(k)
@@ -100,7 +100,7 @@ class statics:
                     break
             if not self.tempdir:
                 sys.exit()
-            self.conf = posixpath.join(self.tempdir, self.name + '.json')
+            self.config = posixpath.join(self.tempdir, self.name + '.json')
         if not self._checkLockFile():
             sys.exit()
             return
@@ -124,8 +124,8 @@ class statics:
 
         # self.ahk = _general.ahk()
 
-    def setTray(self,dynamics):
-        self.dynamics = dynamics
+    # def setTray(self,dynamics):
+        # self.dynamics = dynamics
 
     def _checkLockFile(self):
         lockfile = posixpath.join(self.tempdir,self.name+'.lock')
@@ -344,13 +344,12 @@ class dynamics:
         self.install['Key']     = dict()
         self.install['Errors']  = dict()
 
-        self.install['MainErrors'] = [] #ToDo : use this one
+        self.install['MainErrors'] = []
         try:
-            with open(self.statics.conf,'r') as file:
+            with open(self.statics.config,'r') as file:
                 config = json.load(file)
         except Exception as error:
-            # handle the exception
-            self.install['MainErrors'].append(self.statics.conf + ' opening: ' + str(error))
+            self.install['MainErrors'].append(self.statics.config + ' opening: ' + str(error))
             config={}
         if 'Generals' in config:            
             for k in config['Generals']:
@@ -484,7 +483,7 @@ class dynamics:
                     arrpath = []
                     if not '\\python' in sys.executable:
                         arrpath.append(os.path.dirname(sys.executable))
-                    arrpath.append(os.path.dirname(self.statics.conf))
+                    arrpath.append(os.path.dirname(self.statics.config))
                     arrpath.append(os.getcwd())
                     for psvg in psvgs:
                         if path_svg:
@@ -550,7 +549,7 @@ class dynamics:
         for image in self.internal['Icons']['Images']:
             self.buildImage(image)
         # self.qss = ''
-        # qss = self.statics.conf.replace('.json','.qss.example')
+        # qss = self.statics.config.replace('.json','.qss.example')
         # if os.path.exists(qss) and os.path.isfile(qss):
             # f = open(qss,"r")
             # self.qss = '\n'.join(f.readlines())
