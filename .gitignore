@@ -24,3 +24,5 @@ src/__pycache__/
 *.lock
 *.bak
 test*
+make*
+requirements
