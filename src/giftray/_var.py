@@ -1,7 +1,7 @@
 import os
 import sys
 import posixpath
-# import shutil
+import shutil
 # import win32con
 import win32api
 # import win32process
@@ -98,9 +98,18 @@ class statics:
                 self.tempdir = os.getenv(k)
                 if self.tempdir:
                     break
-            if not self.tempdir:
+            if not self.tempdir or not os.path.isdir(self.tempdir):
                 sys.exit()
+            self.tempdir = posixpath.join(self.tempdir, self.showname)
+            if not os.path.isdir(self.tempdir):
+                os.mkdir(self.tempdir)
+                if not os.path.isdir(self.tempdir):
+                    sys.exit()
             self.config = posixpath.join(self.tempdir, self.name + '.json')
+            if not os.path.isfile(self.config):
+                src_conf=posixpath.join(os.path.dirname(sys.executable),'conf',self.name + '.json')
+                if os.path.isfile(src_conf):
+                    shutil.copy(src_conf,self.config)
         if not self._checkLockFile():
             sys.exit()
             return
