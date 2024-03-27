@@ -30,7 +30,6 @@ PATH_PYTHON     != wslpath "`where.exe python3`"
 #/mnt/c/Users/$(USER)/AppData/Local/Microsoft/WindowsApps/python3.exe
 #FLAGS_PYTHON    = --console
 FLAGS_PYTHON    = 
-PATH_UPX	= V:\git\perso\py.git\upx-3.96-win64
 
 ############### Path setting
 BUILD	        = build
@@ -50,13 +49,13 @@ VERSION_COMMITS	= $(shell git rev-list $(VERSION_MAIN)..HEAD --count)
 VERSION_STAGES	= $(shell git status -s | egrep -c "^\w")
 VERSION_DIFFS	= $(shell git status -s | egrep -c "^.\w")
 VERSION_DATE	= $(shell date +%s)
-VERSION		= $(VERSION_MAIN).$(VERSION_COMMITS).$(VERSION_STAGES).$(VERSION_DIFFS).$(VERSION_DATE)
+$(eval VERSION=$(VERSION_MAIN).$(VERSION_COMMITS).$(VERSION_STAGES).$(VERSION_DIFFS).$(VERSION_DATE))
 
 ############### Variable Definition
 LOWPROJECT 	= $(shell echo $(PROJECT) | tr '[:upper:]' '[:lower:]')
 
 SVGS		= $(wildcard $(SRC_SVG)/*/*.svg)
-SVG		= $(SRC_SVG)/$(LOWPROJECT)-$(ICONB).svg
+SVG			= $(SRC_SVG)/$(LOWPROJECT)-$(ICONB).svg
 CONF		= $(wildcard $(SRC_CONF)/*.example) $(SRC_CONF)/list_key.txt
 
 HTML_PY		= $(SRC)/svg2html.py
@@ -88,6 +87,8 @@ endif
 ifeq ($(COLOR),green)
 	CMD_START = sed -e s/1185E0/32CD32/g -e s/4DCFE0/7CFC00/g
 endif
+
+#$(info $$OUT_EXEC is [${OUT_EXEC}])
 
 ############### Actions of makefile
 all: svg conf ico exec
@@ -140,9 +141,9 @@ $(OUT_EXEC): $(OUT_PY) $(SVG) $(SVGS) $(CONF)
 		--setup-include-files=../$(OUT_ICO:$(BUILD)/%=%)	\
 		--setup-include-files=../$(OUT_HTML_SVGS:$(BUILD)/%=%)	\
 		bdist_msi			\
-		          --dist-dir ../../$(@D)\
-			  -k			\
-			  --target-name $(@F)
+		  --dist-dir ../../$(@D)\
+		  -k			\
+		  --target-name $(@F)
 		#build_exe --build-exe ../$(BUILD_EXE) \
 		#bdist_msi --bdist-dir ../$(BUILD_EXE) \
 		#          --dist-dir ../$(@D)       \
