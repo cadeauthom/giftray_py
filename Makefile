@@ -56,7 +56,8 @@ LOWPROJECT 	= $(shell echo $(PROJECT) | tr '[:upper:]' '[:lower:]')
 
 SVGS		= $(wildcard $(SRC_SVG)/*/*.svg)
 SVG			= $(SRC_SVG)/$(LOWPROJECT)-$(ICONB).svg
-CONF		= $(wildcard $(SRC_CONF)/*.example) $(SRC_CONF)/list_key.txt
+#CONF		= $(wildcard $(SRC_CONF)/*.example) $(SRC_CONF)/list_key.txt
+CONF		= $(wildcard $(SRC_CONF)/*.json) $(SRC_CONF)/list_key.txt
 
 HTML_PY		= $(SRC)/svg2html.py
 PY		= $(SRC)/$(PROJECT).py
