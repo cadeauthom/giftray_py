@@ -1,4 +1,4 @@
-# import os
+import os
 # import sys
 import copy
 import subprocess
@@ -293,6 +293,8 @@ class script(action):
                 self.configuration["AsAdmin"] = conffield(self.admin, type=_general.gtype.BOOL)
             else:
                 self.AddError("'"+i+"' not defined")
+        self.cmd = os.path.expandvars(self.cmd)
+        self.args = os.path.expandvars(self.args)
         if not self.cmd:
             self.AddError("cmd not set in '" +self.show+"'")
         else:
@@ -509,6 +511,7 @@ class wsl(action):
                 self.AddError("'"+i+"' not defined")
         # if "wsl_path" in others_general:
         #     self.wsl_path = others_general["wsl_path"]
+        self.out = os.path.expandvars(self.out)
         if not self.cmd:
             self.AddError("cmd not set in '" +self.show+"'")
         return

@@ -187,7 +187,7 @@
       "Ico": null,
       "Click": false,
       "Key": null,
-      "Command": "C:/Users/tcadeau/AppData/Local/Microsoft/OneDrive/OneDrive.exe",
+      "Command": "%USERPROFILE%/AppData/Local/Microsoft/OneDrive/OneDrive.exe",
       "Arguments": "/shutdown",
       "AsAdmin": false
     },
