@@ -105,7 +105,7 @@ class giftray():
     def _Restart(self):
         self._Clean()
         self.ahk_thread = _general.KThread(target=self._Thread4ahk)
-        self.dynamics = _var.dynamics(self.statics)
+        self.dynamics = _var.dynamics(self.statics,self.tray)
 
         self.app.setStyle(self.dynamics.getStyle())
 
@@ -138,11 +138,13 @@ class giftray():
                                     { "mod" : msg.lParam & 0b1111111111111111,
                                       "key" : msg.lParam >> 16})
                 if ahk == self.dynamics.conf["Generals"]['AHK']:
+                    self.tray.setIcon(self.statics.icon['Themes'][_var.color.GREEN]['Icon'])
                     for k in self.dynamics.install['Key']:
                         # print(k,' ->',self.statics.ahk_translator.getKey(k))
                         keyboard.on_press_key(k, lambda event: self.dynamics.ConnectorAHK(event.scan_code),suppress=True)
                     time.sleep(2)
-                    self.dynamics.cleanPress()
+                    if self.dynamics.cleanPress():
+                        self.tray.setIcon(self.dynamics.getIcon('Tray'))
                     '''
                     arr=[]
                     event = keyboard.read_event(suppress=True)  # Lire un événement clavier sans l'afficher
