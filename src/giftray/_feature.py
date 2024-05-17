@@ -295,7 +295,7 @@ class script(action):
                 self.AddError("'"+i+"' not defined")
         self.cmd = os.path.expandvars(self.cmd)
         self.args = os.path.expandvars(self.args)
-        if not self.cmd:
+        if not self.cmd and self.show != 'template':
             self.AddError("cmd not set in '" +self.show+"'")
         else:
             cmd = _general.WindowsHandler().GetRealPath(self.cmd)
@@ -308,17 +308,38 @@ class script(action):
     def _Run(self):
         out = self.cmd
         cmd = ' & { Start-Process -WindowStyle hidden "'+self.cmd+'"'
+        import shlex
+        cmd2=shlex.split(self.args)
+        folder=' '
         if self.args:
             args = self.args
             if '$folder' in args:
-                args = args.replace('$folder',_general.WindowsHandler().GetCurrentPath())
+                folder = _general.WindowsHandler().GetCurrentPath()
+                if not folder :
+                    folder = ' '
+                args = args.replace('$folder',"\'"+folder+"\'")
+                #cmd2 = list(map(lambda x: x.replace('$folder', '\"'+folder+'\"'), cmd2))    
             cmd += ' -ArgumentList "' + args+'"'
             out += ' ' + self.args
         if self.admin:
             cmd += ' -Verb RunAs'
             out += ' as admin'
+            cmd2 += ['-Verb','RunAs']
         cmd += '}'
+        print(cmd)
         prog = subprocess.Popen(['Powershell',  '-Command', cmd])
+        return out
+        print(cmd2)
+        cmd3 = [self.cmd]
+        for k in cmd2:
+            if '$folder' in k:
+                k=k.replace('$folder', folder)
+            if ' ' in k:
+                k="'"+k+"'"
+            cmd3+=[k]
+            
+        print(cmd3)
+        prog = subprocess.Popen(cmd3)
         return out
 
 class stayactive(service):
@@ -512,7 +533,7 @@ class wsl(action):
         # if "wsl_path" in others_general:
         #     self.wsl_path = others_general["wsl_path"]
         self.out = os.path.expandvars(self.out)
-        if not self.cmd:
+        if not self.cmd and self.show != 'template':
             self.AddError("cmd not set in '" +self.show+"'")
         return
 

@@ -71,7 +71,7 @@
       "Click": true,
       "Key": "T",
       "Command": "cmd.exe",
-      "Arguments": "/c wt.exe -p OracleLinux_9_1",
+      "Arguments": "/c 'C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminalPreview_1.20.10572.0_x64__8wekyb3d8bbwe\\wt.exe' -p OracleLinux_9_1",
       "AsAdmin": false
     },
     "_comment_Terminator": {
@@ -111,9 +111,7 @@
       "Command": "ssh -C2qTnNf annuminas -D 8080",
       "Uniq": true,
       "Output": null,
-      "Distribution": "OracleLinux_9_1",
-      "_comment_vcxsrv": "C:\\Program Files\\VcXsrv\\vcxsrv.exe",
-      "_comment_vcxsrv_timeout": 2
+      "Distribution": "OracleLinux_9_1"
     },
     "Kill Skype": {
       "Function": "script",

@@ -116,21 +116,11 @@ class WindowsHandler:
     def GetCurrentPath(self):
         hwnd      = win32gui.GetForegroundWindow()
         classname = win32gui.GetClassName(hwnd)
-        #other windows: test if windows name contains a path
-        full_text = (win32gui.GetWindowText(hwnd)).split()
-        for idx, t in enumerate(full_text):
-            if not(len(t)>3 and t[1]==':'):
-                continue
-            for i in range (len(full_text),idx,-1):
-                text = ' '.join(full_text[idx:i])
-                if os.path.isdir(text):
-                    return text
-                if os.path.isfile(text):
-                    return os.path.dirname(text)
+        print(classname)
         if (classname == "WorkerW"):
             #Desktop
             return
-        if True or (classname == "CabinetWClass") or (classname == "ExploreWClass"):
+        if (classname == "CabinetWClass") or (classname == "ExploreWClass"):
             #explorer (or other windows ?) if path in ToolbarWindow32
             self.global_array.clear()
             win32gui.EnumChildWindows(hwnd, self._callback_enumChildWindows, "ToolbarWindow32")
@@ -141,6 +131,19 @@ class WindowsHandler:
                     if os.path.isfile(text):
                         return os.path.dirname(text)
             return
+        #other windows: test if windows name contains a path
+        full_text = (win32gui.GetWindowText(hwnd)).split()
+        print(full_text)
+        for idx, t in enumerate(full_text):
+            if not(len(t)>3 and t[1]==':'):
+                continue
+            for i in range (len(full_text),idx,-1):
+                text = ' '.join(full_text[idx:i])
+                print(text)
+                if os.path.isdir(text):
+                    return text
+                if os.path.isfile(text):
+                    return os.path.dirname(text)
         return
 
     def _callback_EnumHandler(self, hwnd, ctx ):
