@@ -71,7 +71,10 @@
       "Click": true,
       "Key": "T",
       "Command": "cmd.exe",
-      "Arguments": "/c 'C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminalPreview_1.20.10572.0_x64__8wekyb3d8bbwe\\wt.exe' -p OracleLinux_9_1",
+      "Arguments": "/c %LOCALAPPDATA%\\Microsoft\\WindowsApps\\Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe\\wt.exe -p OracleLinux_9_1",
+      "WSLDist": "OracleLinux_9_1",
+      "_comment_Space_in_Arguments": "/c `\"C:\\Program Files\\..\\my.exe`\" opt1 opt2",
+      "_comment_": "no -d $folderWSL in args, force 'cd' by WSLDist"
       "AsAdmin": false
     },
     "_comment_Terminator": {
@@ -99,6 +102,19 @@
       "Key": null,
       "Enabled": true,
       "Frequency": null
+    },
+    "TestPath": {
+      "Function": "wsl",
+      "Theme": null,
+      "Light": null,
+      "Dark": null,
+      "Ico": "cloudy",
+      "Click": true,
+      "Key": "Y",
+      "Command": "echo $folder $folderWSL",
+      "Uniq": true,
+      "Output": null,
+      "Distribution": "OracleLinux_9_1"
     },
     "Proxy": {
       "Function": "wsl",

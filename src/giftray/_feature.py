@@ -216,6 +216,31 @@ class action(singleobject):
     def _Run(self):
         return
 
+    def _mount_wsl(self,pathL,driveW,driveL,dist):
+        if driveW == "" or driveW == " ":
+            return
+        wsl_path = _general.WindowsHandler().GetRealPath( "wsl.exe" )
+        if not wsl_path:
+            self.AddError("'wsl.exe' not found")
+            return
+        file = '~/.bash_mount_msg.sh'
+        cmd = "mount | grep \'" + driveW.replace('\\','/') + "\' >/dev/null"
+        cmd +=  " || ( ("
+        cmd +=          "grep '" + file + "' ~/.bashrc "
+        cmd +=          "|| echo -e '\\nif [ -f " + file + " ]; then\\n\\t. " + file + "\\n\\trm " + file + "\\nfi\\n' >>  ~/.bashrc "
+        cmd +=      ")"
+        cmd +=      " && echo 'sudo -- sh <<EOF' > " + file
+        cmd +=      " && echo 'mkdir -p " + driveL + "' >> " + file
+        cmd +=      " && echo 'mount -t drvfs " + driveW.replace('\\','/') + " " + driveL + " -o rw,noatime,uid=1000,gid=1000,case=off' >> " + file
+        # or -o metadata
+        cmd +=      " && echo 'EOF' >> " + file
+        cmd +=      " ) >> /dev/null"
+        cmd +=  " && echo 'cd " + pathL.replace(' ','\\ ') + "' >> " + file
+        wsl_cmd = [wsl_path, '-d', dist, 'bash', '-c', cmd]
+        x = subprocess.Popen( wsl_cmd, shell=True)
+        x.wait()
+        return
+
 class service(singleobject):
     def __del__(self):
         # import ctypes, win32con
@@ -271,14 +296,15 @@ class service(singleobject):
         return
 
 class script(action):
-    #ToDo: add Uniq option (for startx)
     def _Init(self,others):
         self.configuration_type["Command"]=_general.gtype.PATH
         self.configuration_type["Arguments"]=_general.gtype.STRING
         self.configuration_type["AsAdmin"]=_general.gtype.BOOL
+        self.configuration_type["WSLDist"]=_general.gtype.STRING
         self.cmd = ""
         self.args = ""
         self.admin = False
+        self.wslmount = ""
 
         for i in others:
             k = i.title()
@@ -291,6 +317,9 @@ class script(action):
             elif k == "AsAdmin".title():
                 self.admin = _general.GetOpt(others[i],_general.gtype.BOOL)
                 self.configuration["AsAdmin"] = conffield(self.admin, type=_general.gtype.BOOL)
+            elif k == "WSLDist".title():
+                self.wsldist = _general.GetOpt(others[i],_general.gtype.STRING)
+                self.configuration["WSLMount"] = conffield(self.wslmount, type=_general.gtype.STRING)
             else:
                 self.AddError("'"+i+"' not defined")
         self.cmd = os.path.expandvars(self.cmd)
@@ -313,11 +342,21 @@ class script(action):
         folder=' '
         if self.args:
             args = self.args
-            if '$folder' in args:
+            if '$folder' in args or '$folderWSL' in args or self.wsldist:
                 folder = _general.WindowsHandler().GetCurrentPath()
                 if not folder :
                     folder = ' '
-                args = args.replace('$folder',"\'"+folder+"\'")
+                    folderWSL = '~'
+                    driveW = ''
+                    driveL = ''
+                else:
+                    folderWSL,driveW,driveL = _general.WindowsHandler().Path_Win2Lin(folder)
+                if '$folderWSL' in args:
+                    args = args.replace('$folderWSL',"`\""+folderWSL+"`\"")
+                if '$folder' in args:
+                    args = args.replace('$folder',"\'"+folder+"\'")
+                if self.wsldist:
+                    self._mount_wsl(folderWSL,driveW,driveL,self.wsldist)
                 #cmd2 = list(map(lambda x: x.replace('$folder', '\"'+folder+'\"'), cmd2))    
             cmd += ' -ArgumentList "' + args+'"'
             out += ' ' + self.args
@@ -326,21 +365,20 @@ class script(action):
             out += ' as admin'
             cmd2 += ['-Verb','RunAs']
         cmd += '}'
-        print(cmd)
         prog = subprocess.Popen(['Powershell',  '-Command', cmd])
         return out
-        print(cmd2)
-        cmd3 = [self.cmd]
-        for k in cmd2:
-            if '$folder' in k:
-                k=k.replace('$folder', folder)
-            if ' ' in k:
-                k="'"+k+"'"
-            cmd3+=[k]
+        # print(cmd2)
+        # cmd3 = [self.cmd]
+        # for k in cmd2:
+            # if '$folder' in k:
+                # k=k.replace('$folder', folder)
+            # if ' ' in k:
+                # k="'"+k+"'"
+            # cmd3+=[k]
             
-        print(cmd3)
-        prog = subprocess.Popen(cmd3)
-        return out
+        # print(cmd3)
+        # prog = subprocess.Popen(cmd3)
+        # return out
 
 class stayactive(service):
     def _Init(self,others):
@@ -470,36 +508,6 @@ class alwaysontop(action):
         return "Set OnTop to " + name
 
 class wsl(action):
-    def _Path_Win2Lin(self,pathW):
-        driveL = ""
-        driveW = ""
-        pathL = "~"
-        to_return = ["~","",""] #[linux path, win drive, linux mnt dir]
-        if ( pathW == None ) or ( len(pathW) == 0 ):
-            #default
-            True
-        #windows specific directory
-        elif pathW.startswith('::'):
-            #network drive
-            True
-        elif pathW.startswith('\\\\'):
-            a = pathW[2:].split('\\')
-            if len(a)<2:
-                return to_return
-            drive = a[0]
-            pathL = ("/mnt/" + "/".join(a)).replace(" ","\\ ").lower()
-            driveW = "\\\\" + drive #enough \ ?
-            driveL = "/mnt/" + drive.replace(" ","_").lower()
-        else:
-            a = pathW.split(':')
-            if len(a)<1 or len(a[0])!=1:
-                return to_return
-            drive = a[0]
-            driveW = drive + ':'
-            driveL = "/mnt/" + drive.lower()
-            pathL = (driveL + "/".join(a[1].split('\\'))).replace(" ","\\ ").lower()
-        return pathL,driveW,driveL
-
     def _Init(self,others):
         self.configuration_type["Command"]=_general.gtype.STRING
         self.configuration_type["Uniq"]=_general.gtype.BOOL
@@ -541,25 +549,28 @@ class wsl(action):
         main_cmd = self.cmd
         if '$folder' in self.cmd:
             pathW = _general.WindowsHandler().GetCurrentPath()
-            pathL,driveW,driveL = self._Path_Win2Lin(pathW)
-            if driveW != "":
-                file = '~/.bash_mount_msg.sh'
-                cmd = "mount | grep \'" + driveW + "\' >/dev/null"
-                cmd +=  " || ( ("
-                cmd +=          "grep '" + file + "' ~/.bashrc "
-                cmd +=          "|| echo -e '\\nif [ -f " + file + " ]; then\\n\\t. " + file + "\\n\\trm " + file + "\\nfi\\n' >>  ~/.bashrc "
-                cmd +=      ")"
-                cmd +=      " && echo 'sudo -- sh <<EOF' > " + file
-                cmd +=      " && echo 'mkdir -p " + driveL + "' >> " + file
-                cmd +=      " && echo 'mount -t drvfs \"" + driveW + "\\\" " + driveL + " -o rw,noatime,uid=1000,gid=1000,case=off' >> " + file
-                # or -o metadata
-                cmd +=      " && echo 'EOF' >> " + file
-                cmd +=      " && echo 'cd " + pathL + "' >> " + file
-                cmd +=  ") >> /dev/null"
-                wsl_cmd = [self.wsl_path, 'bash', '-c', cmd]
-                x = subprocess.Popen( wsl_cmd, shell=True)
-                x.wait()
-            main_cmd = main_cmd.replace('$folder',pathL)
+            pathL,driveW,driveL = _general.WindowsHandler().Path_Win2Lin(pathW)
+            self._mount_wsl(pathL,driveW,driveL,self.distribution)
+            # pathL=pathL.replace(" ","\\ ")
+            # if driveW != "":
+                # file = '~/.bash_mount_msg.sh'
+                # cmd = "mount | grep \'" + driveW + "\' >/dev/null"
+                # cmd +=  " || ( ("
+                # cmd +=          "grep '" + file + "' ~/.bashrc "
+                # cmd +=          "|| echo -e '\\nif [ -f " + file + " ]; then\\n\\t. " + file + "\\n\\trm " + file + "\\nfi\\n' >>  ~/.bashrc "
+                # cmd +=      ")"
+                # cmd +=      " && echo 'sudo -- sh <<EOF' > " + file
+                # cmd +=      " && echo 'mkdir -p " + driveL + "' >> " + file
+                # cmd +=      " && echo 'mount -t drvfs \"" + driveW + "\\\" " + driveL + " -o rw,noatime,uid=1000,gid=1000,case=off' >> " + file
+                # # or -o metadata
+                # cmd +=      " && echo 'EOF' >> " + file
+                # cmd +=      " && echo 'cd " + pathL + "' >> " + file
+                # cmd +=  ") >> /dev/null"
+                # wsl_cmd = [self.wsl_path, 'bash', '-c', cmd]
+                # x = subprocess.Popen( wsl_cmd, shell=True)
+                # x.wait()
+            main_cmd = main_cmd.replace('$folderWSL',pathL)
+            main_cmd = main_cmd.replace('$folder',"\'"+pathW+"\'")
         if self.uniq:
             main_cmd = 'ps aux | grep "'+main_cmd+'" |grep -v grep >/dev/null|| '+main_cmd
         if self.out:

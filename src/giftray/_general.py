@@ -5,6 +5,7 @@ import shutil
 import threading
 # import trace
 import win32con
+import win32com.client
 import win32api
 import win32process
 import time
@@ -109,31 +110,70 @@ class WindowsHandler:
     def __init__(self):
         self.global_array = []
 
-    def _callback_enumChildWindows(self,handle, arg):
-        if win32gui.GetClassName(handle) == arg:
-            self.global_array.append(handle)
-        return True
+    # def _callback_enumChildWindows(self,handle, arg):
+        # if win32gui.GetClassName(handle) == arg:
+            # self.global_array.append(handle)
+        # return True
+
+    def Path_Win2Lin(self,pathW):
+        driveL = ""
+        driveW = ""
+        pathL = "~"
+        to_return = ["~","",""] #[linux path, win drive, linux mnt dir]
+        if ( pathW == None ) or ( len(pathW) == 0 ):
+            #default
+            True
+        #windows specific directory
+        elif pathW.startswith('::'):
+            #network drive
+            True
+        elif pathW.startswith('//'):
+            a = pathW[2:].split('/')
+            if len(a)<2:
+                return to_return
+            driveW = "\\\\" + a[0] + "\\" + a[1] #enough \ ?
+            a[0]=a[0].lower()
+            a[1]=a[1].lower()
+            pathL = ("/mnt/" + "/".join(a)).replace(" ","\\ ")
+            driveL = "/mnt/" + a[0].replace(" ","_")+ '/' + a[1].replace(" ","_")
+        else:
+            a = pathW.split(':')
+            if len(a)<1 or len(a[0])!=1:
+                return to_return
+            drive = a[0]
+            driveW = drive + ':'
+            driveL = "/mnt/" + drive.lower()
+            pathL = (driveL + "/".join(a[1].split('\\'))).lower()
+        return pathL,driveW,driveL
+
     def GetCurrentPath(self):
         hwnd      = win32gui.GetForegroundWindow()
         classname = win32gui.GetClassName(hwnd)
-        print(classname)
         if (classname == "WorkerW"):
             #Desktop
             return
+        text=win32gui.GetWindowText(hwnd)
         if (classname == "CabinetWClass") or (classname == "ExploreWClass"):
-            #explorer (or other windows ?) if path in ToolbarWindow32
-            self.global_array.clear()
-            win32gui.EnumChildWindows(hwnd, self._callback_enumChildWindows, "ToolbarWindow32")
-            for i in self.global_array :
-                for text in win32gui.GetWindowText(i).split():
-                    if os.path.isdir(text):
-                        return text
-                    if os.path.isfile(text):
-                        return os.path.dirname(text)
+            #explorer (or other windows ?)
+            # self.global_array.clear()
+            # win32gui.EnumChildWindows(hwnd, self._callback_enumChildWindows, "ToolbarWindow32")
+            shell = win32com.client.Dispatch("Shell.Application")
+            for window in shell.Windows():
+                if window.hwnd != hwnd: continue
+                # because in win11 explorer can have tab
+                if text==window.LocationName:
+                    url=window.LocationURL
+                    if url and url.startswith('file'):
+                        url=url[5:].replace('///','')
+                    else:
+                        continue
+                    while url and url.endswith('/'):
+                        url=url[0:-1]
+                    return url+'/'
             return
         #other windows: test if windows name contains a path
-        full_text = (win32gui.GetWindowText(hwnd)).split()
-        print(full_text)
+        #TODO manage wsl path
+        full_text = text.split()
         for idx, t in enumerate(full_text):
             if not(len(t)>3 and t[1]==':'):
                 continue
