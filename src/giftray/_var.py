@@ -784,6 +784,7 @@ class dynamics:
             if key:
                 # act.setToolTip(ahk)
                 act.setShortcut(key)
+                #act.setShortcutContext
                 # act.setShortcut(ahk)
             if self.install['Actions'][a].IsService():
                 act.setCheckable(True)
@@ -799,20 +800,18 @@ class dynamics:
             submenu.setToolTipsVisible(True)
             #submenu.setIcon(self.mainmenuconf.getIcon('Menu'))
             submenu.setIcon(self.getIcon(f))
-            if not self.install['Folders'][f].IsInMenu():
-                # All submenu action
+            act = PyQt6.QtGui.QAction(self.getIcon('GENERIC_Menu'),f,submenu)
+            key = self.install['Folders'][f].GetHK()
+            if key:
+                # act.setToolTip(ahk)
+                act.setShortcut(key)
+            if self.install['Folders'][f].IsInMenu():
                 #act = PyQt6.QtGui.QAction(self.images.getIcon(self.submenus[i].iconid),i,submenu)
-                act = PyQt6.QtGui.QAction(self.getIcon('GENERIC_Menu'),f,submenu)
-                # ahk = self.install['Actions'][a].GetHK()[0]
-                key = self.install['Actions'][a].GetHK()
-                # if ahk:
-                if key:
-                    # act.setToolTip(ahk)
-                    act.setShortcut(key)
-                    # act.setShortcut(ahk)
                 act.triggered.connect(functools.partial(self._ConnectorAction, f))
-                submenu.addAction(act)
-                submenu.addSeparator()
+            else:
+                act.setDisabled(True)
+            submenu.addAction(act)
+            submenu.addSeparator()
             # Sub actions
             for c in self.install['Folders'][f].GetContain():
                 act = PyQt6.QtGui.QAction(self.getIcon(c),c,submenu)
