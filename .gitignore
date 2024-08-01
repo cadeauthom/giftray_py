@@ -21,6 +21,8 @@ src/__pycache__/
 *.exe
 *.wav
 
+*.err
+*.out
 *.lock
 *.bak
 test*
