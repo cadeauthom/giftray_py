@@ -151,7 +151,7 @@ class WindowsHandler:
         classname = win32gui.GetClassName(hwnd)
         if (classname == "WorkerW"):
             #Desktop
-            return
+            return ""
         text=win32gui.GetWindowText(hwnd)
         if (classname == "CabinetWClass") or (classname == "ExploreWClass"):
             #explorer (or other windows ?)
@@ -170,7 +170,7 @@ class WindowsHandler:
                     while url and url.endswith('/'):
                         url=url[0:-1]
                     return url+'/'
-            return
+            return ""
         #other windows: test if windows name contains a path
         #TODO manage wsl path
         full_text = text.split()
@@ -179,12 +179,12 @@ class WindowsHandler:
                 continue
             for i in range (len(full_text),idx,-1):
                 text = ' '.join(full_text[idx:i])
-                print(text)
+                # print(text)
                 if os.path.isdir(text):
                     return text
                 if os.path.isfile(text):
                     return os.path.dirname(text)
-        return
+        return ""
 
     def _callback_EnumHandler(self, hwnd, ctx ):
         if win32gui.IsWindowVisible( hwnd ):

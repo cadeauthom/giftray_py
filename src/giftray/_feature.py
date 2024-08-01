@@ -541,6 +541,7 @@ class wsl(action):
         # if "wsl_path" in others_general:
         #     self.wsl_path = others_general["wsl_path"]
         self.out = os.path.expandvars(self.out)
+        self.cmd = os.path.expandvars(self.cmd)
         if not self.cmd and self.show != 'template':
             self.AddError("cmd not set in '" +self.show+"'")
         return
