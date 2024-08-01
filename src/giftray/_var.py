@@ -784,7 +784,6 @@ class dynamics:
             if key:
                 # act.setToolTip(ahk)
                 act.setShortcut(key)
-                #act.setShortcutContext
                 # act.setShortcut(ahk)
             if self.install['Actions'][a].IsService():
                 act.setCheckable(True)

@@ -365,7 +365,8 @@ class script(action):
             out += ' as admin'
             cmd2 += ['-Verb','RunAs']
         cmd += '}'
-        prog = subprocess.Popen(['Powershell',  '-Command', cmd])
+        prog = subprocess.Popen(['PowerShell.exe',  '-Command', cmd])
+        prog.wait()
         return out
         # print(cmd2)
         # cmd3 = [self.cmd]
