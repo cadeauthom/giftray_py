@@ -148,6 +148,13 @@ class WindowsHandler:
 
     def GetCurrentPath(self):
         hwnd      = win32gui.GetForegroundWindow()
+        threadid,pid = win32process.GetWindowThreadProcessId(hwnd)
+        import psutil
+        #print(hwnd,psutil.Process(pid))
+        e=psutil.Process(pid=pid).environ()
+        print("pid=",pid)
+        for k in e:
+            print(k,"=>",e[k])
         classname = win32gui.GetClassName(hwnd)
         if (classname == "WorkerW"):
             #Desktop
@@ -174,16 +181,28 @@ class WindowsHandler:
         #other windows: test if windows name contains a path
         #TODO manage wsl path
         full_text = text.split()
-        for idx, t in enumerate(full_text):
-            if not(len(t)>3 and t[1]==':'):
-                continue
-            for i in range (len(full_text),idx,-1):
-                text = ' '.join(full_text[idx:i])
-                # print(text)
-                if os.path.isdir(text):
-                    return text
-                if os.path.isfile(text):
-                    return os.path.dirname(text)
+        # print(full_text)
+        # for idx, t in enumerate(full_text):
+            # if not(len(t)>3 and t[1]==':'):
+                # continue
+            # for i in range (len(full_text),idx,-1):
+                # text = ' '.join(full_text[idx:i])
+                # # print(text)
+                # if os.path.isdir(text):
+                    # return text
+                # if os.path.isfile(text):
+                    # return os.path.dirname(text)
+        for k in [r'([a-zA-Z]:([/\\]+[^\\/\'"\[\]]+)+)',r'(~(/[^\'"\s\[\]]+)*)',r'((/[^\'"\s\[\]]+)+)']:
+            print(k,text)
+            regex=re.findall(k,text)
+            if regex:
+                print(regex)
+                t=regex[0][0]
+                print(t)
+                if os.path.isdir(t):
+                    return t
+                if os.path.isfile(t):
+                    return os.path.dirname(t)
         return ""
 
     def _callback_EnumHandler(self, hwnd, ctx ):
